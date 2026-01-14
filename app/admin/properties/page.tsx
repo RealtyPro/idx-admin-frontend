@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { mockProperties } from '@/lib/mockData';
-import { useState, useEffect } from 'react';
+import React,{ useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PropertiesListPage() {

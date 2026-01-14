@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { mockBlogs } from '@/lib/mockData';
 import React from 'react';
+import { Label } from "@/components/ui/label";
 
 export default function BlogDetailsPage() {
   const [blog, setBlog] = useState<typeof mockBlogs[0] | undefined>(undefined);

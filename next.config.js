@@ -5,10 +5,9 @@ const nextConfig = {
     domains: [],
   },
   devIndicators: {
-    buildActivityPosition: 'bottom-right',
+    position: 'bottom-right',
   },
   productionBrowserSourceMaps: false,
-  swcMinify: true,
 }
 
 module.exports = nextConfig 
