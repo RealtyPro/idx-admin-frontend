@@ -31,8 +31,8 @@ const navigation = [
    { name: 'NewsLetter', href: '/admin/newsletter', icon: DocumentTextIcon },
 
   { name: 'Pages', href: '/admin/pages', icon: DocumentTextIcon },
-  { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
-  { name: 'Invoices', href: '/admin/invoices', icon: CreditCardIcon },
+  // { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
+  // { name: 'Invoices', href: '/admin/invoices', icon: CreditCardIcon },
   { name: 'Settings', href: '/admin/settings', icon: Cog6ToothIcon },
 ];
 
