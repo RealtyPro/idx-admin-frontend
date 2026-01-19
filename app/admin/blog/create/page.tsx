@@ -11,15 +11,26 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "react-quill-new/dist/quill.snow.css";
 import { useMutation } from "@tanstack/react-query";
 import { postNewBlog } from "@/services/blog/BlogServices";
+interface ImageObject {
+  file: string;
+  path: string;
+  disk: string;
+  original: string;
+  title: string;
+  caption: string;
+  time: string;
+}
+
 interface BlogResponse {
+  ListAgentMlsId: string;
   title: string;
   subtitle: string;
-  author: string;
   category: string;
-  publishDate: Date | string; // Use string if data comes as ISO string from backend
-  image: string | null;
+  is_featured: string;
+  image: ImageObject | null;
+  status: string;
   content: string;
-  isFeatured: boolean;
+  author: string;
 }
 
 export default function BlogCreatePage() {
@@ -27,64 +38,70 @@ export default function BlogCreatePage() {
   const [subtitle, setSubtitle] = useState("");
   const [author, setAuthor] = useState("");
   const [category, setCategory] = useState("");
-  const [publishDate, setPublishDate] = useState("");
   const [image, setImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [content, setContent] = useState("");
-  const [isFeatured, setIsFeatured] = useState(false); // State for "Is Featured"
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [status, setStatus] = useState("published");
+  const [listAgentMlsId, setListAgentMlsId] = useState("NWM1307294");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const postBlogMutation = useMutation({
-    mutationFn: (newBlog:BlogResponse) => postNewBlog(newBlog),
+    mutationFn: (newBlog: BlogResponse & { imageFile?: File | null }) => postNewBlog(newBlog),
 
     onSuccess: (data) => {
       console.log("blog posted successfully:", data);
-      window.location.href="/admin/blog";
-
+      // Reset form fields after successful submission
+      setTitle("");
+      setSubtitle("");
+      setAuthor("");
+      setCategory("");
+      setImage(null);
+      setImageFile(null);
+      setContent("");
+      setIsFeatured(false);
+      setStatus("published");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      // Redirect to blog list page
+      window.location.href = "/admin/blog";
     },
-    onError: (error) => {
-      console.error("Error  while loggin:", error);
+    onError: (error: any) => {
+      console.error("Error while creating blog:", error);
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to create blog post. Please try again.";
+      alert(errorMessage);
     },
   });
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
       const reader = new FileReader();
       reader.onload = (ev) => {
         setImage(ev.target?.result as string);
       };
-      reader.readAsDataURL(e.target.files[0]);
+      reader.readAsDataURL(file);
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Collect form data
-    const formData = {
+    // Collect form data matching the API structure
+    const formData: BlogResponse = {
+      ListAgentMlsId: listAgentMlsId,
       title,
       subtitle,
-      author,
       category,
-      publishDate,
-      image,
+      is_featured: isFeatured ? "1" : "0",
+      image: null, // Image will be handled by backend when file is uploaded
+      status,
       content,
-      isFeatured,
-      status:true
+      author
     };
-    postBlogMutation.mutate(formData);
-    // Example: Log the form data (replace this with an API call)
-    console.log("Form Data Submitted:", formData);
-
-    // Reset form fields (optional)
-    setTitle("");
-    setSubtitle("");
-    setAuthor("");
-    setCategory("");
-    setPublishDate("");
-    setImage(null);
-    setContent("");
-    setIsFeatured(false);
-
-    alert("Blog post submitted successfully!");
+    
+    postBlogMutation.mutate({ ...formData, imageFile });
   };
 
   return (
@@ -141,16 +158,6 @@ export default function BlogCreatePage() {
               </select>
             </div>
             <div>
-              <Label htmlFor="publishDate">Publish Date</Label>
-              <Input
-                id="publishDate"
-                type="date"
-                value={publishDate}
-                onChange={(e) => setPublishDate(e.target.value)}
-                required
-              />
-            </div>
-            <div>
               <Label htmlFor="image">Image</Label>
               <input
                 id="image"
@@ -175,6 +182,19 @@ export default function BlogCreatePage() {
                 className="bg-white"
               />
             </div>
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm"
+                required
+              >
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
             <div className="flex items-center space-x-2">
               <input
                 id="isFeatured"
@@ -184,7 +204,18 @@ export default function BlogCreatePage() {
               />
               <Label htmlFor="isFeatured">Is Featured</Label>
             </div>
-            <Button type="submit">Add Blog Post</Button>
+            <div>
+              <Label htmlFor="listAgentMlsId">List Agent MLS ID</Label>
+              <Input
+                id="listAgentMlsId"
+                value={listAgentMlsId}
+                onChange={(e) => setListAgentMlsId(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" disabled={postBlogMutation.isPending}>
+              {postBlogMutation.isPending ? "Creating..." : "Add Blog Post"}
+            </Button>
           </form>
         </CardContent>
       </Card>
