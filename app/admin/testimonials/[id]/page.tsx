@@ -4,13 +4,14 @@ import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useParams } from 'next/navigation';
-import { useSingleTestimonial } from '@/services/testimonial/TestimonialQueries';
+import { useSingleTestimonial, useDeleteTestimonial } from '@/services/testimonial/TestimonialQueries';
 import { Skeleton } from '@/components/ui/skeleton';
 export default function TestimonialsDetailPage  (){
   const params = useParams();
   const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '';
   const { data, isLoading, isError } = useSingleTestimonial(id);
   const testimonial = data?.data || data;
+  const deleteTestimonialMutation = useDeleteTestimonial();
 
   if (isLoading) {
     return (
@@ -55,7 +56,25 @@ export default function TestimonialsDetailPage  (){
             <Button asChild variant="secondary" size="sm">
               <Link href="/admin/testimonials">Back</Link>
             </Button>
-            <Button variant="destructive" size="sm" onClick={() => alert('Deleted!')}>Delete</Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                if (!confirm('Are you sure you want to delete this testimonial?')) return;
+                deleteTestimonialMutation.mutate(testimonial.id, {
+                  onSuccess: () => {
+                    window.location.href = "/admin/testimonials";
+                  },
+                  onError: (err: any) => {
+                    console.error('Error deleting testimonial:', err);
+                    alert(err?.response?.data?.message || err?.message || 'Failed to delete testimonial');
+                  },
+                });
+              }}
+              disabled={deleteTestimonialMutation.isPending}
+            >
+              {deleteTestimonialMutation.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="pt-4">

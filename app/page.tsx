@@ -26,7 +26,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 flex flex-col gap-8">
         <div className="max-w-3xl">
-          <h1 className="font-serif text-display text-dark mb-4">
+          <h1 className="font-serif text-heading text-dark mb-4">
             Smart<br />Interaction Logger
           </h1>
           <p className="text-body text-dark mb-8">

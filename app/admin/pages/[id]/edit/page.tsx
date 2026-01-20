@@ -1,36 +1,119 @@
 "use client";
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { mockPages } from '@/lib/mockData';
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSinglePage, useUpdatePage } from '@/services/page/PageQueries';
+import { useQueryClient } from '@tanstack/react-query';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 import 'react-quill-new/dist/quill.snow.css';
 
 export default function PageEditPage() {
-  const [page, setPage] = useState<typeof mockPages[0] | undefined>(undefined);
-  const [content, setContent] = useState<string>("");
-  const [loading, setLoading] = useState(true);
   const params = useParams();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '';
+  
+  const { data, isLoading, isError } = useSinglePage(id);
+  const page = data?.data || data;
+  
+  const updatePageMutation = useUpdatePage();
 
+  const [ListAgentMlsId] = useState("NWM1307294");
+  const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
+  const [heading, setHeading] = useState("");
+  const [sub_heading, setSubHeading] = useState("");
+  const [abstract, setAbstract] = useState("");
+  const [content, setContent] = useState("");
+  const [meta_title, setMetaTitle] = useState("");
+  const [meta_keyword, setMetaKeyword] = useState("");
+  const [meta_description, setMetaDescription] = useState("");
+  const [banner, setBanner] = useState("");
+  const [images, setImages] = useState("active");
+  const [compile, setCompile] = useState("active");
+  const [view, setView] = useState("");
+  const [category, setCategory] = useState("");
+  const [order, setOrder] = useState("1");
+  const [user_id] = useState("104");
+  const [status, setStatus] = useState("show");
+  const [marking, setMarking] = useState("");
+
+  // Update form fields when page data loads
   useEffect(() => {
-    const found = mockPages.find((p) => p.id === params.id);
-    setPage(found);
-    if (found) setContent(found.content || "");
-    const timer = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(timer);
-  }, [params.id]);
+    if (page) {
+      setName(page.name || '');
+      setTitle(page.title || '');
+      setHeading(page.heading || '');
+      setSubHeading(page.sub_heading || '');
+      setAbstract(page.abstract || '');
+      setContent(page.content || '');
+      setMetaTitle(page.meta_title || '');
+      setMetaKeyword(page.meta_keyword || '');
+      setMetaDescription(page.meta_description || '');
+      setBanner(page.banner || '');
+      setImages(page.images || 'active');
+      setCompile(page.compile || 'active');
+      setView(page.view || '');
+      setCategory(page.category || '');
+      setOrder(page.order ? String(page.order) : '1');
+      setStatus(page.status || 'show');
+      setMarking(page.marking || '');
+    }
+  }, [page]);
 
-  if (loading) {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const payload = {
+      ListAgentMlsId: page?.ListAgentMlsId || ListAgentMlsId,
+      name,
+      title,
+      heading,
+      sub_heading,
+      abstract,
+      content,
+      meta_title,
+      meta_keyword,
+      meta_description,
+      banner,
+      images,
+      compile,
+      view,
+      category,
+      order,
+      user_id: page?.user_id || user_id,
+      status,
+      marking
+    };
+
+    updatePageMutation.mutate(
+      { id, data: payload },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['pages'] });
+          queryClient.invalidateQueries({ queryKey: ['page', id] });
+          alert("Page updated successfully");
+          router.push("/admin/pages");
+        },
+        onError: (error: any) => {
+          console.error("Error updating page:", error);
+          const errorMessage = error?.response?.data?.message || error?.message || "Failed to update page. Please try again.";
+          alert(errorMessage);
+        },
+      }
+    );
+  };
+
+  if (isLoading) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
+      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
         <Skeleton className="h-10 w-64 mb-4" />
         <Skeleton className="h-8 w-32 mb-2" />
         <Skeleton className="h-40 w-full rounded-xl" />
@@ -39,9 +122,9 @@ export default function PageEditPage() {
     );
   }
 
-  if (!page) {
+  if (isError || !page) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
+      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
         <Card>
           <CardHeader>
             <CardTitle>Page Not Found</CardTitle>
@@ -58,36 +141,152 @@ export default function PageEditPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
+    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle>Edit Page</CardTitle>
           <Button asChild variant="secondary" size="sm">
-            <Link href={`/admin/pages/${page.id}`}>Back</Link>
+            <Link href={`/admin/pages/${id}`}>Back</Link>
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form className="space-y-4">
-            <div>
-              <Label htmlFor="title">Title</Label>
-              <Input id="title" defaultValue={page.title} />
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
+              </div>
+              <div>
+                <Label htmlFor="title">Title</Label>
+                <Input id="title" value={title} onChange={e => setTitle(e.target.value)} required />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="slug">Slug</Label>
-              <Input id="slug" defaultValue={page.slug} />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="heading">Heading</Label>
+                <Input id="heading" value={heading} onChange={e => setHeading(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="sub_heading">Sub Heading</Label>
+                <Input id="sub_heading" value={sub_heading} onChange={e => setSubHeading(e.target.value)} />
+              </div>
             </div>
+
             <div>
-              <Label htmlFor="date">Date</Label>
-              <Input id="date" type="date" defaultValue={page.date} />
+              <Label htmlFor="abstract">Abstract</Label>
+              <textarea 
+                id="abstract" 
+                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm" 
+                value={abstract} 
+                onChange={e => setAbstract(e.target.value)} 
+              />
             </div>
+
             <div>
               <Label htmlFor="content">Content</Label>
               <ReactQuill theme="snow" value={content} onChange={setContent} className="bg-white" />
             </div>
-            <Button type="submit">Update</Button>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="meta_title">Meta Title</Label>
+                <Input id="meta_title" value={meta_title} onChange={e => setMetaTitle(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="meta_keyword">Meta Keyword</Label>
+                <Input id="meta_keyword" value={meta_keyword} onChange={e => setMetaKeyword(e.target.value)} />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="meta_description">Meta Description</Label>
+              <textarea 
+                id="meta_description" 
+                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm" 
+                value={meta_description} 
+                onChange={e => setMetaDescription(e.target.value)} 
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="banner">Banner</Label>
+              <textarea 
+                id="banner" 
+                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm" 
+                value={banner} 
+                onChange={e => setBanner(e.target.value)} 
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="view">View</Label>
+                <Input id="view" value={view} onChange={e => setView(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <Input id="category" value={category} onChange={e => setCategory(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="order">Order</Label>
+                <Input id="order" type="number" value={order} onChange={e => setOrder(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <select
+                  id="status"
+                  value={status}
+                  onChange={e => setStatus(e.target.value)}
+                  className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm"
+                >
+                  <option value="show">Show</option>
+                  <option value="hide">Hide</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="images">Images</Label>
+                <select
+                  id="images"
+                  value={images}
+                  onChange={e => setImages(e.target.value)}
+                  className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="compile">Compile</Label>
+                <select
+                  id="compile"
+                  value={compile}
+                  onChange={e => setCompile(e.target.value)}
+                  className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="marking">Marking</Label>
+              <Input id="marking" value={marking} onChange={e => setMarking(e.target.value)} />
+            </div>
+
+            <Button type="submit" disabled={updatePageMutation.isPending}>
+              {updatePageMutation.isPending ? "Updating..." : "Update Page"}
+            </Button>
           </form>
         </CardContent>
       </Card>
     </div>
   );
-} 
+}

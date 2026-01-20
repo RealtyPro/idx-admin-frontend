@@ -157,9 +157,6 @@ const handleDelete =(id:string)=>{
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Blog Posts</h1>
         <div className="flex gap-2">
-          <Button asChild variant="secondary">
-            <Link href="/admin">Back</Link>
-          </Button>
           <Button asChild>
             <Link href="/admin/blog/create">New Blog Post</Link>
           </Button>
