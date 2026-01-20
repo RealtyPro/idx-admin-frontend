@@ -147,13 +147,13 @@ export default function adminLayout({
 
           {/* User Section */}
           <div className={`p-4 border-t border-gray-200 ${collapsed ? 'px-2' : ''}`}>
-            <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
+            <div className="flex items-center gap-2">
               <Link 
                 href="/admin/profile"
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg flex-1 hover:bg-gray-50 transition-colors ${collapsed ? 'justify-center px-2' : ''}`}
+                className={`flex items-center rounded-lg hover:bg-gray-50 transition-colors ${collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2 flex-1'}`}
                 title={collapsed ? 'Profile' : undefined}
               >
-                <div className="flex-shrink-0 relative">
+                <div className="flex-shrink-0 relative" style={{ paddingTop: '33px' }}>
                   {userProfilePic ? (
                     <>
                       <img 
@@ -180,18 +180,19 @@ export default function adminLayout({
                   )}
                 </div>
                 {!collapsed && (
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0" style={{ paddingLeft: '40px' }}>
                     <p className="text-sm font-medium text-dark truncate">{userName}</p>
-                    <p className="text-xs text-dark-secondary truncate">{userEmail}</p>
+                    <p className="text-dark-secondary truncate" style={{ fontSize: '9px' }}>{userEmail}</p>
                   </div>
                 )}
               </Link>
               <button
-                className="p-1 rounded-lg text-dark-secondary hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-shrink-0 p-2 rounded-lg text-dark-secondary hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 onClick={handleLogout}
                 disabled={logoutMutation.isPending}
                 aria-label="Logout"
                 type="button"
+                title="Logout"
               >
                 <ArrowLeftOnRectangleIcon className="w-5 h-5" />
               </button>
