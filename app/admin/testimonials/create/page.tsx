@@ -34,6 +34,8 @@ function showToast(message: string) {
 
 export default function TestimonialCreatePage() {
   const [name, setName] = useState("");
+  const [position, setPosition] = useState("");
+  const [rating, setRating] = useState("");
   const [details, setDetails] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,19 +48,9 @@ export default function TestimonialCreatePage() {
     const payload = {
       ListAgentMlsId: "NWM1307294",
       name,
-      position: null,
-      rating: null,
+      position: position || "",
+      rating: rating || "",
       details,
-      image: {
-        folder: "testimonial/testimonial/2025/04/02/014016299/photo",
-        file: "ZgDoy6JcSNC9M7xKREL5hrTDgTLbCP4Lg22FINFw.jpg",
-        path: "testimonial/testimonial/2025/04/02/014016299/photo/ZgDoy6JcSNC9M7xKREL5hrTDgTLbCP4Lg22FINFw.jpg",
-        disk: "local",
-        original: "Screenshot_20250116_115317_Google.jpg",
-        title: "Screenshot 20250116 115317 google",
-        caption: "Screenshot 20250116 115317 google",
-        time: "2025-04-02 01:41:08"
-      },
       status: "active",
       user_id: "104",
       upload_folder: "testimonial/testimonial"
@@ -90,6 +82,14 @@ export default function TestimonialCreatePage() {
             <div>
               <Label htmlFor="name">Name</Label>
               <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
+            </div>
+            <div>
+              <Label htmlFor="position">Position</Label>
+              <Input id="position" value={position} onChange={e => setPosition(e.target.value)} placeholder="e.g., CEO, TechCorp Solutions" />
+            </div>
+            <div>
+              <Label htmlFor="rating">Rating</Label>
+              <Input id="rating" type="number" min="1" max="5" value={rating} onChange={e => setRating(e.target.value)} placeholder="1-5" />
             </div>
             <div>
               <Label htmlFor="details">Details</Label>

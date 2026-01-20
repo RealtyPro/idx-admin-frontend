@@ -2,23 +2,42 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockBlogs } from '@/lib/mockData';
 import React from 'react';
 import { Label } from "@/components/ui/label";
+import { useSingleBlog } from '@/services/blog/BlogQueris';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { deleteBlog } from "@/services/blog/BlogServices";
 
 export default function BlogDetailsPage() {
-  const [blog, setBlog] = useState<typeof mockBlogs[0] | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
   const params = useParams();
-  useEffect(() => {
-    setBlog(mockBlogs.find((b) => b.id === params.id));
-    setLoading(false);
-  }, [params.id]);
+  const { data: blogData, isLoading, error } = useSingleBlog({ id: params.id as string });
+  const queryClient = useQueryClient();
+  
+  const blog = blogData?.data || blogData;
+  
+  const deleteBlogMutation = useMutation({
+    mutationFn: (id: string) => deleteBlog(id),
+    onSuccess: () => {
+      alert("Blog deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ['bloglist'] });
+      window.location.href = "/admin/blog";
+    },
+    onError: (error: any) => {
+      console.error("Error while deleting blog:", error);
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to delete blog post. Please try again.";
+      alert(errorMessage);
+    },
+  });
+  
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this blog post?")) {
+      deleteBlogMutation.mutate(params.id as string);
+    }
+  };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
         <Skeleton className="h-10 w-64 mb-4" />
@@ -28,7 +47,7 @@ export default function BlogDetailsPage() {
     );
   }
 
-  if (!blog) {
+  if (error || !blog) {
     return (
       <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
         <Card>
@@ -53,28 +72,40 @@ export default function BlogDetailsPage() {
           <div>
             <CardTitle className="text-xl">{blog.title}</CardTitle>
             <div className="text-sm text-muted-foreground">
-              By {blog.author} on {blog.date}
+              By {blog.author || 'Unknown'}
+              {blog.publishDate && <span> on {new Date(blog.publishDate).toLocaleDateString()}</span>}
             </div>
           </div>
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link href={`/admin/blog/${blog.id}/edit`}>Edit</Link>
+              <Link href={`/admin/blog/${params.id}/edit`}>Edit</Link>
             </Button>
             <Button asChild variant="secondary" size="sm">
               <Link href="/admin/blog">Back</Link>
             </Button>
-            <Button variant="destructive" size="sm" onClick={() => alert('Deleted!')}>Delete</Button>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={handleDelete}
+              disabled={deleteBlogMutation.isPending}
+            >
+              {deleteBlogMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="prose max-w-none">
-            <div>
+            {blog.subtitle && (
+              <div className="text-lg italic text-muted-foreground mb-4">
+                {blog.subtitle}
+              </div>
+            )}
+            <div className="mb-4">
               <Label htmlFor="category">Category</Label>
               <select
                 id="category"
                 value={blog.category || ""}
-                onChange={(e) => alert(`Selected category: ${e.target.value}`)} // Replace with actual logic if needed
-                className="block w-full text-sm border-gray-300 rounded-md"
+                className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm mt-1"
                 disabled
               >
                 <option value="blog">Blog</option>
@@ -82,7 +113,40 @@ export default function BlogDetailsPage() {
                 <option value="articles">Articles</option>
               </select>
             </div>
-            <div className="mt-4">{blog.content}</div>
+            {blog.status && (
+              <div className="mb-4">
+                <Label>Status</Label>
+                <div className="mt-1">
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    blog.status === 'published' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {blog.status}
+                  </span>
+                  {blog.is_featured === "1" || blog.is_featured === 1 || blog.is_featured === true ? (
+                    <span className="ml-2 px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-sm font-semibold">
+                      Featured
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            )}
+            {blog.image && (
+              <div className="mb-4">
+                <img 
+                  src={typeof blog.image === 'string' 
+                    ? blog.image 
+                    : blog.image.path?.startsWith('http') 
+                      ? blog.image.path 
+                      : `https://demorealestate2.webnapps.net/storage/${blog.image.path}`
+                  } 
+                  alt={blog.title} 
+                  className="w-full rounded-lg max-h-96 object-cover"
+                />
+              </div>
+            )}
+            <div className="mt-4" dangerouslySetInnerHTML={{ __html: blog.content || '' }} />
           </div>
         </CardContent>
       </Card>

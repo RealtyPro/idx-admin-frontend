@@ -65,14 +65,6 @@ export default function InquiriesPage() {
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Enquiries</h1>
-        <div className="flex gap-2">
-          <Button asChild variant="secondary">
-            <Link href="/admin">Back</Link>
-          </Button>
-          {/* <Button asChild>
-            <Link href="/admin/enquiries/create">New Enquiry</Link>
-          </Button> */}
-        </div>
       </div>
       <div className="grid gap-4">
         {Array.isArray(inquiries) && inquiries.length > 0 ? (

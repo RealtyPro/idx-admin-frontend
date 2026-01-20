@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSingleTestimonial, useUpdateTestimonial } from '@/services/testimonial/TestimonialQueries';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 export default function TestimonialEditPage() {
   const params = useParams();
@@ -17,11 +17,23 @@ export default function TestimonialEditPage() {
   const { data, isLoading, isError } = useSingleTestimonial(id);
 
   const testimonial = data?.data || data;
-  const [name, setName] = useState(testimonial?.name || '');
-  const [details, setDetails] = useState(testimonial?.details || testimonial?.content || '');
+  const [name, setName] = useState('');
+  const [position, setPosition] = useState('');
+  const [rating, setRating] = useState('');
+  const [details, setDetails] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const updateTestimonialMutation = useUpdateTestimonial();
+
+  // Update form fields when testimonial data loads
+  useEffect(() => {
+    if (testimonial) {
+      setName(testimonial.name || '');
+      setPosition(testimonial.position || '');
+      setRating(testimonial.rating ? String(testimonial.rating) : '');
+      setDetails(testimonial.details || testimonial.content || '');
+    }
+  }, [testimonial]);
 
   // Simple toast utility (replace with your own or a library if available)
   function showToast(message: string) {
@@ -94,19 +106,9 @@ export default function TestimonialEditPage() {
             const payload = {
               ListAgentMlsId: testimonial.ListAgentMlsId || "NWM1307294",
               name,
-              position: testimonial.position || null,
-              rating: testimonial.rating || null,
+              position: position || "",
+              rating: rating || "",
               details,
-              image: testimonial.image || {
-                folder: "testimonial/testimonial/2025/04/02/014016299/photo",
-                file: "ZgDoy6JcSNC9M7xKREL5hrTDgTLbCP4Lg22FINFw.jpg",
-                path: "testimonial/testimonial/2025/04/02/014016299/photo/ZgDoy6JcSNC9M7xKREL5hrTDgTLbCP4Lg22FINFw.jpg",
-                disk: "local",
-                original: "Screenshot_20250116_115317_Google.jpg",
-                title: "Screenshot 20250116 115317 google",
-                caption: "Screenshot 20250116 115317 google",
-                time: "2025-04-02 01:41:08"
-              },
               status: testimonial.status || "active",
               user_id: testimonial.user_id || "104",
               upload_folder: testimonial.upload_folder || "testimonial/testimonial"
@@ -117,11 +119,14 @@ export default function TestimonialEditPage() {
                 onSuccess: () => {
                   showToast("Testimonial updated successfully");
                   setTimeout(() => {
-                    router.push(`/admin/testimonials/${testimonial.id}`);
+                    // Redirect to testimonials list page after successful update
+                    router.push("/admin/testimonials");
                   }, 1200);
                 },
                 onError: (err: any) => {
-                  setError(err?.message || "Failed to update testimonial");
+                  const errorMessage = err?.response?.data?.message || err?.message || "Failed to update testimonial. Please try again.";
+                  setError(errorMessage);
+                  console.error("Error updating testimonial:", err);
                 }
               }
             );
@@ -129,6 +134,14 @@ export default function TestimonialEditPage() {
             <div>
               <Label htmlFor="name">Name</Label>
               <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
+            </div>
+            <div>
+              <Label htmlFor="position">Position</Label>
+              <Input id="position" value={position} onChange={e => setPosition(e.target.value)} placeholder="e.g., CEO, TechCorp Solutions" />
+            </div>
+            <div>
+              <Label htmlFor="rating">Rating</Label>
+              <Input id="rating" type="number" min="1" max="5" value={rating} onChange={e => setRating(e.target.value)} placeholder="1-5" />
             </div>
             <div>
               <Label htmlFor="details">Details</Label>

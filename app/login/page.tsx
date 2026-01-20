@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 
 import { useMutation } from "@tanstack/react-query";
 import axiosInstance from "@/services/Api";
+import { fetchProfile } from "@/services/profile/ProfileServices";
 
 export default function Login() {
   const router = useRouter();
@@ -60,11 +61,33 @@ export default function Login() {
     e.preventDefault();
     if (validateForm()) {
       loginMutation.mutate(formData, {
-        onSuccess: (data) => {
-          // Store access token in sessionStorage and redirect
+        onSuccess: async (data) => {
+          // Store access token in sessionStorage
           if (data?.access_token) {
             sessionStorage.setItem("access_token_type", data.token_type);
             sessionStorage.setItem("access_token", data.access_token);
+            
+            // Fetch profile and save name, email, and profile picture to sessionStorage
+            try {
+              const profileData = await fetchProfile();
+              const profile = profileData?.data || profileData;
+              
+              if (profile?.name) {
+                sessionStorage.setItem("user_name", profile.name);
+              }
+              if (profile?.email) {
+                sessionStorage.setItem("user_email", profile.email);
+              }
+              // Save profile picture (checking various possible field names)
+              const profilePic = profile?.profile_pic || profile?.profile_picture || profile?.avatar || profile?.image || profile?.photo || profile?.picture;
+              if (profilePic) {
+                sessionStorage.setItem("user_profile_pic", profilePic);
+              }
+            } catch (profileError) {
+              // If profile fetch fails, still proceed with login
+              console.error("Failed to fetch profile:", profileError);
+            }
+            
             router.push("/admin/blog");
           } else {
             setErrors((prev) => ({

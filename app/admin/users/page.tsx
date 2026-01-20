@@ -29,7 +29,7 @@ import {
   UserPlusIcon,
 } from '@heroicons/react/24/outline';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Bars3Icon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { mockUsers } from '@/lib/mockData';
@@ -108,31 +108,14 @@ type SortableHeaderProps = {
 };
 
 function SortableHeader({ columns, columnOrder, setColumnOrder, sortState, setSortState }: SortableHeaderProps) {
-  const sensors = useSensors(useSensor(PointerSensor));
-
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={event => {
-        const { active, over } = event;
-        if (over && String(active.id) !== String(over.id)) {
-          const oldIndex = columnOrder.indexOf(String(active.id));
-          const newIndex = columnOrder.indexOf(String(over.id));
-          setColumnOrder(arrayMove(columnOrder, oldIndex, newIndex));
-        }
-      }}
-    >
-      <SortableContext items={columnOrder} strategy={verticalListSortingStrategy}>
-        <tr className="border-b">
-          {columnOrder.map((colId, idx) => {
-            const column = columns.find(c => c.id === colId);
-            if (!column) return null;
-            return <SortableTh key={colId} id={colId} column={column} index={idx} sortState={sortState} setSortState={setSortState} />;
-          })}
-        </tr>
-      </SortableContext>
-    </DndContext>
+    <SortableContext items={columnOrder} strategy={horizontalListSortingStrategy}>
+      {columnOrder.map((colId, idx) => {
+        const column = columns.find(c => c.id === colId);
+        if (!column) return null;
+        return <SortableTh key={colId} id={colId} column={column} index={idx} sortState={sortState} setSortState={setSortState} />;
+      })}
+    </SortableContext>
   );
 }
 
@@ -199,6 +182,8 @@ export default function UsersPage() {
   const [sortState, setSortState] = useState<{ column: string; direction: 'asc' | 'desc' } | null>(null);
   const [users, setUsers] = useState<typeof mockUsers>([]);
   const [loading, setLoading] = useState(true);
+  
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   useEffect(() => {
     setUsers(mockUsers);
@@ -330,18 +315,32 @@ export default function UsersPage() {
         <CardHeader>
           <CardTitle>System Users</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <SortableHeader
-                  columns={defaultColumns}
-                  columnOrder={columnOrder}
-                  setColumnOrder={setColumnOrder}
-                  sortState={sortState}
-                  setSortState={setSortState}
-                />
-              </thead>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={event => {
+            const { active, over } = event;
+            if (over && String(active.id) !== String(over.id)) {
+              const oldIndex = columnOrder.indexOf(String(active.id));
+              const newIndex = columnOrder.indexOf(String(over.id));
+              setColumnOrder(arrayMove(columnOrder, oldIndex, newIndex));
+            }
+          }}
+        >
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <SortableHeader
+                      columns={defaultColumns}
+                      columnOrder={columnOrder}
+                      setColumnOrder={setColumnOrder}
+                      sortState={sortState}
+                      setSortState={setSortState}
+                    />
+                  </tr>
+                </thead>
               <tbody className="divide-y">
                 {filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
@@ -441,6 +440,7 @@ export default function UsersPage() {
             </table>
           </div>
         </CardContent>
+      </DndContext>
       </Card>
 
       {/* Edit User Dialog */}

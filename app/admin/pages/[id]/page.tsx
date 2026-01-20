@@ -1,24 +1,44 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from "next/link";
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mockPages } from '@/lib/mockData';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSinglePage } from '@/services/page/PageQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { deletePage } from '@/services/page/PageServices';
 
 export default function PageDetails() {
-	const [page, setPage] = useState<typeof mockPages[0] | undefined>(undefined);
-	const [loading, setLoading] = useState(true);
 	const params = useParams();
+	const router = useRouter();
+	const queryClient = useQueryClient();
+	const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '';
+	
+	const { data, isLoading, isError } = useSinglePage(id);
+	const page = data?.data || data;
 
-	useEffect(() => {
-		setPage(mockPages.find((p) => p.id === params.id));
-		const timer = setTimeout(() => setLoading(false), 300);
-		return () => clearTimeout(timer);
-	}, [params.id]);
+	const deletePageMutation = useMutation({
+		mutationFn: (id: string) => deletePage(id),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['pages'] });
+			alert("Page deleted successfully");
+			router.push("/admin/pages");
+		},
+		onError: (error: any) => {
+			console.error("Error deleting page:", error);
+			const errorMessage = error?.response?.data?.message || error?.message || "Failed to delete page. Please try again.";
+			alert(errorMessage);
+		},
+	});
 
-	if (loading) {
+	const handleDelete = () => {
+		if (window.confirm("Are you sure you want to delete this page?")) {
+			deletePageMutation.mutate(id);
+		}
+	};
+
+	if (isLoading) {
 		return (
 			<div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
 				<Skeleton className="h-10 w-64" />
@@ -28,7 +48,7 @@ export default function PageDetails() {
 		);
 	}
 
-	if (!page) {
+	if (isError || !page) {
 		return (
 			<div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
 				<Card>
@@ -52,20 +72,32 @@ export default function PageDetails() {
 				<CardHeader className="flex flex-row justify-between items-center">
 					<div>
 						<CardTitle className="text-xl">{page.title}</CardTitle>
-						<div className="text-sm text-muted-foreground">{page.slug} • {page.date}</div>
+						<div className="text-sm text-muted-foreground">
+							{page.slug && <span>{page.slug}</span>}
+							{page.slug && page.date && <span> • </span>}
+							{page.date && <span>{page.date}</span>}
+							{page.created_at && !page.date && <span>{page.created_at}</span>}
+						</div>
 					</div>
 					<div className="flex gap-2">
 						<Button asChild variant="outline" size="sm">
-							<Link href={`/admin/pages/${page.id}/edit`}>Edit</Link>
+							<Link href={`/admin/pages/${id}/edit`}>Edit</Link>
 						</Button>
 						<Button asChild variant="secondary" size="sm">
 							<Link href="/admin/pages">Back</Link>
 						</Button>
-						<Button variant="destructive" size="sm" onClick={() => alert('Deleted!')}>Delete</Button>
+						<Button 
+							variant="destructive" 
+							size="sm" 
+							onClick={handleDelete}
+							disabled={deletePageMutation.isPending}
+						>
+							{deletePageMutation.isPending ? "Deleting..." : "Delete"}
+						</Button>
 					</div>
 				</CardHeader>
 				<CardContent className="pt-4">
-					<div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: page.content }} />
+					<div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: page.content || '' }} />
 				</CardContent>
 			</Card>
 		</div>

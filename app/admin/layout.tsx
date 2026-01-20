@@ -3,33 +3,28 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import {
   HomeIcon,
   ChatBubbleLeftRightIcon,
-  PhoneIcon,
-  ChartBarIcon,
-  Cog6ToothIcon,
   ArrowLeftOnRectangleIcon,
   UsersIcon,
-  CreditCardIcon,
   DocumentTextIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   EnvelopeIcon,
 } from '@heroicons/react/24/outline';
+import { useLogout } from '@/services/auth/AuthQueries';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: HomeIcon },
   { name: 'Listings', href: '/admin/listings', icon: DocumentTextIcon },
-  { name: 'Agents', href: '/admin/agents', icon: UsersIcon },
   { name: 'Users', href: '/admin/users', icon: UsersIcon },
   { name: 'Enquiries', href: '/admin/inquiries', icon: EnvelopeIcon },
   { name: 'Blog', href: '/admin/blog', icon: DocumentTextIcon },
   { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon },
    { name: 'NewsLetter', href: '/admin/newsletter', icon: DocumentTextIcon },
-
   { name: 'Pages', href: '/admin/pages', icon: DocumentTextIcon },
   // { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
   // { name: 'Invoices', href: '/admin/invoices', icon: CreditCardIcon },
@@ -42,7 +37,61 @@ export default function adminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const logoutMutation = useLogout();
+  const [userName, setUserName] = useState('User');
+  const [userEmail, setUserEmail] = useState('user@example.com');
+  const [userInitials, setUserInitials] = useState('JD');
+  const [userProfilePic, setUserProfilePic] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Load user data from sessionStorage
+    if (typeof window !== 'undefined') {
+      const name = sessionStorage.getItem('user_name') || 'User';
+      const email = sessionStorage.getItem('user_email') || 'user@example.com';
+      const profilePic = sessionStorage.getItem('user_profile_pic');
+      
+      setUserName(name);
+      setUserEmail(email);
+      setUserProfilePic(profilePic);
+      
+      // Generate initials from name
+      const initials = name
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+      setUserInitials(initials || 'JD');
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      // Clear sessionStorage
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('access_token_type');
+        sessionStorage.removeItem('user_name');
+        sessionStorage.removeItem('user_email');
+        sessionStorage.removeItem('user_profile_pic');
+      }
+      // Redirect to login page
+      router.push('/login');
+    } catch (error) {
+      // Even if logout API fails, clear local storage and redirect
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('access_token_type');
+        sessionStorage.removeItem('user_name');
+        sessionStorage.removeItem('user_email');
+        sessionStorage.removeItem('user_profile_pic');
+      }
+      router.push('/login');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -101,24 +150,49 @@ export default function adminLayout({
 
           {/* User Section */}
           <div className={`p-4 border-t border-gray-200 ${collapsed ? 'px-2' : ''}`}>
-            <div className={`flex items-center gap-3 px-3 py-2 ${collapsed ? 'justify-center' : ''}`}>
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-primary font-medium">JD</span>
+            <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
+              <Link 
+                href="/admin/profile"
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg flex-1 hover:bg-gray-50 transition-colors ${collapsed ? 'justify-center px-2' : ''}`}
+                title={collapsed ? 'Profile' : undefined}
+              >
+                <div className="flex-shrink-0 relative">
+                  {userProfilePic ? (
+                    <>
+                      <img 
+                        src={userProfilePic} 
+                        alt={userName}
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => {
+                          // Hide image and show fallback
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                          if (fallback) {
+                            fallback.style.display = 'flex';
+                          }
+                        }}
+                      />
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center absolute inset-0" style={{ display: 'none' }}>
+                        <span className="text-primary font-medium text-xs">{userInitials}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-primary font-medium text-xs">{userInitials}</span>
+                    </div>
+                  )}
                 </div>
-              </div>
-              {!collapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-dark truncate">John Doe</p>
-                  <p className="text-xs text-dark-secondary truncate">john@example.com</p>
-                </div>
-              )}
+                {!collapsed && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-dark truncate">{userName}</p>
+                    <p className="text-xs text-dark-secondary truncate">{userEmail}</p>
+                  </div>
+                )}
+              </Link>
               <button
-                className="p-1 rounded-lg text-dark-secondary hover:bg-gray-50"
-                onClick={() => {
-                  // Handle logout
-                  console.log('Logout clicked');
-                }}
+                className="p-1 rounded-lg text-dark-secondary hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleLogout}
+                disabled={logoutMutation.isPending}
                 aria-label="Logout"
                 type="button"
               >

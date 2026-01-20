@@ -22,3 +22,9 @@ export const createTestimonial = async (testimonialData: object) => {
   const response = await axiosInstance.post('v1/admin/testimonial', testimonialData);
   return response.data;
 };
+
+// Delete testimonial (DELETE v1/admin/testimonial/${id})
+export const deleteTestimonial = async (id: string) => {
+  const response = await axiosInstance.delete(`v1/admin/testimonial/${id}`);
+  return response.data;
+};
