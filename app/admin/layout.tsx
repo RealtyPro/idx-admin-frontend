@@ -26,6 +26,9 @@ const navigation = [
   { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon },
    { name: 'NewsLetter', href: '/admin/newsletter', icon: DocumentTextIcon },
   { name: 'Pages', href: '/admin/pages', icon: DocumentTextIcon },
+  // { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
+  // { name: 'Invoices', href: '/admin/invoices', icon: CreditCardIcon },
+  { name: 'Settings', href: '/admin/settings', icon: Cog6ToothIcon },
 ];
 
 export default function adminLayout({
