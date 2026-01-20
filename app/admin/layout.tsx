@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   HomeIcon,
   ChatBubbleLeftRightIcon,
@@ -14,18 +14,22 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   EnvelopeIcon,
-} from '@heroicons/react/24/outline';
-import { useLogout } from '@/services/auth/AuthQueries';
+} from "@heroicons/react/24/outline";
+import { useLogout } from "@/services/auth/AuthQueries";
 
 const navigation = [
-  { name: 'Dashboard', href: '/admin', icon: HomeIcon },
-  { name: 'Listings', href: '/admin/listings', icon: DocumentTextIcon },
-  { name: 'Users', href: '/admin/users', icon: UsersIcon },
-  { name: 'Enquiries', href: '/admin/inquiries', icon: EnvelopeIcon },
-  { name: 'Blog', href: '/admin/blog', icon: DocumentTextIcon },
-  { name: 'Testimonials', href: '/admin/testimonials', icon: ChatBubbleLeftRightIcon },
-   { name: 'NewsLetter', href: '/admin/newsletter', icon: DocumentTextIcon },
-  { name: 'Pages', href: '/admin/pages', icon: DocumentTextIcon },
+  { name: "Dashboard", href: "/admin", icon: HomeIcon },
+  { name: "Listings", href: "/admin/listings", icon: DocumentTextIcon },
+  { name: "Users", href: "/admin/users", icon: UsersIcon },
+  { name: "Enquiries", href: "/admin/inquiries", icon: EnvelopeIcon },
+  { name: "Blog", href: "/admin/blog", icon: DocumentTextIcon },
+  {
+    name: "Testimonials",
+    href: "/admin/testimonials",
+    icon: ChatBubbleLeftRightIcon,
+  },
+  { name: "NewsLetter", href: "/admin/newsletter", icon: DocumentTextIcon },
+  { name: "Pages", href: "/admin/pages", icon: DocumentTextIcon },
 ];
 
 export default function adminLayout({
@@ -37,30 +41,30 @@ export default function adminLayout({
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const logoutMutation = useLogout();
-  const [userName, setUserName] = useState('User');
-  const [userEmail, setUserEmail] = useState('user@example.com');
-  const [userInitials, setUserInitials] = useState('JD');
+  const [userName, setUserName] = useState("User");
+  const [userEmail, setUserEmail] = useState("user@example.com");
+  const [userInitials, setUserInitials] = useState("JD");
   const [userProfilePic, setUserProfilePic] = useState<string | null>(null);
 
   useEffect(() => {
     // Load user data from sessionStorage
-    if (typeof window !== 'undefined') {
-      const name = sessionStorage.getItem('user_name') || 'User';
-      const email = sessionStorage.getItem('user_email') || 'user@example.com';
-      const profilePic = sessionStorage.getItem('user_profile_pic');
-      
+    if (typeof window !== "undefined") {
+      const name = sessionStorage.getItem("user_name") || "User";
+      const email = sessionStorage.getItem("user_email") || "user@example.com";
+      const profilePic = sessionStorage.getItem("user_profile_pic");
+
       setUserName(name);
       setUserEmail(email);
       setUserProfilePic(profilePic);
-      
+
       // Generate initials from name
       const initials = name
-        .split(' ')
-        .map(n => n[0])
-        .join('')
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
         .toUpperCase()
         .slice(0, 2);
-      setUserInitials(initials || 'JD');
+      setUserInitials(initials || "JD");
     }
   }, []);
 
@@ -68,25 +72,25 @@ export default function adminLayout({
     try {
       await logoutMutation.mutateAsync();
       // Clear sessionStorage
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('access_token');
-        sessionStorage.removeItem('access_token_type');
-        sessionStorage.removeItem('user_name');
-        sessionStorage.removeItem('user_email');
-        sessionStorage.removeItem('user_profile_pic');
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("access_token");
+        sessionStorage.removeItem("access_token_type");
+        sessionStorage.removeItem("user_name");
+        sessionStorage.removeItem("user_email");
+        sessionStorage.removeItem("user_profile_pic");
       }
       // Redirect to login page
-      router.push('/login');
+      router.push("/login");
     } catch (error) {
       // Even if logout API fails, clear local storage and redirect
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('access_token');
-        sessionStorage.removeItem('access_token_type');
-        sessionStorage.removeItem('user_name');
-        sessionStorage.removeItem('user_email');
-        sessionStorage.removeItem('user_profile_pic');
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("access_token");
+        sessionStorage.removeItem("access_token_type");
+        sessionStorage.removeItem("user_name");
+        sessionStorage.removeItem("user_email");
+        sessionStorage.removeItem("user_profile_pic");
       }
-      router.push('/login');
+      router.push("/login");
     }
   };
 
@@ -95,24 +99,35 @@ export default function adminLayout({
       {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 transition-all duration-300 bg-white border-r border-gray-200 z-30 ${
-          collapsed ? 'w-20' : 'w-64'
+          collapsed ? "w-20" : "w-64"
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo & Collapse Button */}
-          <div className={`flex items-center gap-2 p-6 ${collapsed ? 'justify-center' : ''}`}>
+          <div
+            className={`flex items-center gap-2 p-6 ${collapsed ? "justify-center" : ""}`}
+          >
             {collapsed ? (
-              <span className="font-serif text-2xl font-bold text-primary">IDX</span>
+              <span className="font-serif text-2xl font-bold text-primary">
+                IDX
+              </span>
             ) : (
               <>
-                <Image src="/images/logo.svg" alt="IDX Logo" width={32} height={32} />
-                <span className="font-serif text-xl text-dark">IDX Dashboard</span>
+                <Image
+                  src="/images/logo.svg"
+                  alt="IDX Logo"
+                  width={32}
+                  height={32}
+                />
+                <span className="font-serif text-xl text-dark">
+                  IDX Dashboard
+                </span>
               </>
             )}
             <button
-              className={`ml-auto p-1 rounded-lg hover:bg-gray-100 transition ${collapsed ? '' : 'ml-4'}`}
+              className={`ml-auto p-1 rounded-lg hover:bg-gray-100 transition ${collapsed ? "" : "ml-4"}`}
               onClick={() => setCollapsed((c) => !c)}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               type="button"
             >
               {collapsed ? (
@@ -133,9 +148,9 @@ export default function adminLayout({
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-dark-secondary hover:bg-gray-50'
-                  } ${collapsed ? 'justify-center px-2' : ''}`}
+                      ? "bg-primary/10 text-primary"
+                      : "text-dark-secondary hover:bg-gray-50"
+                  } ${collapsed ? "justify-center px-2" : ""}`}
                   title={collapsed ? item.name : undefined}
                 >
                   <item.icon className="w-5 h-5" />
@@ -202,11 +217,9 @@ export default function adminLayout({
       </div>
 
       {/* Main Content */}
-      <div className={collapsed ? 'pl-20' : 'pl-64'}>
-        <main className="py-6">
-          {children}
-        </main>
+      <div className={collapsed ? "pl-20" : "pl-64"}>
+        <main className="py-6">{children}</main>
       </div>
     </div>
   );
-} 
+}
