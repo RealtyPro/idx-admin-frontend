@@ -9,7 +9,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSingleNeighbourhood, useUpdateNeighbourhood } from '@/services/neighbourhood/NeighbourhoodQueries';
 import { useQueryClient } from '@tanstack/react-query';
-import { uploadNeighbourhoodImage } from '@/services/neighbourhood/NeighbourhoodUpload';
+import { uploadNeighbourhoodImage, ImageObject } from '@/services/neighbourhood/NeighbourhoodUpload';
 
 export default function NeighbourhoodEditPage() {
   const params = useParams();
@@ -27,6 +27,8 @@ export default function NeighbourhoodEditPage() {
   const [location, setLocation] = useState("");
   const [image, setImage] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageObject, setImageObject] = useState<ImageObject | null>(null);
+  const [originalImageObject, setOriginalImageObject] = useState<ImageObject | null>(null);
   const [status, setStatus] = useState("active");
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -36,22 +38,41 @@ export default function NeighbourhoodEditPage() {
       setName(neighbourhood.name || neighbourhood.title || '');
       setDescription(neighbourhood.description || '');
       setLocation(neighbourhood.location || '');
-      setImage(neighbourhood.image || '');
       setStatus(neighbourhood.status || 'active');
+      
+      // Handle image - could be a path string or image object
+      if (neighbourhood.image) {
+        if (typeof neighbourhood.image === 'string') {
+          setImage(neighbourhood.image);
+        } else if (neighbourhood.image && typeof neighbourhood.image === 'object') {
+          // Store the image object
+          setImageObject(neighbourhood.image as ImageObject);
+          setOriginalImageObject(neighbourhood.image as ImageObject);
+          
+          // Set preview URL
+          const imageUrl = neighbourhood.image.path?.startsWith('http') 
+            ? neighbourhood.image.path 
+            : `https://demorealestate2.webnapps.net/storage/${neighbourhood.image.path}`;
+          setImage(imageUrl);
+        }
+      }
     }
   }, [neighbourhood]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const payload = {
+    const payload: any = {
       name,
       description,
       location,
-      image,
-      imageFile,
       status
     };
+
+    // Only include image if it was updated
+    if (imageObject) {
+      payload.image = imageObject;
+    }
 
     updateNeighbourhoodMutation.mutate(
       { id, data: payload },
@@ -159,16 +180,28 @@ export default function NeighbourhoodEditPage() {
                     reader.readAsDataURL(file);
                     
                     try {
-                      // Upload the image
-                      const uploadedImageUrl = await uploadNeighbourhoodImage(file);
-                      setImage(uploadedImageUrl);
+                      // Upload the image and get the image object
+                      const uploadedImageObj = await uploadNeighbourhoodImage(file);
+                      setImageObject(uploadedImageObj);
+                      
+                      // Set preview image URL
+                      const previewUrl = uploadedImageObj.path.startsWith('http') 
+                        ? uploadedImageObj.path 
+                        : `https://demorealestate2.webnapps.net/storage/${uploadedImageObj.path}`;
+                      setImage(previewUrl);
+                      
                       alert("Image uploaded successfully");
                     } catch (error: any) {
                       console.error("Error uploading image:", error);
                       const errorMessage = error?.response?.data?.message || error?.message || "Failed to upload image. Please try again.";
                       alert(errorMessage);
                       // Reset preview if upload fails
-                      setImage(neighbourhood?.image || "");
+                      setImage(originalImageObject?.path ? 
+                        (originalImageObject.path.startsWith('http') 
+                          ? originalImageObject.path 
+                          : `https://demorealestate2.webnapps.net/storage/${originalImageObject.path}`) 
+                        : '');
+                      setImageObject(originalImageObject);
                       setImageFile(null);
                       if (e.target) {
                         e.target.value = "";

@@ -9,7 +9,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createNeighbourhood } from '@/services/neighbourhood/NeighbourhoodServices';
-import { uploadNeighbourhoodImage } from '@/services/neighbourhood/NeighbourhoodUpload';
+import { uploadNeighbourhoodImage, ImageObject } from '@/services/neighbourhood/NeighbourhoodUpload';
 
 export default function NeighbourhoodCreatePage() {
   const router = useRouter();
@@ -20,6 +20,7 @@ export default function NeighbourhoodCreatePage() {
   const [location, setLocation] = useState("");
   const [image, setImage] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageObject, setImageObject] = useState<ImageObject | null>(null);
   const [status, setStatus] = useState("active");
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -44,12 +45,16 @@ export default function NeighbourhoodCreatePage() {
       name,
       description,
       location,
-      image,
-      imageFile,
+      image: imageObject, // Use the uploaded image object instead of URL
       status
     };
 
-    createNeighbourhoodMutation.mutate(payload);
+    // If we have an image object, send it; otherwise send imageFile for backward compatibility
+    if (imageObject) {
+      createNeighbourhoodMutation.mutate(payload);
+    } else {
+      createNeighbourhoodMutation.mutate({ ...payload, imageFile });
+    }
   };
 
   return (
@@ -111,9 +116,16 @@ export default function NeighbourhoodCreatePage() {
                     reader.readAsDataURL(file);
                     
                     try {
-                      // Upload the image
-                      const uploadedImageUrl = await uploadNeighbourhoodImage(file);
-                      setImage(uploadedImageUrl);
+                      // Upload the image and get the image object
+                      const uploadedImageObj = await uploadNeighbourhoodImage(file);
+                      setImageObject(uploadedImageObj);
+                      
+                      // Set preview image URL
+                      const previewUrl = uploadedImageObj.path.startsWith('http') 
+                        ? uploadedImageObj.path 
+                        : `https://demorealestate2.webnapps.net/storage/${uploadedImageObj.path}`;
+                      setImage(previewUrl);
+                      
                       alert("Image uploaded successfully");
                     } catch (error: any) {
                       console.error("Error uploading image:", error);
@@ -122,6 +134,7 @@ export default function NeighbourhoodCreatePage() {
                       // Reset preview if upload fails
                       setImage("");
                       setImageFile(null);
+                      setImageObject(null);
                       if (e.target) {
                         e.target.value = "";
                       }

@@ -2,21 +2,18 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { mockListings } from '@/lib/mockData';
 import React from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useProperties } from '@/services/property/PropertyQueries';
 
 export default function ListingsPage() {
-  const [listings, setListings] = useState<typeof mockListings>([]);
-  const [loading, setLoading] = useState(true);
+  const page = 1;
+  const { data, isLoading, isError, error } = useProperties(page);
+  
+  // Extract listings (properties) from API response
+  const listings = data?.data || data || [];
 
-  useEffect(() => {
-    setListings(mockListings);
-    setLoading(false);
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
         <div className="flex justify-between items-center">
@@ -39,6 +36,14 @@ export default function ListingsPage() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="container mx-auto py-6 px-2 sm:px-4">
+        <p className="text-red-500">Error loading listings: {error instanceof Error ? error.message : 'Unknown error'}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <div className="flex justify-between items-center">
@@ -53,26 +58,43 @@ export default function ListingsPage() {
         </div>
       </div>
       <div className="grid gap-4">
-        {listings.map((listing) => (
-          <Card key={listing.id}>
-            <CardHeader className="flex flex-row justify-between items-center">
-              <div>
-                <CardTitle className="text-lg">
-                  <Link href={`/admin/listings/${listing.id}`}>{listing.title}</Link>
-                </CardTitle>
-                <div className="text-sm text-muted-foreground">
-                  {listing.address} • {listing.price} • {listing.status} • Agent: {listing.agent} • Views: {listing.views} • Inquiries: {listing.inquiries}
+        {Array.isArray(listings) && listings.length > 0 ? (
+          listings.map((listing: any) => (
+            <Card key={listing.id}>
+              <CardHeader className="flex flex-row justify-between items-center">
+                <div>
+                  <CardTitle className="text-lg">
+                    <Link href={`/admin/listings/${listing.id}`}>
+                      {listing.title || listing.name || listing.address || `Listing ${listing.id}`}
+                    </Link>
+                  </CardTitle>
+                  <div className="text-sm text-muted-foreground">
+                    {listing.address && <span>{listing.address}</span>}
+                    {listing.address && listing.price && <span> • </span>}
+                    {listing.price && <span>{listing.price}</span>}
+                    {listing.status && (listing.address || listing.price) && <span> • </span>}
+                    {listing.status && <span>{listing.status}</span>}
+                    {listing.agent && (listing.address || listing.price || listing.status) && <span> • </span>}
+                    {listing.agent && <span>Agent: {listing.agent}</span>}
+                    {listing.views !== undefined && (listing.address || listing.price || listing.status || listing.agent) && <span> • </span>}
+                    {listing.views !== undefined && <span>Views: {listing.views}</span>}
+                    {listing.inquiries !== undefined && (listing.address || listing.price || listing.status || listing.agent || listing.views !== undefined) && <span> • </span>}
+                    {listing.inquiries !== undefined && <span>Inquiries: {listing.inquiries}</span>}
+                    {listing.created_at && !listing.status && !listing.agent && listing.views === undefined && listing.inquiries === undefined && (listing.address || listing.price) && <span> • </span>}
+                    {listing.created_at && !listing.status && !listing.agent && listing.views === undefined && listing.inquiries === undefined && <span>{listing.created_at}</span>}
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <Button asChild variant="outline" size="sm">
-                  <Link href={`/admin/listings/${listing.id}/edit`}>Edit</Link>
-                </Button>
-                <Button variant="destructive" size="sm" onClick={() => alert('Deleted!')}>Delete</Button>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
+                <div className="flex gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/admin/listings/${listing.id}`}>View</Link>
+                  </Button>
+                </div>
+              </CardHeader>
+            </Card>
+          ))
+        ) : (
+          <p className="text-center text-muted-foreground">No listings found.</p>
+        )}
       </div>
     </div>
   );

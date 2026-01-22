@@ -2,21 +2,40 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mockProperties } from '@/lib/mockData';
-import React,{ useState, useEffect } from 'react';
+import React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useProperties, useDeleteProperty } from '@/services/property/PropertyQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { deleteProperty } from '@/services/property/PropertyServices';
 
 export default function PropertiesListPage() {
-  const [properties, setProperties] = useState<typeof mockProperties>([]);
-  const [loading, setLoading] = useState(true);
+  const page = 1;
+  const { data, isLoading, isError, error } = useProperties(page);
+  const queryClient = useQueryClient();
+  
+  // Extract properties from API response
+  const properties = data?.data || data || [];
 
-  useEffect(() => {
-    setProperties(mockProperties);
-    const timer = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(timer);
-  }, []);
+  const deletePropertyMutation = useMutation({
+    mutationFn: (id: string) => deleteProperty(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
+      alert("Property deleted successfully");
+    },
+    onError: (error: any) => {
+      console.error("Error deleting property:", error);
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to delete property. Please try again.";
+      alert(errorMessage);
+    },
+  });
 
-  if (loading) {
+  const handleDelete = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this property?")) {
+      deletePropertyMutation.mutate(id);
+    }
+  };
+
+  if (isLoading) {
     return (
       <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
         <div className="flex justify-between items-center">
@@ -35,6 +54,14 @@ export default function PropertiesListPage() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="container mx-auto py-6 px-2 sm:px-4">
+        <p className="text-red-500">Error loading properties: {error instanceof Error ? error.message : 'Unknown error'}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <div className="flex justify-between items-center">
@@ -49,26 +76,45 @@ export default function PropertiesListPage() {
         </div>
       </div>
       <div className="grid gap-4">
-        {properties.map((property) => (
-          <Card key={property.id}>
-            <CardHeader className="flex flex-row justify-between items-center">
-              <div>
-                <CardTitle className="text-lg">
-                  <Link href={`/admin/properties/${property.id}`}>{property.title}</Link>
-                </CardTitle>
-                <div className="text-sm text-muted-foreground">
-                  {property.address} • {property.price} • {property.status}
+        {Array.isArray(properties) && properties.length > 0 ? (
+          properties.map((property: any) => (
+            <Card key={property.id}>
+              <CardHeader className="flex flex-row justify-between items-center">
+                <div>
+                  <CardTitle className="text-lg">
+                    <Link href={`/admin/properties/${property.id}`}>
+                      {property.title || property.name || property.address || `Property ${property.id}`}
+                    </Link>
+                  </CardTitle>
+                  <div className="text-sm text-muted-foreground">
+                    {property.address && <span>{property.address}</span>}
+                    {property.address && property.price && <span> • </span>}
+                    {property.price && <span>{property.price}</span>}
+                    {property.status && (property.address || property.price) && <span> • </span>}
+                    {property.status && <span>{property.status}</span>}
+                    {property.created_at && !property.status && (property.address || property.price) && <span> • </span>}
+                    {property.created_at && !property.status && <span>{property.created_at}</span>}
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <Button asChild variant="outline" size="sm">
-                  <Link href={`/admin/properties/${property.id}/edit`}>Edit</Link>
-                </Button>
-                <Button variant="destructive" size="sm" onClick={() => alert('Deleted!')}>Delete</Button>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
+                <div className="flex gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/admin/properties/${property.id}/edit`}>Edit</Link>
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => handleDelete(property.id)}
+                    disabled={deletePropertyMutation.isPending}
+                  >
+                    {deletePropertyMutation.isPending ? "Deleting..." : "Delete"}
+                  </Button>
+                </div>
+              </CardHeader>
+            </Card>
+          ))
+        ) : (
+          <p className="text-center text-muted-foreground">No properties found.</p>
+        )}
       </div>
     </div>
   );

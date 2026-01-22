@@ -1,12 +1,22 @@
 import axiosInstance from '@/services/Api';
 
+export interface ImageObject {
+  file: string;
+  path: string;
+  disk: string;
+  original: string;
+  title: string;
+  caption: string;
+  time: string;
+}
+
 /**
  * Upload image file to the server
  * @param file - The image file to upload
  * @param config - The config path (e.g., 'idx.neighbourhood.neighbourhood.model')
- * @returns The uploaded image URL
+ * @returns The uploaded image object with file, path, disk, original, title, caption, and time
  */
-export const uploadNeighbourhoodImage = async (file: File, config: string = 'idx.neighbourhood.neighbourhood.model'): Promise<string> => {
+export const uploadNeighbourhoodImage = async (file: File, config: string = 'idx.neighbourhood.neighbourhood.model'): Promise<ImageObject> => {
   // Generate datetime string in format: YYYY/MM/DD/HHMMSSXXX
   const now = new Date();
   const year = now.getFullYear();
@@ -33,25 +43,45 @@ export const uploadNeighbourhoodImage = async (file: File, config: string = 'idx
     },
   });
   
-  // Return the uploaded image URL or path
-  // The API should return the full URL or path to the uploaded image
-  // If the API returns a relative path, construct the full URL
-  const baseUrl = axiosInstance.defaults.baseURL || 'https://demorealestate2.webnapps.net/api/';
-  const uploadedPath = response.data?.url || response.data?.path || response.data?.data?.url || response.data?.data?.path;
+  // The API should return the image object with the structure
+  // If the response contains the image object directly, use it
+  const imageData = response.data?.data || response.data?.image || response.data;
   
-  // If the path is already a full URL, return it
-  if (uploadedPath && (uploadedPath.startsWith('http://') || uploadedPath.startsWith('https://'))) {
-    return uploadedPath;
+  // If we get an image object, return it
+  if (imageData && typeof imageData === 'object' && imageData.file && imageData.path) {
+    return imageData as ImageObject;
   }
   
-  // If it's a relative path, construct the full URL
-  if (uploadedPath) {
-    return uploadedPath.startsWith('/') 
-      ? `${baseUrl.replace(/\/$/, '')}${uploadedPath}`
-      : `${baseUrl.replace(/\/$/, '')}/${uploadedPath}`;
-  }
+  // If we only get a path or URL, construct the image object
+  // Extract filename from the original file
+  const originalFileName = file.name;
+  const fileNameWithoutExt = originalFileName.replace(/\.[^/.]+$/, "");
+  const fileExtension = originalFileName.split('.').pop() || '';
   
-  // Fallback: construct the full URL from the upload endpoint
-  return `${baseUrl.replace(/\/$/, '')}/${uploadUrl}`;
+  // Generate a filename if not provided (using timestamp)
+  const timestamp = Date.now();
+  const generatedFileName = `${timestamp}.${fileExtension}`;
+  
+  // Try to extract path from response or construct it
+  const uploadedPath = imageData?.path || imageData?.url || imageData;
+  const pathFromResponse = typeof uploadedPath === 'string' ? uploadedPath : '';
+  
+  // Construct path if not provided (neighbourhood/neighbourhood/YYYY/MM/DD/HH/MM/filename)
+  const constructedPath = pathFromResponse || `neighbourhood/neighbourhood/${year}/${month}/${day}/${hours}/${minutes}/${generatedFileName}`;
+  const fileName = pathFromResponse.split('/').pop() || generatedFileName;
+  
+  // Format time as YYYY-MM-DD HH:MM:SS
+  const timeString = `${year}-${month}-${day} ${hours}:${minutes}:${String(seconds).padStart(2, '0')}`;
+  
+  // Return the image object
+  return {
+    file: fileName,
+    path: constructedPath,
+    disk: 'local',
+    original: originalFileName,
+    title: fileNameWithoutExt.replace(/[-_]/g, ' '),
+    caption: fileNameWithoutExt.replace(/[-_]/g, ' '),
+    time: timeString
+  };
 };
 
