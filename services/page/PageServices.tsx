@@ -13,15 +13,73 @@ export const fetchSinglePage = async (id: string) => {
 };
 
 // Create page (POST v1/admin/page)
-export const createPage = async (pageData: object) => {
-	const response = await axiosInstance.post('v1/admin/page', pageData);
-	return response.data;
+export const createPage = async (pageData: any) => {
+	const { bannerFile, ...restData } = pageData;
+
+	// If there's a banner image file, send as FormData
+	if (bannerFile) {
+		const formData = new FormData();
+
+		formData.append('banner', bannerFile);
+
+		// Append all other fields
+		Object.keys(restData).forEach((key) => {
+			const value = (restData as any)[key];
+			if (value !== null && value !== undefined) {
+				if (typeof value === 'object') {
+					formData.append(key, JSON.stringify(value));
+				} else {
+					formData.append(key, value);
+				}
+			}
+		});
+
+		const response = await axiosInstance.post('v1/admin/page', formData, {
+			headers: {
+				'Content-Type': 'multipart/form-data',
+			},
+		});
+		return response.data;
+	} else {
+		// Send as JSON if no file
+		const response = await axiosInstance.post('v1/admin/page', restData);
+		return response.data;
+	}
 };
 
 // Update page (PUT v1/admin/page/${id})
-export const updatePage = async (id: string, pageData: object) => {
-	const response = await axiosInstance.put(`v1/admin/page/${id}`, pageData);
-	return response.data;
+export const updatePage = async (id: string, pageData: any) => {
+	const { bannerFile, ...restData } = pageData;
+
+	// If there's a banner image file, send as FormData
+	if (bannerFile) {
+		const formData = new FormData();
+
+		formData.append('banner', bannerFile);
+
+		// Append all other fields
+		Object.keys(restData).forEach((key) => {
+			const value = (restData as any)[key];
+			if (value !== null && value !== undefined) {
+				if (typeof value === 'object') {
+					formData.append(key, JSON.stringify(value));
+				} else {
+					formData.append(key, value);
+				}
+			}
+		});
+
+		const response = await axiosInstance.put(`v1/admin/page/${id}`, formData, {
+			headers: {
+				'Content-Type': 'multipart/form-data',
+			},
+		});
+		return response.data;
+	} else {
+		// Send as JSON if no file
+		const response = await axiosInstance.put(`v1/admin/page/${id}`, restData);
+		return response.data;
+	}
 };
 
 // Delete page (DELETE v1/admin/page/${id})

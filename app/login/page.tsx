@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { useMutation } from "@tanstack/react-query";
@@ -12,6 +12,16 @@ import { fetchProfile } from "@/services/profile/ProfileServices";
 
 export default function Login() {
   const router = useRouter();
+
+  // Redirect to dashboard if token already exists
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = sessionStorage.getItem("access_token");
+      if (token) {
+        router.push("/admin");
+      }
+    }
+  }, [router]);
   const [formData, setFormData] = useState({
     email: "",
     password: "",

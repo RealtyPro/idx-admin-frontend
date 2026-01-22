@@ -37,7 +37,7 @@ export const postNewBlog = async (blogdata: any) => {
         });
         return response.data;
       } else {
-        // Send as JSON if no file
+        // Send as JSON if no file - image object will be included in restData
         const response = await axiosInstance.post('v1/admin/blog', restData);
         return response.data;
       }
@@ -72,7 +72,7 @@ export const updateBlog = async (id: string, blogdata: any) => {
         });
         return response.data;
       } else {
-        // Send as JSON if no file
+        // Send as JSON if no file - image object will be included in restData
         const response = await axiosInstance.put(`v1/admin/blog/${id}`, restData);
         return response.data;
       }

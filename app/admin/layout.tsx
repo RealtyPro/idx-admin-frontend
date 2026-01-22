@@ -14,6 +14,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   EnvelopeIcon,
+  MapPinIcon,
 } from "@heroicons/react/24/outline";
 import { useLogout } from "@/services/auth/AuthQueries";
 
@@ -30,6 +31,7 @@ const navigation = [
   },
   { name: "NewsLetter", href: "/admin/newsletter", icon: DocumentTextIcon },
   { name: "Pages", href: "/admin/pages", icon: DocumentTextIcon },
+  { name: "Neighbourhoods", href: "/admin/neighbourhoods", icon: MapPinIcon },
 ];
 
 export default function adminLayout({

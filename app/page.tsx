@@ -3,8 +3,38 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function Home() {
+  const router = useRouter();
+  const [hasToken, setHasToken] = useState(false);
+
+  useEffect(() => {
+    // Check if token exists in sessionStorage and redirect to dashboard
+    if (typeof window !== 'undefined') {
+      const token = sessionStorage.getItem('access_token');
+      if (token) {
+        setHasToken(true);
+        // Redirect to dashboard if token exists
+        router.push('/admin');
+      } else {
+        setHasToken(false);
+      }
+    }
+  }, [router]);
+
+  const handleLoginClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    if (hasToken) {
+      // Redirect to dashboard if token exists
+      router.push('/admin');
+    } else {
+      // Go to login page if no token
+      router.push('/login');
+    }
+  };
+
   return (
     <main className="min-h-screen bg-white">
       {/* Navigation */}
@@ -14,7 +44,11 @@ export default function Home() {
           <span className="font-serif text-heading text-dark">RealtiPro</span>
         </div>
         <div className="flex gap-4">
-          <Link href="/login" className="flex items-center justify-center px-8 py-2 rounded-[37.5px] bg-gradient-to-br from-primary to-primary-light text-white font-bold text-button">
+          <Link 
+            href={hasToken ? "/admin" : "/login"} 
+            onClick={handleLoginClick}
+            className="flex items-center justify-center px-8 py-2 rounded-[37.5px] bg-gradient-to-br from-primary to-primary-light text-white font-bold text-button"
+          >
             Login
           </Link>
           <Link href="/register" className="flex items-center justify-center px-8 py-2 rounded-[37.5px] border border-border text-border text-button">

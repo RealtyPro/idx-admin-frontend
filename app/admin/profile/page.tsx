@@ -189,12 +189,26 @@ export default function ProfilePage() {
               </div>
             )}
 
-            <div className="flex gap-2">
-              <Button type="submit" disabled={updateProfileMutation.isPending}>
-                {updateProfileMutation.isPending ? "Updating..." : "Update Profile"}
-              </Button>
-              <Button asChild variant="secondary" type="button">
-                <Link href="/admin">Cancel</Link>
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+              <div className="flex gap-2">
+                <Button type="submit" disabled={updateProfileMutation.isPending}>
+                  {updateProfileMutation.isPending ? "Updating..." : "Update Profile"}
+                </Button>
+                <Button asChild variant="secondary" type="button">
+                  <Link href="/admin">Cancel</Link>
+                </Button>
+              </div>
+              <Button
+                asChild
+                variant="outline"
+                type="button"
+                className="sm:ml-auto"
+              >
+                <Link
+                  href={email ? `/admin/reset-password?email=${encodeURIComponent(email)}` : "/admin/reset-password"}
+                >
+                  Reset password
+                </Link>
               </Button>
             </div>
           </form>

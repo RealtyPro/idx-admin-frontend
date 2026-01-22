@@ -11,19 +11,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useSingleBlog } from '@/services/blog/BlogQueris';
 import { useMutation } from "@tanstack/react-query";
 import { updateBlog } from "@/services/blog/BlogServices";
+import { uploadBlogImage, ImageObject } from "@/services/blog/BlogUpload";
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 import 'react-quill-new/dist/quill.snow.css';
-
-interface ImageObject {
-  file: string;
-  path: string;
-  disk: string;
-  original: string;
-  title: string;
-  caption: string;
-  time: string;
-}
 
 interface BlogResponse {
   ListAgentMlsId: string;
@@ -43,6 +34,8 @@ export default function BlogEditPage() {
   
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageObject, setImageObject] = useState<ImageObject | null>(null);
+  const [originalImageObject, setOriginalImageObject] = useState<ImageObject | null>(null);
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [author, setAuthor] = useState('');
@@ -52,6 +45,8 @@ export default function BlogEditPage() {
   const [content, setContent] = useState<string>("");
   const [listAgentMlsId, setListAgentMlsId] = useState("NWM1307294");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
 
   // Populate form when blog data is loaded
   useEffect(() => {
@@ -71,12 +66,18 @@ export default function BlogEditPage() {
         // Handle image - could be a path string or image object
         if (typeof blog.image === 'string') {
           setImage(blog.image);
-        } else if (blog.image.path) {
-          // If it's an object with path, construct full URL or use path
-          const imageUrl = blog.image.path.startsWith('http') 
+          setOriginalImage(blog.image);
+        } else if (blog.image && typeof blog.image === 'object') {
+          // Store the image object
+          setImageObject(blog.image as ImageObject);
+          setOriginalImageObject(blog.image as ImageObject);
+          
+          // Set preview URL
+          const imageUrl = blog.image.path?.startsWith('http') 
             ? blog.image.path 
             : `https://demorealestate2.webnapps.net/storage/${blog.image.path}`;
           setImage(imageUrl);
+          setOriginalImage(imageUrl);
         }
       }
     }
@@ -96,35 +97,70 @@ export default function BlogEditPage() {
     },
   });
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setImageFile(file);
+      setUploadingImage(true);
+      
+      // Show preview immediately
       const reader = new FileReader();
       reader.onload = (ev) => {
         setImage(ev.target?.result as string);
       };
       reader.readAsDataURL(file);
+      
+      try {
+        // Upload the image and get the image object
+        const uploadedImageObj = await uploadBlogImage(file);
+        setImageObject(uploadedImageObj);
+        
+        // Set preview image URL
+        const previewUrl = uploadedImageObj.path.startsWith('http') 
+          ? uploadedImageObj.path 
+          : `https://demorealestate2.webnapps.net/storage/${uploadedImageObj.path}`;
+        setImage(previewUrl);
+        
+        alert("Image uploaded successfully");
+      } catch (error: any) {
+        console.error("Error uploading image:", error);
+        const errorMessage = error?.response?.data?.message || error?.message || "Failed to upload image. Please try again.";
+        alert(errorMessage);
+        // Reset preview if upload fails
+        setImage(originalImage);
+        setImageObject(originalImageObject);
+        setImageFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      } finally {
+        setUploadingImage(false);
+      }
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Collect form data matching the API structure
-    const formData: BlogResponse = {
+    // Base form data without image
+    const formData: Omit<BlogResponse, 'image'> & { image?: ImageObject | null } = {
       ListAgentMlsId: listAgentMlsId,
       title,
       subtitle,
       category,
       is_featured: isFeatured ? "1" : "0",
-      image: null, // Image will be handled by backend when file is uploaded
       status,
       content,
-      author
+      author,
     };
-    
-    updateBlogMutation.mutate({ ...formData, imageFile });
+
+    // Only attach image field if a NEW image was uploaded
+    // (i.e. imageObject exists and is different from the original image object)
+    if (imageObject && imageObject !== originalImageObject) {
+      formData.image = imageObject;
+    }
+
+    updateBlogMutation.mutate(formData as BlogResponse);
   };
 
   if (isLoading) {
@@ -215,10 +251,14 @@ export default function BlogEditPage() {
                 id="image"
                 type="file"
                 accept="image/*"
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                disabled={uploadingImage}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 disabled:opacity-50"
                 onChange={handleImageChange}
                 ref={fileInputRef}
               />
+              {uploadingImage && (
+                <p className="text-xs text-muted-foreground mt-1">Uploading image...</p>
+              )}
               {image && (
                 <div className="mt-2">
                   <img src={image} alt="Preview" className="max-h-40 rounded" />
@@ -255,15 +295,6 @@ export default function BlogEditPage() {
                 onChange={(e) => setIsFeatured(e.target.checked)}
               />
               <Label htmlFor="isFeatured">Is Featured</Label>
-            </div>
-            <div>
-              <Label htmlFor="listAgentMlsId">List Agent MLS ID</Label>
-              <Input
-                id="listAgentMlsId"
-                value={listAgentMlsId}
-                onChange={(e) => setListAgentMlsId(e.target.value)}
-                required
-              />
             </div>
             <Button type="submit" disabled={updateBlogMutation.isPending}>
               {updateBlogMutation.isPending ? "Updating..." : "Update Blog"}

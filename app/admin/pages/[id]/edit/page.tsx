@@ -36,6 +36,7 @@ export default function PageEditPage() {
   const [meta_keyword, setMetaKeyword] = useState("");
   const [meta_description, setMetaDescription] = useState("");
   const [banner, setBanner] = useState("");
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [images, setImages] = useState("active");
   const [compile, setCompile] = useState("active");
   const [view, setView] = useState("");
@@ -83,6 +84,7 @@ export default function PageEditPage() {
       meta_keyword,
       meta_description,
       banner,
+      bannerFile,
       images,
       compile,
       view,
@@ -209,26 +211,30 @@ export default function PageEditPage() {
               />
             </div>
 
-            <div>
-              <Label htmlFor="banner">Banner</Label>
-              <textarea 
-                id="banner" 
-                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm" 
-                value={banner} 
-                onChange={e => setBanner(e.target.value)} 
+            <div className="space-y-2">
+              <Label htmlFor="banner">Banner Image</Label>
+              {banner && (
+                <img
+                  src={banner}
+                  alt="Current banner"
+                  className="w-full max-h-40 object-cover rounded-md border border-input"
+                />
+              )}
+              <Input
+                id="banner"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setBannerFile(file);
+                }}
               />
+              <p className="text-xs text-muted-foreground">
+                Upload a new banner image to replace the existing one.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="view">View</Label>
-                <Input id="view" value={view} onChange={e => setView(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <Input id="category" value={category} onChange={e => setCategory(e.target.value)} />
-              </div>
-            </div>
+  
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -262,18 +268,7 @@ export default function PageEditPage() {
                   <option value="inactive">Inactive</option>
                 </select>
               </div>
-              <div>
-                <Label htmlFor="compile">Compile</Label>
-                <select
-                  id="compile"
-                  value={compile}
-                  onChange={e => setCompile(e.target.value)}
-                  className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
+             
             </div>
 
             <div>

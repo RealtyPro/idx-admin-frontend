@@ -11,15 +11,7 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import "react-quill-new/dist/quill.snow.css";
 import { useMutation } from "@tanstack/react-query";
 import { postNewBlog } from "@/services/blog/BlogServices";
-interface ImageObject {
-  file: string;
-  path: string;
-  disk: string;
-  original: string;
-  title: string;
-  caption: string;
-  time: string;
-}
+import { uploadBlogImage, ImageObject } from "@/services/blog/BlogUpload";
 
 interface BlogResponse {
   ListAgentMlsId: string;
@@ -40,11 +32,13 @@ export default function BlogCreatePage() {
   const [category, setCategory] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageObject, setImageObject] = useState<ImageObject | null>(null);
   const [content, setContent] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
   const [status, setStatus] = useState("published");
-  const [listAgentMlsId, setListAgentMlsId] = useState("NWM1307294");
+  const listAgentMlsId = "NWM1307294";
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const postBlogMutation = useMutation({
     mutationFn: (newBlog: BlogResponse & { imageFile?: File | null }) => postNewBlog(newBlog),
@@ -58,6 +52,7 @@ export default function BlogCreatePage() {
       setCategory("");
       setImage(null);
       setImageFile(null);
+      setImageObject(null);
       setContent("");
       setIsFeatured(false);
       setStatus("published");
@@ -73,15 +68,45 @@ export default function BlogCreatePage() {
       alert(errorMessage);
     },
   });
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setImageFile(file);
+      setUploadingImage(true);
+      
+      // Show preview immediately
       const reader = new FileReader();
       reader.onload = (ev) => {
         setImage(ev.target?.result as string);
       };
       reader.readAsDataURL(file);
+      
+      try {
+        // Upload the image and get the image object
+        const uploadedImageObj = await uploadBlogImage(file);
+        setImageObject(uploadedImageObj);
+        
+        // Set preview image URL - construct from path or use existing image
+        const previewUrl = uploadedImageObj.path.startsWith('http') 
+          ? uploadedImageObj.path 
+          : `https://demorealestate2.webnapps.net/storage/${uploadedImageObj.path}`;
+        setImage(previewUrl);
+        
+        alert("Image uploaded successfully");
+      } catch (error: any) {
+        console.error("Error uploading image:", error);
+        const errorMessage = error?.response?.data?.message || error?.message || "Failed to upload image. Please try again.";
+        alert(errorMessage);
+        // Reset preview if upload fails
+        setImage(null);
+        setImageFile(null);
+        setImageObject(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      } finally {
+        setUploadingImage(false);
+      }
     }
   };
 
@@ -95,13 +120,18 @@ export default function BlogCreatePage() {
       subtitle,
       category,
       is_featured: isFeatured ? "1" : "0",
-      image: null, // Image will be handled by backend when file is uploaded
+      image: imageObject, // Use the uploaded image object instead of null
       status,
       content,
       author
     };
     
-    postBlogMutation.mutate({ ...formData, imageFile });
+    // If we have an image object, send it; otherwise send imageFile for backward compatibility
+    if (imageObject) {
+      postBlogMutation.mutate(formData);
+    } else {
+      postBlogMutation.mutate({ ...formData, imageFile });
+    }
   };
 
   return (
@@ -163,10 +193,14 @@ export default function BlogCreatePage() {
                 id="image"
                 type="file"
                 accept="image/*"
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                disabled={uploadingImage}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 disabled:opacity-50"
                 onChange={handleImageChange}
                 ref={fileInputRef}
               />
+              {uploadingImage && (
+                <p className="text-xs text-muted-foreground mt-1">Uploading image...</p>
+              )}
               {image && (
                 <div className="mt-2">
                   <img src={image} alt="Preview" className="max-h-40 rounded" />
@@ -203,15 +237,6 @@ export default function BlogCreatePage() {
                 onChange={(e) => setIsFeatured(e.target.checked)}
               />
               <Label htmlFor="isFeatured">Is Featured</Label>
-            </div>
-            <div>
-              <Label htmlFor="listAgentMlsId">List Agent MLS ID</Label>
-              <Input
-                id="listAgentMlsId"
-                value={listAgentMlsId}
-                onChange={(e) => setListAgentMlsId(e.target.value)}
-                required
-              />
             </div>
             <Button type="submit" disabled={postBlogMutation.isPending}>
               {postBlogMutation.isPending ? "Creating..." : "Add Blog Post"}
