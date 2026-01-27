@@ -169,33 +169,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-dark">Recent Activity</h2>
-          </div>
-          <div className="divide-y divide-gray-200">
-            {activity.map((activity) => (
-              <div key={activity.id} className="p-6 hover:bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-2 rounded-lg bg-primary/10`}>
-                      {activity.type === 'listing' && <HomeIcon className="w-5 h-5 text-primary" />}
-                      {activity.type === 'sale' && <CreditCardIcon className="w-5 h-5 text-green-600" />}
-                      {activity.type === 'inquiry' && <EnvelopeIcon className="w-5 h-5 text-blue-600" />}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-dark">{activity.description}</p>
-                      <p className="text-xs text-dark-secondary">
-                        {activity.time} • Agent: {activity.agent}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-sm text-dark-secondary">{activity.status}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+       
       </div>
     </div>
   );

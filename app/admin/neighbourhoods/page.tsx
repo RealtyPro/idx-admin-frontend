@@ -165,9 +165,6 @@ export default function NeighbourhoodsListPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Neighbourhoods</h1>
         <div className="flex gap-2">
-          <Button asChild variant="secondary">
-            <Link href="/admin">Back</Link>
-          </Button>
           <Button asChild>
             <Link href="/admin/neighbourhoods/create">Add Neighbourhood</Link>
           </Button>

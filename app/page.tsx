@@ -139,7 +139,7 @@ export default function Home() {
       <footer className="bg-footer-bg text-footer-text py-16">
         <div className="container mx-auto px-4">
           <div className="text-center space-y-4">
-            <p className="text-body">© 2024 Smart Interaction Logger. All rights reserved.</p>
+            <p className="text-body">© 2026 IDX. All rights reserved.</p>
             <p className="text-body">
               <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
               <span className="mx-4">|</span>
