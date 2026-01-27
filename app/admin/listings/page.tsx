@@ -2,16 +2,117 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import React from 'react';
+import React, { useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProperties } from '@/services/property/PropertyQueries';
 
 export default function ListingsPage() {
-  const page = 1;
-  const { data, isLoading, isError, error } = useProperties(page);
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data, isLoading, isError, error } = useProperties(currentPage);
   
   // Extract listings (properties) from API response
   const listings = data?.data || data || [];
+  
+  // Extract pagination metadata from API response
+  const pagination = data?.meta || data?.pagination || null;
+  const totalPages = pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1;
+  const currentPageNum = pagination?.current_page || pagination?.currentPage || currentPage;
+  const totalItems = pagination?.total || pagination?.totalItems || listings.length;
+  
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+  
+  const renderPagination = () => {
+    // Show pagination if we have pagination data or if there are multiple pages worth of data
+    // Also show if we have listings and might have more pages
+    if (totalPages <= 1 && (!pagination || listings.length < 10)) return null;
+    
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPageNum - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 mt-6">
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPageNum - 1)}
+            disabled={currentPageNum === 1 || isLoading}
+          >
+            Previous
+          </Button>
+          
+          {startPage > 1 && (
+            <>
+              <Button
+                variant={1 === currentPageNum ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePageChange(1)}
+                disabled={isLoading}
+              >
+                1
+              </Button>
+              {startPage > 2 && <span className="px-2 text-muted-foreground">...</span>}
+            </>
+          )}
+          
+          {pages.map((page) => (
+            <Button
+              key={page}
+              variant={page === currentPageNum ? "default" : "outline"}
+              size="sm"
+              onClick={() => handlePageChange(page)}
+              disabled={isLoading}
+            >
+              {page}
+            </Button>
+          ))}
+          
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && <span className="px-2 text-muted-foreground">...</span>}
+              <Button
+                variant={totalPages === currentPageNum ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePageChange(totalPages)}
+                disabled={isLoading}
+              >
+                {totalPages}
+              </Button>
+            </>
+          )}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPageNum + 1)}
+            disabled={currentPageNum === totalPages || isLoading}
+          >
+            Next
+          </Button>
+        </div>
+        {pagination && (
+          <div className="text-sm text-muted-foreground">
+            Page {currentPageNum} of {totalPages} {totalItems && `(${totalItems} total items)`}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -48,14 +149,6 @@ export default function ListingsPage() {
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Listings</h1>
-        <div className="flex gap-2">
-          <Button asChild variant="secondary">
-            <Link href="/admin">Back</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/admin/listings/create">New Listing</Link>
-          </Button>
-        </div>
       </div>
       <div className="grid gap-4">
         {Array.isArray(listings) && listings.length > 0 ? (
@@ -96,6 +189,7 @@ export default function ListingsPage() {
           <p className="text-center text-muted-foreground">No listings found.</p>
         )}
       </div>
+      {renderPagination()}
     </div>
   );
 } 

@@ -18,7 +18,6 @@ export default function PageCreatePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   
-  const [ListAgentMlsId] = useState("NWM1307294");
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [heading, setHeading] = useState("");
@@ -57,7 +56,7 @@ export default function PageCreatePage() {
     e.preventDefault();
 
     const payload = {
-      ListAgentMlsId,
+      uuid,
       name,
       title,
       heading,

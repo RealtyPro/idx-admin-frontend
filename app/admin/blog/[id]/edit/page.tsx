@@ -17,7 +17,7 @@ const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 import 'react-quill-new/dist/quill.snow.css';
 
 interface BlogResponse {
-  ListAgentMlsId: string;
+  uuid?: string; 
   title: string;
   subtitle: string;
   category: string;
@@ -43,7 +43,6 @@ export default function BlogEditPage() {
   const [isFeatured, setIsFeatured] = useState(false);
   const [status, setStatus] = useState('published');
   const [content, setContent] = useState<string>("");
-  const [listAgentMlsId, setListAgentMlsId] = useState("NWM1307294");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -59,7 +58,6 @@ export default function BlogEditPage() {
       setContent(blog.content || '');
       setStatus(blog.status || 'published');
       setIsFeatured(blog.is_featured === "1" || blog.is_featured === 1 || blog.is_featured === true);
-      setListAgentMlsId(blog.ListAgentMlsId || "NWM1307294");
       
       // Set existing image if available
       if (blog.image) {
@@ -143,8 +141,7 @@ export default function BlogEditPage() {
     e.preventDefault();
 
     // Base form data without image
-    const formData: Omit<BlogResponse, 'image'> & { image?: ImageObject | null } = {
-      ListAgentMlsId: listAgentMlsId,
+    const formData: Omit<BlogResponse, 'image' | 'uuid'> & { image?: ImageObject | null } = {
       title,
       subtitle,
       category,
@@ -165,7 +162,7 @@ export default function BlogEditPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
+      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
         <Skeleton className="h-10 w-64 mb-4" />
         <Skeleton className="h-8 w-32 mb-2" />
         <Skeleton className="h-40 w-full rounded-xl" />
@@ -176,7 +173,7 @@ export default function BlogEditPage() {
 
   if (error || !singleBlog?.data) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
+      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Blog Not Found</CardTitle>
@@ -193,7 +190,7 @@ export default function BlogEditPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
+    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle>Edit Blog Post</CardTitle>

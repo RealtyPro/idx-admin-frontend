@@ -16,6 +16,10 @@ export const fetchSingleNeighbourhood = async (id: string) => {
 export const createNeighbourhood = async (neighbourhoodData: any) => {
 	const { imageFile, ...restData } = neighbourhoodData;
 
+	console.log('createNeighbourhood - neighbourhoodData:', neighbourhoodData);
+	console.log('createNeighbourhood - imageFile:', imageFile);
+	console.log('createNeighbourhood - restData:', restData);
+
 	// If there's an image file, send as FormData
 	if (imageFile) {
 		const formData = new FormData();
@@ -41,7 +45,8 @@ export const createNeighbourhood = async (neighbourhoodData: any) => {
 		});
 		return response.data;
 	} else {
-		// Send as JSON if no file
+		// Send as JSON if no file - images object will be included in restData
+		console.log('Sending as JSON with images object:', restData.images);
 		const response = await axiosInstance.post('v1/admin/neighbourhood', restData);
 		return response.data;
 	}
@@ -50,6 +55,11 @@ export const createNeighbourhood = async (neighbourhoodData: any) => {
 // Update neighbourhood (PUT v1/admin/neighbourhood/${id})
 export const updateNeighbourhood = async (id: string, neighbourhoodData: any) => {
 	const { imageFile, ...restData } = neighbourhoodData;
+
+	console.log('updateNeighbourhood - id:', id);
+	console.log('updateNeighbourhood - neighbourhoodData:', neighbourhoodData);
+	console.log('updateNeighbourhood - imageFile:', imageFile);
+	console.log('updateNeighbourhood - restData:', restData);
 
 	// If there's an image file, send as FormData
 	if (imageFile) {
@@ -76,7 +86,8 @@ export const updateNeighbourhood = async (id: string, neighbourhoodData: any) =>
 		});
 		return response.data;
 	} else {
-		// Send as JSON if no file
+		// Send as JSON if no file - images object will be included in restData
+		console.log('Sending as JSON with images object:', restData.images);
 		const response = await axiosInstance.put(`v1/admin/neighbourhood/${id}`, restData);
 		return response.data;
 	}

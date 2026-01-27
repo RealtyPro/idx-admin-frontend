@@ -35,7 +35,7 @@ export default function Login() {
   const loginMutation = useMutation({
     mutationFn: async (payload: { email: string; password: string }) => {
       try {
-        const response = await axiosInstance.post("login", payload);
+        const response = await axiosInstance.post("user/login", payload);
         return response.data;
       } catch (error: any) {
         // Axios error handling

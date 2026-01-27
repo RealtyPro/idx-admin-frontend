@@ -24,7 +24,6 @@ export default function NewsletterCreatePage() {
     setLoading(true);
     try {
       await axiosInstance.post('v1/admin/newsletter', {
-        ListAgentMlsId: 'NWM1307294',
         name,
         email,
         contact_no: contactNo,

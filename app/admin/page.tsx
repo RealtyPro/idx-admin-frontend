@@ -8,10 +8,10 @@ import {
   UsersIcon,
   EnvelopeIcon,
 } from '@heroicons/react/24/outline';
-import Image from 'next/image';
-import { stats, recentActivity } from '@/lib/mockData';
+import { recentActivity } from '@/lib/mockData';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import api from '@/services/Api';
 
 const iconMap: Record<string, any> = {
   HomeIcon,
@@ -21,16 +21,97 @@ const iconMap: Record<string, any> = {
   EnvelopeIcon,
 };
 
+type Stat = {
+  name: string;
+  value: string;
+  change: string;
+  changeType: 'positive' | 'negative';
+  icon: 'HomeIcon' | 'DocumentTextIcon' | 'CreditCardIcon' | 'UsersIcon' | 'EnvelopeIcon';
+};
+
 export default function AdminDashboard() {
-  const [statsData, setStatsData] = useState<typeof stats>([]);
+  const [statsData, setStatsData] = useState<Stat[]>([]);
   const [activity, setActivity] = useState<typeof recentActivity>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setStatsData(stats);
-    setActivity(recentActivity);
-    const timer = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(timer);
+    const extractCount = (res: any): number => {
+      if (!res) return 0;
+      const data = res.data;
+
+      if (typeof data === 'number') return data;
+      if (typeof data === 'string') return parseInt(data, 10) || 0;
+
+      if (typeof data === 'object' && data !== null) {
+        if (typeof data.count === 'number') return data.count;
+        if (typeof data.total === 'number') return data.total;
+        if (typeof data.data === 'number') return data.data;
+        if (typeof data.data === 'object' && data.data !== null) {
+          if (typeof data.data.count === 'number') return data.data.count;
+          if (typeof data.data.total === 'number') return data.data.total;
+        }
+      }
+
+      return 0;
+    };
+
+    const fetchDashboardData = async () => {
+      setActivity(recentActivity);
+
+      // Fetch each count individually so one failure doesn't block others
+      const fetchCount = async (url: string, name: string): Promise<number> => {
+        try {
+          const res = await api.get(url);
+          return extractCount(res);
+        } catch (error: any) {
+          console.error(`Failed to load ${name} count from ${url}:`, error.message);
+          return 0;
+        }
+      };
+
+      const [listingsCount, enquiriesCount, blogsCount, testimonialsCount] =
+        await Promise.all([
+          fetchCount('v1/admin/count/product/property/all', 'Listings'),
+          fetchCount('v1/admin/count/enquiry/enquiry/all', 'Enquiries'),
+          fetchCount('v1/admin/count/blog/blog/all', 'Blogs'),
+          fetchCount('v1/admin/count/testimonial/testimonial/all', 'Testimonials'),
+        ]);
+
+      setStatsData([
+        {
+          name: 'Total Listings',
+          value: String(listingsCount),
+          change: '',
+          changeType: 'positive',
+          icon: 'HomeIcon',
+        },
+        {
+          name: 'Total Enquiries',
+          value: String(enquiriesCount),
+          change: '',
+          changeType: 'positive',
+          icon: 'EnvelopeIcon',
+        },
+        {
+          name: 'Total Blogs',
+          value: String(blogsCount),
+          change: '',
+          changeType: 'positive',
+          icon: 'DocumentTextIcon',
+        },
+        {
+          name: 'Total Testimonials',
+          value: String(testimonialsCount),
+          change: '',
+          changeType: 'positive',
+          icon: 'UsersIcon',
+        },
+      ]);
+
+      setLoading(false);
+    };
+
+    fetchDashboardData();
   }, []);
 
   if (loading) {
@@ -53,9 +134,10 @@ export default function AdminDashboard() {
     <div className="px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-serif text-dark">IDX Dashboard Overview</h1>
-          <p className="text-dark-secondary">Welcome back! Here's your IDX real estate summary.</p>
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-serif text-dark">Dashboard Overview</h1>
+          <div className="hidden md:block">
+          </div>
         </div>
 
         {/* Stats Grid */}

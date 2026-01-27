@@ -40,7 +40,7 @@ export default function NeighbourhoodDetails() {
 
 	if (isLoading) {
 		return (
-			<div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
+			<div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
 				<Skeleton className="h-10 w-64" />
 				<Skeleton className="h-6 w-40" />
 				<Skeleton className="h-32 w-full rounded-xl" />
@@ -50,7 +50,7 @@ export default function NeighbourhoodDetails() {
 
 	if (isError || !neighbourhood) {
 		return (
-			<div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
+			<div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
 				<Card>
 					<CardHeader>
 						<CardTitle>Neighbourhood Not Found</CardTitle>
@@ -67,7 +67,7 @@ export default function NeighbourhoodDetails() {
 	}
 
 	return (
-		<div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
+		<div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
 			<Card>
 				<CardHeader className="flex flex-row justify-between items-center">
 					<div>

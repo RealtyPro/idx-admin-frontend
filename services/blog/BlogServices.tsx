@@ -12,16 +12,16 @@ export const fetchSingleBlog = async (id: string) => {
 
 export const postNewBlog = async (blogdata: any) => {
     try {
-      const { imageFile, ...restData } = blogdata;
+      const { imageFile, uuid, ...restData } = blogdata;
       
       // If there's an image file, send as FormData
       if (imageFile) {
         const formData = new FormData();
         formData.append('image', imageFile);
         
-        // Append all other fields
+        // Append all other fields (excluding uuid)
         Object.keys(restData).forEach(key => {
-          if (restData[key] !== null && restData[key] !== undefined) {
+          if (restData[key] !== null && restData[key] !== undefined && key !== 'uuid') {
             if (typeof restData[key] === 'object') {
               formData.append(key, JSON.stringify(restData[key]));
             } else {
@@ -37,7 +37,7 @@ export const postNewBlog = async (blogdata: any) => {
         });
         return response.data;
       } else {
-        // Send as JSON if no file - image object will be included in restData
+        // Send as JSON if no file - image object will be included in restData (uuid excluded)
         const response = await axiosInstance.post('v1/admin/blog', restData);
         return response.data;
       }
@@ -47,16 +47,16 @@ export const postNewBlog = async (blogdata: any) => {
   };
 export const updateBlog = async (id: string, blogdata: any) => {
     try {
-      const { imageFile, ...restData } = blogdata;
+      const { imageFile, uuid, ...restData } = blogdata;
       
       // If there's an image file, send as FormData
       if (imageFile) {
         const formData = new FormData();
         formData.append('image', imageFile);
         
-        // Append all other fields
+        // Append all other fields (excluding uuid)
         Object.keys(restData).forEach(key => {
-          if (restData[key] !== null && restData[key] !== undefined) {
+          if (restData[key] !== null && restData[key] !== undefined && key !== 'uuid') {
             if (typeof restData[key] === 'object') {
               formData.append(key, JSON.stringify(restData[key]));
             } else {
@@ -72,7 +72,7 @@ export const updateBlog = async (id: string, blogdata: any) => {
         });
         return response.data;
       } else {
-        // Send as JSON if no file - image object will be included in restData
+        // Send as JSON if no file - image object will be included in restData (uuid excluded)
         const response = await axiosInstance.put(`v1/admin/blog/${id}`, restData);
         return response.data;
       }

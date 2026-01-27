@@ -3,18 +3,24 @@ import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from '@/components/ui/skeleton';
-import React from 'react';
+import React, { useState } from 'react';
 import { useNeighbourhoods, useDeleteNeighbourhood } from '@/services/neighbourhood/NeighbourhoodQueries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteNeighbourhood } from '@/services/neighbourhood/NeighbourhoodServices';
 
 export default function NeighbourhoodsListPage() {
-  const page = 1;
-  const { data, isLoading, isError, error } = useNeighbourhoods(page);
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data, isLoading, isError, error } = useNeighbourhoods(currentPage);
   const queryClient = useQueryClient();
   
   // Extract neighbourhoods from API response
   const neighbourhoods = data?.data || data || [];
+  
+  // Extract pagination metadata from API response
+  const pagination = data?.meta || data?.pagination || null;
+  const totalPages = pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1;
+  const currentPageNum = pagination?.current_page || pagination?.currentPage || currentPage;
+  const totalItems = pagination?.total || pagination?.totalItems || neighbourhoods.length;
 
   const deleteNeighbourhoodMutation = useMutation({
     mutationFn: (id: string) => deleteNeighbourhood(id),
@@ -33,6 +39,98 @@ export default function NeighbourhoodsListPage() {
     if (window.confirm("Are you sure you want to delete this neighbourhood?")) {
       deleteNeighbourhoodMutation.mutate(id);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+  
+  const renderPagination = () => {
+    if (totalPages <= 1 && (!pagination || neighbourhoods.length < 10)) return null;
+    
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPageNum - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 mt-6">
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPageNum - 1)}
+            disabled={currentPageNum === 1 || isLoading}
+          >
+            Previous
+          </Button>
+          
+          {startPage > 1 && (
+            <>
+              <Button
+                variant={1 === currentPageNum ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePageChange(1)}
+                disabled={isLoading}
+              >
+                1
+              </Button>
+              {startPage > 2 && <span className="px-2 text-muted-foreground">...</span>}
+            </>
+          )}
+          
+          {pages.map((page) => (
+            <Button
+              key={page}
+              variant={page === currentPageNum ? "default" : "outline"}
+              size="sm"
+              onClick={() => handlePageChange(page)}
+              disabled={isLoading}
+            >
+              {page}
+            </Button>
+          ))}
+          
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && <span className="px-2 text-muted-foreground">...</span>}
+              <Button
+                variant={totalPages === currentPageNum ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePageChange(totalPages)}
+                disabled={isLoading}
+              >
+                {totalPages}
+              </Button>
+            </>
+          )}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPageNum + 1)}
+            disabled={currentPageNum === totalPages || isLoading}
+          >
+            Next
+          </Button>
+        </div>
+        
+        <div className="text-sm text-muted-foreground">
+          Page {currentPageNum} of {totalPages} ({totalItems} total items)
+        </div>
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -109,6 +207,9 @@ export default function NeighbourhoodsListPage() {
           <p className="text-center text-muted-foreground">No neighbourhoods found.</p>
         )}
       </div>
+      
+      {/* Pagination Controls */}
+      {renderPagination()}
     </div>
   );
 }

@@ -172,33 +172,35 @@ export const mockContacts = [
   },
 ];
 
-// Dashboard Stats
+// Dashboard Stats (fallback for admin dashboard)
+// Keep order and labels in sync with the live API-based dashboard:
+// 1) Total Listings, 2) Total Enquiries, 3) Total Blogs, 4) Total Testimonials
 export const stats = [
   {
     name: "Total Listings",
     value: "30",
-    change: "+5.2%",
+    change: "",
     changeType: "positive",
     icon: "HomeIcon",
   },
   {
-    name: "New Listings This Month",
-    value: "7",
-    change: "+16.7%",
+    name: "Total Enquiries",
+    value: "23",
+    change: "",
+    changeType: "positive",
+    icon: "EnvelopeIcon",
+  },
+  {
+    name: "Total Blogs",
+    value: "10",
+    change: "",
     changeType: "positive",
     icon: "DocumentTextIcon",
   },
   {
-    name: "Properties Sold",
+    name: "Total Testimonials",
     value: "12",
-    change: "+9.1%",
-    changeType: "positive",
-    icon: "CreditCardIcon",
-  },
-  {
-    name: "Active Agents",
-    value: "8",
-    change: "+1",
+    change: "",
     changeType: "positive",
     icon: "UsersIcon",
   },

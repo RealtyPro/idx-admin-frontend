@@ -25,7 +25,6 @@ export default function PageEditPage() {
   
   const updatePageMutation = useUpdatePage();
 
-  const [ListAgentMlsId] = useState("NWM1307294");
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [heading, setHeading] = useState("");
@@ -73,7 +72,7 @@ export default function PageEditPage() {
     e.preventDefault();
 
     const payload = {
-      ListAgentMlsId: page?.ListAgentMlsId || ListAgentMlsId,
+      uuid: page?.uuid || uuid,
       name,
       title,
       heading,

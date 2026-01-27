@@ -2,24 +2,29 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import React from 'react';
+import React, { useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProperties, useDeleteProperty } from '@/services/property/PropertyQueries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteProperty } from '@/services/property/PropertyServices';
 
 export default function PropertiesListPage() {
-  const page = 1;
-  const { data, isLoading, isError, error } = useProperties(page);
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data, isLoading, isError, error } = useProperties(currentPage);
   const queryClient = useQueryClient();
   
   // Extract properties from API response
   const properties = data?.data || data || [];
+  
+  // Extract pagination metadata from API response
+  const pagination = data?.meta || data?.pagination || null;
+  const totalPages = pagination?.last_page || pagination?.total_pages || 1;
+  const currentPageNum = pagination?.current_page || currentPage;
 
   const deletePropertyMutation = useMutation({
     mutationFn: (id: string) => deleteProperty(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['properties'] });
+      queryClient.invalidateQueries({ queryKey: ['properties', currentPage] });
       alert("Property deleted successfully");
     },
     onError: (error: any) => {
@@ -33,6 +38,89 @@ export default function PropertiesListPage() {
     if (window.confirm("Are you sure you want to delete this property?")) {
       deletePropertyMutation.mutate(id);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const renderPagination = () => {
+    if (!pagination || totalPages <= 1) return null;
+    
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPageNum - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return (
+      <div className="flex items-center justify-center gap-2 mt-6">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handlePageChange(currentPageNum - 1)}
+          disabled={currentPageNum === 1 || isLoading}
+        >
+          Previous
+        </Button>
+        
+        {startPage > 1 && (
+          <>
+            <Button
+              variant={1 === currentPageNum ? "default" : "outline"}
+              size="sm"
+              onClick={() => handlePageChange(1)}
+            >
+              1
+            </Button>
+            {startPage > 2 && <span className="px-2">...</span>}
+          </>
+        )}
+        
+        {pages.map((page) => (
+          <Button
+            key={page}
+            variant={page === currentPageNum ? "default" : "outline"}
+            size="sm"
+            onClick={() => handlePageChange(page)}
+          >
+            {page}
+          </Button>
+        ))}
+        
+        {endPage < totalPages && (
+          <>
+            {endPage < totalPages - 1 && <span className="px-2">...</span>}
+            <Button
+              variant={totalPages === currentPageNum ? "default" : "outline"}
+              size="sm"
+              onClick={() => handlePageChange(totalPages)}
+            >
+              {totalPages}
+            </Button>
+          </>
+        )}
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handlePageChange(currentPageNum + 1)}
+          disabled={currentPageNum === totalPages || isLoading}
+        >
+          Next
+        </Button>
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -116,6 +204,7 @@ export default function PropertiesListPage() {
           <p className="text-center text-muted-foreground">No properties found.</p>
         )}
       </div>
+      {renderPagination()}
     </div>
   );
 } 

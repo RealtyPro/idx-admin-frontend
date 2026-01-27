@@ -18,6 +18,16 @@ axiosInstance.interceptors.request.use(
       config.headers['Content-Type'] = 'application/json';
     }
 
+    // Remove uuid from params and payload for user/customer endpoint
+    if (config.url && config.url.includes('user/customer')) {
+      if (config.params && typeof config.params === 'object') {
+        delete config.params.uuid;
+      }
+      if (config.data && typeof config.data === 'object') {
+        delete config.data.uuid;
+      }
+    }
+
     // Add Authorization header if access_token exists in sessionStorage
     if (typeof window !== 'undefined') {
       const token = sessionStorage.getItem('access_token');

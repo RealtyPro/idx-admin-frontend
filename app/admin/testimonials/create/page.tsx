@@ -45,14 +45,20 @@ export default function TestimonialCreatePage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const payload = {
-      ListAgentMlsId: "NWM1307294",
+    // Create payload without user_id - explicitly exclude it
+    const payload: {
+      name: string;
+      position: string;
+      rating: string;
+      details: string;
+      status: string;
+      upload_folder: string;
+    } = {
       name,
       position: position || "",
       rating: rating || "",
       details,
       status: "active",
-      user_id: "104",
       upload_folder: "testimonial/testimonial"
     };
     try {
@@ -69,7 +75,7 @@ export default function TestimonialCreatePage() {
   };
 
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
+    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle>Add Testimonial</CardTitle>
@@ -89,7 +95,19 @@ export default function TestimonialCreatePage() {
             </div>
             <div>
               <Label htmlFor="rating">Rating</Label>
-              <Input id="rating" type="number" min="1" max="5" value={rating} onChange={e => setRating(e.target.value)} placeholder="1-5" />
+              <select
+                id="rating"
+                value={rating}
+                onChange={e => setRating(e.target.value)}
+                className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm"
+              >
+                <option value="">Select rating</option>
+                <option value="1">1 Star</option>
+                <option value="2">2 Stars</option>
+                <option value="3">3 Stars</option>
+                <option value="4">4 Stars</option>
+                <option value="5">5 Stars</option>
+              </select>
             </div>
             <div>
               <Label htmlFor="details">Details</Label>

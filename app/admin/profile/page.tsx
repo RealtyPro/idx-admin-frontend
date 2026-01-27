@@ -122,8 +122,7 @@ export default function ProfilePage() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  readOnly
                 />
               </div>
             </div>

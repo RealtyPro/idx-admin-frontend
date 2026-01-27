@@ -30,8 +30,8 @@ export default function BlogListPage() {
   
   // Extract pagination metadata from API response
   const pagination = blogListDatas?.meta || blogListDatas?.pagination || null;
-  const totalPages = pagination?.last_page || pagination?.total_pages || 1;
-  const currentPageNum = pagination?.current_page || currentPage;
+  const totalPages = pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1;
+  const totalItems = pagination?.total || pagination?.totalItems || blogs.length;
   const removeBlogMutation = useMutation({
     mutationFn: (id:string) => deleteBlog(id),
 
@@ -46,11 +46,9 @@ export default function BlogListPage() {
   });
   useEffect(()=>{
     if(blogListDatas && !isLoading && !error) {
-     // setBlogs(blogListDatas);
      setBlogs(blogListDatas.data || blogListDatas)
      console.log("blogListDatas",blogListDatas);
     }
-    console.log("blogListDatas",blogListDatas);
   },[blogListDatas,isLoading,error])
   
   const handlePageChange = (page: number) => {
@@ -61,11 +59,12 @@ export default function BlogListPage() {
   };
   
   const renderPagination = () => {
-    if (!pagination || totalPages <= 1) return null;
+    // Show pagination if we have multiple pages or pagination metadata
+    if (totalPages <= 1 && !pagination) return null;
     
     const pages = [];
     const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPageNum - Math.floor(maxVisiblePages / 2));
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
     
     if (endPage - startPage < maxVisiblePages - 1) {
@@ -77,61 +76,71 @@ export default function BlogListPage() {
     }
     
     return (
-      <div className="flex items-center justify-center gap-2 mt-6">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handlePageChange(currentPageNum - 1)}
-          disabled={currentPageNum === 1 || isLoading}
-        >
-          Previous
-        </Button>
-        
-        {startPage > 1 && (
-          <>
-            <Button
-              variant={1 === currentPageNum ? "default" : "outline"}
-              size="sm"
-              onClick={() => handlePageChange(1)}
-            >
-              1
-            </Button>
-            {startPage > 2 && <span className="px-2">...</span>}
-          </>
-        )}
-        
-        {pages.map((page) => (
+      <div className="flex flex-col items-center justify-center gap-4 mt-6">
+        <div className="flex items-center justify-center gap-2">
           <Button
-            key={page}
-            variant={page === currentPageNum ? "default" : "outline"}
+            variant="outline"
             size="sm"
-            onClick={() => handlePageChange(page)}
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1 || isLoading}
           >
-            {page}
+            Previous
           </Button>
-        ))}
-        
-        {endPage < totalPages && (
-          <>
-            {endPage < totalPages - 1 && <span className="px-2">...</span>}
+          
+          {startPage > 1 && (
+            <>
+              <Button
+                variant={1 === currentPage ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePageChange(1)}
+                disabled={isLoading}
+              >
+                1
+              </Button>
+              {startPage > 2 && <span className="px-2 text-muted-foreground">...</span>}
+            </>
+          )}
+          
+          {pages.map((page) => (
             <Button
-              variant={totalPages === currentPageNum ? "default" : "outline"}
+              key={page}
+              variant={page === currentPage ? "default" : "outline"}
               size="sm"
-              onClick={() => handlePageChange(totalPages)}
+              onClick={() => handlePageChange(page)}
+              disabled={isLoading}
             >
-              {totalPages}
+              {page}
             </Button>
-          </>
+          ))}
+          
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && <span className="px-2 text-muted-foreground">...</span>}
+              <Button
+                variant={totalPages === currentPage ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePageChange(totalPages)}
+                disabled={isLoading}
+              >
+                {totalPages}
+              </Button>
+            </>
+          )}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages || isLoading}
+          >
+            Next
+          </Button>
+        </div>
+        {pagination && (
+          <div className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages} {totalItems && `(${totalItems} total items)`}
+          </div>
         )}
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handlePageChange(currentPageNum + 1)}
-          disabled={currentPageNum === totalPages || isLoading}
-        >
-          Next
-        </Button>
       </div>
     );
   };

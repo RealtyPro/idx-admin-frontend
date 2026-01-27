@@ -32,10 +32,23 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Bars3Icon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import { mockUsers } from '@/lib/mockData';
 import { Skeleton } from '@/components/ui/skeleton';
+import axiosInstance from '@/services/Api';
 
 const roles = ['Admin', 'Supervisor', 'Agent'];
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  lastActive?: string;
+  callsHandled?: number;
+  avgRating?: number;
+  slotFrom?: string;
+  slotTo?: string;
+}
 
 interface EditUserFormData {
   id: number;
@@ -49,11 +62,7 @@ interface EditUserFormData {
 
 const defaultColumns = [
   { id: 'user', label: 'User' },
-  { id: 'role', label: 'Role' },
   { id: 'status', label: 'Status' },
-  { id: 'lastActive', label: 'Last Active' },
-  { id: 'callsHandled', label: 'Calls Handled' },
-  { id: 'avgRating', label: 'Avg Rating' },
   { id: 'actions', label: 'Actions' },
 ];
 
@@ -78,7 +87,6 @@ function DraggableTh({ column, index, listeners, attributes, isDragging, sortSta
       scope="col"
     >
       <div className="flex items-center gap-1">
-        <Bars3Icon className="w-4 h-4 text-gray-400 mr-1 cursor-grab" />
         <button
           type="button"
           className="flex items-center gap-1 group"
@@ -145,7 +153,6 @@ function SortableTh({ id, column, index, sortState, setSortState }: SortableThPr
       scope="col"
     >
       <div className="flex items-center gap-1">
-        <Bars3Icon className="w-4 h-4 text-gray-400 mr-1 cursor-grab" />
         <button
           type="button"
           className="flex items-center gap-1 group"
@@ -180,16 +187,68 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<EditUserFormData | null>(null);
   const [columnOrder, setColumnOrder] = useState(defaultColumns.map(c => c.id));
   const [sortState, setSortState] = useState<{ column: string; direction: 'asc' | 'desc' } | null>(null);
-  const [users, setUsers] = useState<typeof mockUsers>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   useEffect(() => {
-    setUsers(mockUsers);
-    const timer = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+       const response = await axiosInstance.get('v1/user/customer', {
+          params: { page: currentPage }, // Add page parameter
+        });
+        
+        const data = response.data;
+        
+        // Extract pagination metadata
+        const pagination = data?.meta || data?.pagination || null;
+        setTotalPages(pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1);
+        setTotalItems(pagination?.total || pagination?.totalItems || 0);
+        
+        // Map API response to User interface
+        // Adjust the mapping based on the actual API response structure
+        const mappedUsers: User[] = Array.isArray(data) 
+          ? data.map((user: any, index: number) => ({
+              id: user.id || user.user_id || index + 1,
+              name: user.name || user.full_name || user.username || `User ${index + 1}`,
+              email: user.email || user.email_address || '',
+              role: user.role || user.user_role || 'Agent',
+              status: user.status || user.is_active ? 'Active' : 'Inactive',
+              lastActive: user.last_active || user.last_login || user.updated_at || '',
+              callsHandled: user.calls_handled || user.calls || 0,
+              avgRating: user.avg_rating || user.rating || 0,
+            }))
+          : (data.data || data.users || []).map((user: any, index: number) => ({
+              id: user.id || user.user_id || index + 1,
+              name: user.name || user.full_name || user.username || `User ${index + 1}`,
+              email: user.email || user.email_address || '',
+              role: user.role || user.user_role || 'Agent',
+              status: user.status || user.is_active ? 'Active' : 'Inactive',
+              lastActive: user.last_active || user.last_login || user.updated_at || '',
+              callsHandled: user.calls_handled || user.calls || 0,
+              avgRating: user.avg_rating || user.rating || 0,
+            }));
+        
+        setUsers(mappedUsers);
+      } catch (err: any) {
+        console.error('Error fetching users:', err);
+        // Don't redirect to login, just show error message
+        const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch users';
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [currentPage]);
 
   // Generate half-hour slots from 9:00 AM to 8:00 PM
   const slotOptions: string[] = [];
@@ -203,7 +262,7 @@ export default function UsersPage() {
   }
   slotOptions.push('20:00 PM');
 
-  const handleEditUser = (user: typeof mockUsers[0]) => {
+  const handleEditUser = (user: User) => {
     setEditingUser({
       id: user.id,
       name: user.name,
@@ -214,6 +273,11 @@ export default function UsersPage() {
     setEditDialogOpen(true);
   };
 
+  const handlePushToCRM = (user: User) => {
+    // TODO: Integrate with CRM API
+    console.log('Push to CRM:', user);
+  };
+
   const handleSaveUser = () => {
     if (editingUser) {
       // Here you would typically make an API call to update the user
@@ -221,6 +285,99 @@ export default function UsersPage() {
       setEditDialogOpen(false);
       setEditingUser(null);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+  
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+    
+    const pages = [];
+    const maxVisiblePages = 5;
+    const currentPageNum = currentPage;
+    let startPage = Math.max(1, currentPageNum - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 mt-6 pb-6">
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPageNum - 1)}
+            disabled={currentPageNum === 1 || loading}
+          >
+            Previous
+          </Button>
+          
+          {startPage > 1 && (
+            <>
+              <Button
+                variant={1 === currentPageNum ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePageChange(1)}
+                disabled={loading}
+              >
+                1
+              </Button>
+              {startPage > 2 && <span className="px-2 text-muted-foreground">...</span>}
+            </>
+          )}
+          
+          {pages.map((page) => (
+            <Button
+              key={page}
+              variant={page === currentPageNum ? "default" : "outline"}
+              size="sm"
+              onClick={() => handlePageChange(page)}
+              disabled={loading}
+            >
+              {page}
+            </Button>
+          ))}
+          
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && <span className="px-2 text-muted-foreground">...</span>}
+              <Button
+                variant={totalPages === currentPageNum ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePageChange(totalPages)}
+                disabled={loading}
+              >
+                {totalPages}
+              </Button>
+            </>
+          )}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPageNum + 1)}
+            disabled={currentPageNum === totalPages || loading}
+          >
+            Next
+          </Button>
+        </div>
+        
+        <div className="text-sm text-muted-foreground">
+          Page {currentPageNum} of {totalPages} ({totalItems} total users)
+        </div>
+      </div>
+    );
   };
 
   let filteredUsers = users.filter(user => {
@@ -264,57 +421,41 @@ export default function UsersPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-serif text-dark">Users</h1>
+            <p className="text-dark-secondary">Manage system users and their roles</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center py-8">
+              <p className="text-red-600 mb-4">Error: {error}</p>
+              <Button onClick={() => window.location.reload()}>Retry</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl sm:text-2xl font-serif text-dark">Users</h1>
-          <p className="text-dark-secondary">Manage system users and their roles</p>
         </div>
-        <Button className="flex items-center gap-2">
-          <UserPlusIcon className="w-5 h-5" />
-          Add User
-        </Button>
       </div>
 
       {/* Search and Filter Bar */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex gap-4">
-            <div className="relative flex-1">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="px-4 py-2 rounded-lg border border-input bg-background text-sm"
-            >
-              <option value="all">All Roles</option>
-              {roles.map(role => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
-            <Button variant="outline" className="flex items-center gap-2">
-              <FunnelIcon className="w-5 h-5" />
-              More Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Users Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>System Users</CardTitle>
-        </CardHeader>
+      
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -390,13 +531,13 @@ export default function UsersPage() {
                           return (
                             <td key="avgRating" className="px-4 py-3">
                               <div className="flex items-center">
-                                <span className="text-sm mr-2">{user.avgRating}</span>
+                                <span className="text-sm mr-2">{user.avgRating || 0}</span>
                                 <div className="flex gap-1">
                                   {[...Array(5)].map((_, i) => (
                                     <svg
                                       key={i}
                                       className={`w-4 h-4 ${
-                                        i < Math.floor(user.avgRating) ? 'text-yellow-400' : 'text-gray-300'
+                                        i < Math.floor(user.avgRating || 0) ? 'text-yellow-400' : 'text-gray-300'
                                       }`}
                                       fill="currentColor"
                                       viewBox="0 0 20 20"
@@ -412,6 +553,14 @@ export default function UsersPage() {
                           return (
                             <td key="actions" className="px-4 py-3">
                               <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 px-3 text-xs"
+                                  onClick={() => handlePushToCRM(user)}
+                                >
+                                  Push to CRM
+                                </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -442,6 +591,9 @@ export default function UsersPage() {
         </CardContent>
       </DndContext>
       </Card>
+
+      {/* Pagination Controls */}
+      {renderPagination()}
 
       {/* Edit User Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

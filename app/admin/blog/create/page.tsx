@@ -14,7 +14,7 @@ import { postNewBlog } from "@/services/blog/BlogServices";
 import { uploadBlogImage, ImageObject } from "@/services/blog/BlogUpload";
 
 interface BlogResponse {
-  ListAgentMlsId: string;
+  uuid?: string; // UUID not needed in payload
   title: string;
   subtitle: string;
   category: string;
@@ -36,7 +36,6 @@ export default function BlogCreatePage() {
   const [content, setContent] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
   const [status, setStatus] = useState("published");
-  const listAgentMlsId = "NWM1307294";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -114,8 +113,7 @@ export default function BlogCreatePage() {
     e.preventDefault();
 
     // Collect form data matching the API structure
-    const formData: BlogResponse = {
-      ListAgentMlsId: listAgentMlsId,
+    const formData: Omit<BlogResponse, 'uuid'> = {
       title,
       subtitle,
       category,
@@ -135,7 +133,7 @@ export default function BlogCreatePage() {
   };
 
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
+    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle>Add Blog Post</CardTitle>

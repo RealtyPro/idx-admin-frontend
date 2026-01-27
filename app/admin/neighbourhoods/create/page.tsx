@@ -4,25 +4,67 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createNeighbourhood } from '@/services/neighbourhood/NeighbourhoodServices';
 import { uploadNeighbourhoodImage, ImageObject } from '@/services/neighbourhood/NeighbourhoodUpload';
+import { useStates, useCountiesByState, useCitiesByCounty } from '@/services/location/LocationQueries';
 
 export default function NeighbourhoodCreatePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   
-  const [name, setName] = useState("");
+  const [state, setState] = useState("");
+  const [county, setCounty] = useState("");
+  const [city, setCity] = useState("");
   const [description, setDescription] = useState("");
-  const [location, setLocation] = useState("");
   const [image, setImage] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageObject, setImageObject] = useState<ImageObject | null>(null);
   const [status, setStatus] = useState("active");
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Fetch location options dynamically
+  const { data: statesData, isLoading: statesLoading } = useStates();
+  const { data: countiesData, isLoading: countiesLoading } = useCountiesByState(state);
+  const { data: citiesData, isLoading: citiesLoading } = useCitiesByCounty(county);
+
+  // Debug: Log the API responses
+  useEffect(() => {
+    if (statesData) {
+      console.log('States API Response:', statesData);
+    }
+  }, [statesData]);
+
+  useEffect(() => {
+    if (countiesData) {
+      console.log('Counties API Response:', countiesData);
+    }
+  }, [countiesData]);
+
+  useEffect(() => {
+    if (citiesData) {
+      console.log('Cities API Response:', citiesData);
+    }
+  }, [citiesData]);
+
+  // Handle different possible response structures
+  const states = statesData?.data || statesData || [];
+  const counties = countiesData?.data || countiesData || [];
+  const cities = citiesData?.data || citiesData || [];
+
+  // Reset county when state changes
+  useEffect(() => {
+    setCounty("");
+    setCity("");
+  }, [state]);
+
+  // Reset city when county changes
+  useEffect(() => {
+    setCity("");
+  }, [county]);
 
   const createNeighbourhoodMutation = useMutation({
     mutationFn: (neighbourhoodData: object) => createNeighbourhood(neighbourhoodData),
@@ -33,7 +75,21 @@ export default function NeighbourhoodCreatePage() {
     },
     onError: (error: any) => {
       console.error("Error creating neighbourhood:", error);
-      const errorMessage = error?.response?.data?.message || error?.message || "Failed to create neighbourhood. Please try again.";
+      console.error("Error response data:", error?.response?.data);
+      console.error("Validation errors:", error?.response?.data?.errors);
+      
+      // Show detailed error message
+      const errorData = error?.response?.data;
+      let errorMessage = errorData?.message || error?.message || "Failed to create neighbourhood.";
+      
+      // If there are validation errors, show them
+      if (errorData?.errors) {
+        const validationErrors = Object.entries(errorData.errors)
+          .map(([field, messages]: [string, any]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+          .join('\n');
+        errorMessage += '\n\nValidation Errors:\n' + validationErrors;
+      }
+      
       alert(errorMessage);
     },
   });
@@ -41,24 +97,45 @@ export default function NeighbourhoodCreatePage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const payload = {
-      name,
+    // Validate required fields
+    if (!state) {
+      alert('Please select a state');
+      return;
+    }
+    if (!county) {
+      alert('Please select a county');
+      return;
+    }
+    if (!city) {
+      alert('Please select a city');
+      return;
+    }
+    if (!imageObject) {
+      alert('Please upload an image');
+      return;
+    }
+
+    // Build payload - only include image if it exists
+    const payload: any = {
+      region_id: state,    
+      county_id: county,     
+      city_id: city,        
       description,
-      location,
-      image: imageObject, // Use the uploaded image object instead of URL
       status
     };
 
-    // If we have an image object, send it; otherwise send imageFile for backward compatibility
+    // Add the uploaded image object
     if (imageObject) {
-      createNeighbourhoodMutation.mutate(payload);
-    } else {
-      createNeighbourhoodMutation.mutate({ ...payload, imageFile });
+      payload.images = imageObject;  // API expects 'images' not 'image'
+      console.log('Submitting neighbourhood with image object:', imageObject);
     }
+
+    console.log('Full neighbourhood payload:', payload);
+    createNeighbourhoodMutation.mutate(payload);
   };
 
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
+    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle>Add Neighbourhood</CardTitle>
@@ -69,13 +146,82 @@ export default function NeighbourhoodCreatePage() {
         <CardContent className="space-y-4">
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <Label htmlFor="name">Name *</Label>
-              <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
+              <Label htmlFor="state">State</Label>
+              <select
+                id="state"
+                value={state}
+                onChange={e => {
+                  const selectedId = e.target.value;
+                  console.log('Selected state ID:', selectedId);
+                  setState(selectedId);
+                }}
+                disabled={statesLoading}
+                className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
+              >
+                <option value="">{statesLoading ? 'Loading states...' : 'Select state'}</option>
+                {Array.isArray(states) && states.map((stateOption: any, index: number) => {
+                  // Debug: log each state option structure
+                  if (index === 0) console.log('Sample state option:', stateOption);
+                  return (
+                    <option key={stateOption.id || index} value={stateOption.id || stateOption.value || stateOption}>
+                      {stateOption.name || stateOption.title || stateOption.label || stateOption}
+                    </option>
+                  );
+                })}
+              </select>
+              {!statesLoading && (!states || states.length === 0) && (
+                <p className="text-xs text-red-500 mt-1">No states available. Check console for API response.</p>
+              )}
             </div>
 
             <div>
-              <Label htmlFor="location">Location</Label>
-              <Input id="location" value={location} onChange={e => setLocation(e.target.value)} />
+              <Label htmlFor="county">County</Label>
+              <select
+                id="county"
+                value={county}
+                onChange={e => {
+                  const selectedId = e.target.value;
+                  console.log('Selected county ID:', selectedId);
+                  setCounty(selectedId);
+                }}
+                disabled={!state || countiesLoading}
+                className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
+              >
+                <option value="">{countiesLoading ? 'Loading counties...' : 'Select county'}</option>
+                {Array.isArray(counties) && counties.map((countyOption: any, index: number) => {
+                  if (index === 0) console.log('Sample county option:', countyOption);
+                  return (
+                    <option key={countyOption.id || index} value={countyOption.id || countyOption.value || countyOption}>
+                      {countyOption.name || countyOption.title || countyOption.label || countyOption}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="city">City</Label>
+              <select
+                id="city"
+                value={city}
+                onChange={e => {
+                  const selectedId = e.target.value;
+                  console.log('Selected city ID:', selectedId);
+                  setCity(selectedId);
+                }}
+                disabled={!county || citiesLoading}
+                className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
+              >
+                <option value="">{citiesLoading ? 'Loading cities...' : 'Select city'}</option>
+                {Array.isArray(cities) && cities.map((cityOption: any, index: number) => {
+                  if (index === 0) console.log('Sample city option:', cityOption);
+                  return (
+                    <option key={cityOption.id || index} value={cityOption.id || cityOption.value || cityOption}>
+                      {cityOption.name || cityOption.title || cityOption.label || cityOption}
+                    </option>
+                  );
+                })}
+              </select>
             </div>
 
             <div>
@@ -171,4 +317,3 @@ export default function NeighbourhoodCreatePage() {
     </div>
   );
 }
-

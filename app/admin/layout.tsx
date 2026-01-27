@@ -30,7 +30,7 @@ const navigation = [
     icon: ChatBubbleLeftRightIcon,
   },
   { name: "NewsLetter", href: "/admin/newsletter", icon: DocumentTextIcon },
-  { name: "Pages", href: "/admin/pages", icon: DocumentTextIcon },
+  // { name: "Pages", href: "/admin/pages", icon: DocumentTextIcon },
   { name: "Neighbourhoods", href: "/admin/neighbourhoods", icon: MapPinIcon },
 ];
 

@@ -1,6 +1,7 @@
 import axiosInstance from '@/services/Api';
 
 export interface ImageObject {
+  folder: string;
   file: string;
   path: string;
   disk: string;
@@ -17,7 +18,7 @@ export interface ImageObject {
  * @returns The uploaded image object with file, path, disk, original, title, caption, and time
  */
 export const uploadBlogImage = async (file: File, config: string = 'idx.blog.blog.model'): Promise<ImageObject> => {
-  // Generate datetime string in format: YYYY/MM/DD/HHMMSSXXX
+  // Generate datetime string in format: YYYY/MM/DD/HH/MM
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -27,7 +28,8 @@ export const uploadBlogImage = async (file: File, config: string = 'idx.blog.blo
   const seconds = String(now.getSeconds()).padStart(2, '0');
   const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
   
-  const datetimePath = `${year}/${month}/${day}/${hours}${minutes}${seconds}${milliseconds}`;
+  // Use HH/MM format for folder structure to match API
+  const datetimePath = `${year}/${month}/${day}/${hours}/${minutes}`;
   
   // Generate upload URL
   const uploadUrl = `filer/upload/${config}/${datetimePath}/image`;
@@ -47,8 +49,14 @@ export const uploadBlogImage = async (file: File, config: string = 'idx.blog.blo
   // If the response contains the image object directly, use it
   const imageData = response.data?.data || response.data?.image || response.data;
   
-  // If we get an image object, return it
+  // If we get an image object, return it (ensure it has folder field)
   if (imageData && typeof imageData === 'object' && imageData.file && imageData.path) {
+    // Ensure folder field exists, if not extract from path
+    if (!imageData.folder && imageData.path) {
+      const pathParts = imageData.path.split('/');
+      pathParts.pop(); // Remove filename
+      imageData.folder = pathParts.join('/');
+    }
     return imageData as ImageObject;
   }
   
@@ -66,16 +74,22 @@ export const uploadBlogImage = async (file: File, config: string = 'idx.blog.blo
   const uploadedPath = imageData?.path || imageData?.url || imageData;
   const pathFromResponse = typeof uploadedPath === 'string' ? uploadedPath : '';
   
-  // Construct path if not provided (blog/blog/YYYY/MM/DD/HH/MM/filename)
-  // Reuse the variables already defined above
-  const constructedPath = pathFromResponse || `blog/blog/${year}/${month}/${day}/${hours}/${minutes}/${generatedFileName}`;
+  // Construct folder path: blog/blog/YYYY/MM/DD/HH/MM
+  const folderPath = `blog/blog/${datetimePath}`;
+  
+  // Construct full path if not provided
+  const constructedPath = pathFromResponse || `${folderPath}/${generatedFileName}`;
   const fileName = pathFromResponse.split('/').pop() || generatedFileName;
+  
+  // Extract folder from path if we have a path from response
+  const finalFolderPath = pathFromResponse ? constructedPath.substring(0, constructedPath.lastIndexOf('/')) : folderPath;
   
   // Format time as YYYY-MM-DD HH:MM:SS
   const timeString = `${year}-${month}-${day} ${hours}:${minutes}:${String(seconds).padStart(2, '0')}`;
   
   // Return the image object
   return {
+    folder: finalFolderPath,
     file: fileName,
     path: constructedPath,
     disk: 'local',
