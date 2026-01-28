@@ -273,9 +273,46 @@ export default function UsersPage() {
     setEditDialogOpen(true);
   };
 
-  const handlePushToCRM = (user: User) => {
-    // TODO: Integrate with CRM API
-    console.log('Push to CRM:', user);
+  const handlePushToCRM = async (user: User) => {
+    try {
+      // Check if user is authenticated
+      const token = sessionStorage.getItem('access_token');
+      if (!token) {
+        alert('Please login to sync customers to CRM');
+        // Optionally redirect to login page
+        // window.location.href = '/login';
+        return;
+      }
+
+      console.log('Pushing to CRM:', user);
+      const response = await axiosInstance.get(`/user/sync-customer-to-crm`, {
+        params: {
+          customer_id: user.id
+        }
+      });
+      console.log('CRM sync response:', response.data);
+      
+      // Show success message
+      if (response.data.message) {
+        alert(response.data.message);
+      } else {
+        alert('Customer successfully synced to CRM');
+      }
+    } catch (error: any) {
+      console.error('Error pushing to CRM:', error);
+      
+      // Handle specific error cases
+      if (error.response?.status === 401) {
+        alert('Authentication failed. Please login again.');
+        // Optionally clear token and redirect to login
+        // sessionStorage.removeItem('access_token');
+        // window.location.href = '/login';
+      } else if (error.response?.data?.message) {
+        alert(`Failed to sync: ${error.response.data.message}`);
+      } else {
+        alert('Failed to sync customer to CRM. Please try again.');
+      }
+    }
   };
 
   const handleSaveUser = () => {
@@ -561,7 +598,7 @@ export default function UsersPage() {
                                 >
                                   Push to CRM
                                 </Button>
-                                <Button
+                                {/* <Button
                                   variant="ghost"
                                   size="sm"
                                   className="h-8 w-8 p-0"
@@ -575,7 +612,7 @@ export default function UsersPage() {
                                   className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
                                 >
                                   <TrashIcon className="h-4 w-4" />
-                                </Button>
+                                </Button> */}
                               </div>
                             </td>
                           );

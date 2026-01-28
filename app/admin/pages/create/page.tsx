@@ -56,7 +56,6 @@ export default function PageCreatePage() {
     e.preventDefault();
 
     const payload = {
-      uuid,
       name,
       title,
       heading,

@@ -72,7 +72,7 @@ export default function PageEditPage() {
     e.preventDefault();
 
     const payload = {
-      uuid: page?.uuid || uuid,
+      uuid: page?.uuid,
       name,
       title,
       heading,
