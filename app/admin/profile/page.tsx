@@ -8,24 +8,48 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile, useUpdateProfile } from '@/services/profile/ProfileQueries';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCitiesByCounty, useCountiesByState, useStates } from '@/services/location/LocationQueries';
 
 export default function ProfilePage() {
   const queryClient = useQueryClient();
   const { data, isLoading, isError } = useProfile();
   const updateProfileMutation = useUpdateProfile();
-  
+  const [county, setCounty] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState('');
   const profile = data?.data || data;
-
+  const { data: statesData, isLoading: statesLoading } = useStates();
+  const { data: countiesData, isLoading: countiesLoading } = useCountiesByState(state);
+  const { data: citiesData, isLoading: citiesLoading } = useCitiesByCounty(county);
+ 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
+  // const [city, setCity] = useState('');
+  // const [state, setState] = useState('');
   const [zip, setZip] = useState('');
   const [country, setCountry] = useState('');
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (statesData) {
+      console.log('States API Response:', statesData);
+    }
+  }, [statesData]);
+  useEffect(() => {
+    if (countiesData) {
+      console.log('Counties API Response:', countiesData);
+    }
+  }, [countiesData]);
 
+  useEffect(() => {
+    if (citiesData) {
+      console.log('Cities API Response:', citiesData);
+    }
+  }, [citiesData]);
+  const states = statesData?.data || statesData || [];
+  const counties = countiesData?.data || countiesData || [];
+  const cities = citiesData?.data || citiesData || [];
   // Update form fields when profile data loads
   useEffect(() => {
     if (profile) {
@@ -37,6 +61,7 @@ export default function ProfilePage() {
       setState(profile.state || '');
       setZip(profile.zip || '');
       setCountry(profile.country || '');
+      setCounty(profile.country || '');
     }
   }, [profile]);
 
@@ -54,7 +79,7 @@ export default function ProfilePage() {
       zip,
       country,
     };
-
+console.log(payload);
     updateProfileMutation.mutate(payload, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -148,39 +173,101 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                />
-              </div>
-              <div>
                 <Label htmlFor="state">State</Label>
-                <Input
+                <select
                   id="state"
                   value={state}
-                  onChange={(e) => setState(e.target.value)}
-                />
-              </div>
+                  onChange={e => {
+                    const selectedId = e.target.value;
+                    console.log('Selected state ID:', selectedId);
+                    setState(selectedId);
+                    // Reset county and city when state changes
+                    setCounty("");
+                    setCity("");
+                  }}
+                  disabled={statesLoading}
+                  className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
+                  style={{ border: '1px solid #e5e5e5', minHeight: '37px' }}
+                >
+                <option value="">{statesLoading ? 'Loading states...' : 'Select state'}</option>
+                {Array.isArray(states) && states.map((stateOption: any, index: number) => {
+                  // Debug: log each state option structure
+                  if (index === 0) console.log('Sample state option:', stateOption);
+                  return (
+                    <option key={stateOption.id || index} value={stateOption.id || stateOption.value || stateOption}>
+                      {stateOption.name || stateOption.title || stateOption.label || stateOption}
+                    </option>
+                  );
+                })}
+              </select>
+              {!statesLoading && (!states || states.length === 0) && (
+                <p className="text-xs text-red-500 mt-1">No states available. Check console for API response.</p>
+              )}
+            </div>
               <div>
-                <Label htmlFor="zip">Zip Code</Label>
-                <Input
-                  id="zip"
-                  value={zip}
-                  onChange={(e) => setZip(e.target.value)}
-                />
+                <Label htmlFor="county">County</Label>
+                <select
+                  id="county"
+                  value={county}
+                  onChange={e => {
+                    const selectedId = e.target.value;
+                    console.log('Selected county ID:', selectedId);
+                    setCounty(selectedId);
+                    setCountry(selectedId);
+                    // Reset city when county changes
+                    setCity("");
+                  }}
+                  disabled={!state || countiesLoading}
+                  className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
+                  style={{ border: '1px solid #e5e5e5', minHeight: '37px' }}
+                >
+                <option value="">{countiesLoading ? 'Loading counties...' : 'Select county'}</option>
+                {Array.isArray(counties) && counties.map((countyOption: any, index: number) => {
+                  if (index === 0) console.log('Sample county option:', countyOption);
+                  return (
+                    <option key={countyOption.id || index} value={countyOption.id || countyOption.value || countyOption}>
+                      {countyOption.name || countyOption.title || countyOption.label || countyOption}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+              <div>
+                <Label htmlFor="city">City</Label>
+                <select
+                  id="city"
+                  value={city}
+                  onChange={e => {
+                    const selectedId = e.target.value;
+                    console.log('Selected city ID:', selectedId);
+                    setCity(selectedId);
+                  }}
+                  disabled={!county || citiesLoading}
+                  className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
+                  style={{ border: '1px solid #e5e5e5', minHeight: '37px' }}
+                >
+                <option value="">{citiesLoading ? 'Loading cities...' : 'Select city'}</option>
+                {Array.isArray(cities) && cities.map((cityOption: any, index: number) => {
+                  if (index === 0) console.log('Sample city option:', cityOption);
+                  return (
+                    <option key={cityOption.id || index} value={cityOption.id || cityOption.value || cityOption}>
+                      {cityOption.name || cityOption.title || cityOption.label || cityOption}
+                    </option>
+                  );
+                })}
+              </select>
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="country">Country</Label>
+            {/* <div>
+              <Label htmlFor="zip">Zip Code</Label>
               <Input
-                id="country"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
+                id="zip"
+                value={zip}
+                onChange={(e) => setZip(e.target.value)}
               />
-            </div>
+            </div> */}
 
             {error && (
               <div className="text-red-500 text-sm bg-red-50 p-3 rounded">

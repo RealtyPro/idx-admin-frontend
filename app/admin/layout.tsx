@@ -49,8 +49,16 @@ export default function adminLayout({
   const [userProfilePic, setUserProfilePic] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load user data from sessionStorage
+    // Check for authentication and load user data from sessionStorage
     if (typeof window !== "undefined") {
+      const token = sessionStorage.getItem("access_token");
+      
+      // Redirect to login if no token exists
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
       const name = sessionStorage.getItem("user_name") || "User";
       const email = sessionStorage.getItem("user_email") || "user@example.com";
       const profilePic = sessionStorage.getItem("user_profile_pic");
@@ -68,7 +76,7 @@ export default function adminLayout({
         .slice(0, 2);
       setUserInitials(initials || "JD");
     }
-  }, []);
+  }, [router]);
 
   const handleLogout = async () => {
     try {

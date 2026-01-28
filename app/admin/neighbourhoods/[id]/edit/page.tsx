@@ -18,14 +18,24 @@ export default function NeighbourhoodEditPage() {
   const queryClient = useQueryClient();
   const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '';
   
+  // Check for authentication on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = sessionStorage.getItem('access_token');
+      if (!token) {
+        router.push('/login');
+      }
+    }
+  }, [router]);
+  
   const { data, isLoading, isError } = useSingleNeighbourhood(id);
   const neighbourhood = data?.data || data;
   
   const updateNeighbourhoodMutation = useUpdateNeighbourhood();
 
-  const [state, setState] = useState("");
-  const [county, setCounty] = useState("");
-  const [city, setCity] = useState("");
+  const [state, setState] = useState<string | number>("");
+  const [county, setCounty] = useState<string | number>("");
+  const [city, setCity] = useState<string | number>("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -34,17 +44,34 @@ export default function NeighbourhoodEditPage() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [status, setStatus] = useState("active");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch location options dynamically
   const { data: statesData, isLoading: statesLoading } = useStates();
-  const { data: countiesData, isLoading: countiesLoading } = useCountiesByState(state);
-  const { data: citiesData, isLoading: citiesLoading } = useCitiesByCounty(county);
+  const { data: countiesData, isLoading: countiesLoading } = useCountiesByState(state ? String(state) : "");
+  const { data: citiesData, isLoading: citiesLoading } = useCitiesByCounty(county ? String(county) : "");
 
   const states = statesData?.data || statesData || [];
   const counties = countiesData?.data || countiesData || [];
   const cities = citiesData?.data || citiesData || [];
+
+  // Debug: Log available options
+  useEffect(() => {
+    console.log('States available:', states.length, states.slice(0, 3));
+    if (states.length > 0) {
+      console.log('Sample state IDs:', states.slice(0, 5).map((s: any) => ({ id: s.key, name: s.name })));
+    }
+    console.log('Counties available:', counties.length, counties.slice(0, 3));
+    if (counties.length > 0) {
+      console.log('Sample county IDs:', counties.slice(0, 5).map((c: any) => ({ id: c.key, name: c.name })));
+    }
+    console.log('Cities available:', cities.length, cities.slice(0, 3));
+    if (cities.length > 0) {
+      console.log('Sample city IDs:', cities.slice(0, 5).map((c: any) => ({ id: c.key, name: c.name })));
+    }
+  }, [states, counties, cities]);
 
   // Update form fields when neighbourhood data loads
   useEffect(() => {
@@ -52,15 +79,16 @@ export default function NeighbourhoodEditPage() {
       console.log('Loading neighbourhood data:', neighbourhood);
       
       // Extract state/region ID - try multiple possible field names
-      const stateId = neighbourhood.region_id || neighbourhood.state_id || neighbourhood.state || '';
-      const countyId = neighbourhood.county_id || neighbourhood.county || '';
-      const cityId = neighbourhood.city_id || neighbourhood.city || '';
+      const stateId = neighbourhood.state_id;
+      const countyId = neighbourhood.county_id;
+      const cityId = neighbourhood.city_id;
       
-      console.log('Extracted IDs:', { stateId, countyId, cityId });
+      console.log('Extracted IDs from API:', { stateId, countyId, cityId });
       
-      setState(String(stateId));
-      setCounty(String(countyId));
-      setCity(String(cityId));
+      // Convert to strings to match select option values
+      setState(stateId ? String(stateId) : "");
+      setCounty(countyId ? String(countyId) : "");
+      setCity(cityId ? String(cityId) : "");
       setDescription(neighbourhood.description || '');
       setStatus(neighbourhood.status || 'active');
       
@@ -98,18 +126,38 @@ export default function NeighbourhoodEditPage() {
         }
       }
       
-      // Mark initial load as complete
-      setIsInitialLoad(false);
+      // Mark initial load as complete after a short delay to allow cascading loads
+      setTimeout(() => setIsInitialLoad(false), 500);
     }
   }, [neighbourhood]);
+
+  // Debug: Log state values when they change
+  useEffect(() => {
+    console.log('Current form values:', { state, county, city });
+    console.log('State type:', typeof state, 'County type:', typeof county, 'City type:', typeof city);
+    
+    // Check if current values exist in options
+    if (state && states.length > 0) {
+      const stateExists = states.find((s: any) => String(s.id) === String(state));
+      console.log('State value exists in options?', !!stateExists, 'Looking for:', state);
+    }
+    if (county && counties.length > 0) {
+      const countyExists = counties.find((c: any) => String(c.id) === String(county));
+      console.log('County value exists in options?', !!countyExists, 'Looking for:', county);
+    }
+    if (city && cities.length > 0) {
+      const cityExists = cities.find((c: any) => String(c.id) === String(city));
+      console.log('City value exists in options?', !!cityExists, 'Looking for:', city);
+    }
+  }, [state, county, city, states, counties, cities]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const payload: any = {
-      region_id: state,      // Send state ID as region_id
-      county_id: county,     // Send county ID as county_id
-      city_id: city,         // Send city ID as city_id
+      state_id: state ? Number(state) : null,      // Send state ID as region_id
+      county_id: county ? Number(county) : null,     // Send county ID as county_id
+      city_id: city ? Number(city) : null,         // Send city ID as city_id
       description,
       status
     };
@@ -213,11 +261,15 @@ export default function NeighbourhoodEditPage() {
                 }}
                 disabled={statesLoading}
                 className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
+                style={{ border: '1px solid #e5e5e5', minHeight: '37px' }}
               >
                 <option value="">{statesLoading ? 'Loading states...' : 'Select state'}</option>
                 {Array.isArray(states) && states.map((stateOption: any, index: number) => (
-                  <option key={stateOption.id || index} value={stateOption.id}>
-                    {stateOption.name || stateOption.title || stateOption.label || 'Unknown'}
+                  <option 
+                    key={stateOption.key || stateOption.value || stateOption.id || index} 
+                    value={String(stateOption.value || stateOption.key || stateOption.id)}
+                  >
+                    {stateOption.text || stateOption.name || stateOption.title || stateOption.label || 'Unknown'}
                   </option>
                 ))}
               </select>
@@ -237,11 +289,15 @@ export default function NeighbourhoodEditPage() {
                 }}
                 disabled={!state || countiesLoading}
                 className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
+                style={{ border: '1px solid #e5e5e5', minHeight: '37px' }}
               >
                 <option value="">{countiesLoading ? 'Loading counties...' : 'Select county'}</option>
                 {Array.isArray(counties) && counties.map((countyOption: any, index: number) => (
-                  <option key={countyOption.id || index} value={countyOption.id}>
-                    {countyOption.name || countyOption.title || countyOption.label || 'Unknown'}
+                  <option 
+                    key={countyOption.key || countyOption.value || countyOption.id || index} 
+                    value={String(countyOption.value || countyOption.key || countyOption.id)}
+                  >
+                    {countyOption.text || countyOption.name || countyOption.title || countyOption.label || 'Unknown'}
                   </option>
                 ))}
               </select>
@@ -255,11 +311,15 @@ export default function NeighbourhoodEditPage() {
                 onChange={e => setCity(e.target.value)}
                 disabled={!county || citiesLoading}
                 className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
+                style={{ border: '1px solid #e5e5e5', minHeight: '37px' }}
               >
                 <option value="">{citiesLoading ? 'Loading cities...' : 'Select city'}</option>
                 {Array.isArray(cities) && cities.map((cityOption: any, index: number) => (
-                  <option key={cityOption.id || index} value={cityOption.id}>
-                    {cityOption.name || cityOption.title || cityOption.label || 'Unknown'}
+                  <option 
+                    key={cityOption.key || cityOption.value || cityOption.id || index} 
+                    value={String(cityOption.value || cityOption.key || cityOption.id)}
+                  >
+                    {cityOption.text || cityOption.name || cityOption.title || cityOption.label || 'Unknown'}
                   </option>
                 ))}
               </select>
@@ -288,32 +348,35 @@ export default function NeighbourhoodEditPage() {
                   if (file) {
                     setImageFile(file);
                     setUploadingImage(true);
+                    setUploadSuccess(false);
                     
-                    // Show preview immediately
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                      setImage(ev.target?.result as string);
-                    };
-                    reader.readAsDataURL(file);
+                    // Hide preview during upload
+                    const tempImage = image;
+                    setImage(null);
                     
                     try {
                       // Upload the image and get the image object
                       const uploadedImageObj = await uploadNeighbourhoodImage(file);
+                      console.log("Uploaded image object:", uploadedImageObj);
                       setImageObject(uploadedImageObj);
                       
                       // Set preview image URL
                       const previewUrl = uploadedImageObj.path.startsWith('http') 
                         ? uploadedImageObj.path 
-                        : `https://demorealestate2.webnapps.net/storage/${uploadedImageObj.path}`;
-                      setImage(previewUrl);
+                        : `https://demorealestate2.webnapps.net/image/local/xs/${uploadedImageObj.path}`;
                       
-                      alert("Image uploaded successfully");
+                      console.log("Setting preview URL:", previewUrl);
+                      setImage(previewUrl);
+                      setUploadSuccess(true);
+                      
+                      // Remove success message after 3 seconds
+                      setTimeout(() => setUploadSuccess(false), 3000);
                     } catch (error: any) {
                       console.error("Error uploading image:", error);
                       const errorMessage = error?.response?.data?.message || error?.message || "Failed to upload image. Please try again.";
                       alert(errorMessage);
                       // Reset preview if upload fails
-                      setImage(originalImage);
+                      setImage(tempImage);
                       setImageObject(originalImageObject);
                       setImageFile(null);
                       if (fileInputRef.current) {
@@ -327,11 +390,50 @@ export default function NeighbourhoodEditPage() {
                 ref={fileInputRef}
               />
               {uploadingImage && (
-                <p className="text-xs text-muted-foreground mt-1">Uploading image...</p>
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-600 flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Uploading image...
+                  </p>
+                </div>
               )}
-              {image && (
-                <div className="mt-2">
-                  <img src={image} alt="Preview" className="max-h-40 rounded" />
+              {uploadSuccess && !uploadingImage && (
+                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-600 flex items-center gap-2">
+                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Image uploaded successfully!
+                  </p>
+                </div>
+              )}
+              {image && !uploadingImage && (
+                <div className="mt-4 relative inline-block">
+                  <img 
+                    src={image} 
+                    alt="Neighbourhood preview" 
+                    className="max-h-64 max-w-full rounded-lg shadow-md object-cover border border-gray-200" 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImage(originalImage);
+                      setImageObject(originalImageObject);
+                      setImageFile(null);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = "";
+                      }
+                    }}
+                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors"
+                    title="Remove image"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
                 </div>
               )}
             </div>
@@ -343,6 +445,7 @@ export default function NeighbourhoodEditPage() {
                 value={status}
                 onChange={e => setStatus(e.target.value)}
                 className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm"
+                style={{ border: '1px solid #e5e5e5', minHeight: '37px' }}
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>

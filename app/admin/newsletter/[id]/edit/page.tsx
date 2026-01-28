@@ -90,7 +90,7 @@ export default function NewsletterSubscriberEditPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
+      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
         <Skeleton className="h-10 w-64 mb-4" />
         <Skeleton className="h-8 w-32 mb-2" />
         <Skeleton className="h-40 w-full rounded-xl" />
@@ -101,7 +101,7 @@ export default function NewsletterSubscriberEditPage() {
 
   if (isError || !subscriber) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
+      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Subscriber Not Found</CardTitle>
@@ -118,7 +118,7 @@ export default function NewsletterSubscriberEditPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
+    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle>Edit Newsletter Subscriber</CardTitle>
