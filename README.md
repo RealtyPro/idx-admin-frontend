@@ -4,6 +4,8 @@ A modern web application for capturing, storing, and analyzing WhatsApp & call i
 
 ## Features
 
+
+
 - Real-time chat logging
 - Call recording playback
 - Seamless WhatsApp integration
@@ -43,5 +45,6 @@ npm run dev
 - [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
 
 ## License
+
 
 This project is licensed under the MIT License - see the LICENSE file for details. 
