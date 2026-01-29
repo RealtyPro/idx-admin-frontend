@@ -21,7 +21,7 @@ export default function ProfilePage() {
   const { data: statesData, isLoading: statesLoading } = useStates();
   const { data: countiesData, isLoading: countiesLoading } = useCountiesByState(state);
   const { data: citiesData, isLoading: citiesLoading } = useCitiesByCounty(county);
- 
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -31,20 +31,46 @@ export default function ProfilePage() {
   const [zip, setZip] = useState('');
   const [country, setCountry] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Helper function to format phone number
+  const formatPhone = (phoneData: any): string => {
+    if (!phoneData) return '';
+    
+    // If it's already a properly formatted string (not JSON), return it
+    if (typeof phoneData === 'string') {
+      // Check if it's a stringified JSON object
+      if (phoneData.startsWith('{') && phoneData.includes('"code"')) {
+        try {
+          const parsed = JSON.parse(phoneData);
+          if (parsed.code && parsed.number) {
+            return `${parsed.code} ${parsed.number}`;
+          }
+        } catch (e) {
+          console.error('Failed to parse phone JSON:', e);
+          return phoneData; // Return as is if parsing fails
+        }
+      }
+      return phoneData;
+    }
+    
+    // If it's an object
+    if (typeof phoneData === 'object' && phoneData.code && phoneData.number) {
+      return `${phoneData.code} ${phoneData.number}`;
+    }
+    
+    return '';
+  };
   useEffect(() => {
     if (statesData) {
-      console.log('States API Response:', statesData);
     }
   }, [statesData]);
   useEffect(() => {
     if (countiesData) {
-      console.log('Counties API Response:', countiesData);
     }
   }, [countiesData]);
 
   useEffect(() => {
     if (citiesData) {
-      console.log('Cities API Response:', citiesData);
     }
   }, [citiesData]);
   const states = statesData?.data || statesData || [];
@@ -53,9 +79,16 @@ export default function ProfilePage() {
   // Update form fields when profile data loads
   useEffect(() => {
     if (profile) {
+      console.log('Profile phone data:', profile.phone, 'Type:', typeof profile.phone);
+      
       setName(profile.name || '');
       setEmail(profile.email || '');
-      setPhone(profile.phone || '');
+      
+      // Handle phone using helper function
+      const formattedPhone = formatPhone(profile.phone);
+      console.log('Formatted phone:', formattedPhone);
+      setPhone(formattedPhone);
+      
       setAddress(profile.address || '');
       setCity(profile.city || '');
       setState(profile.state || '');
@@ -157,8 +190,9 @@ console.log(payload);
               <Input
                 id="phone"
                 type="tel"
-                value={phone}
+                value={formatPhone(phone)}
                 onChange={(e) => setPhone(e.target.value)}
+                placeholder="+971 1234567890"
               />
             </div>
 
@@ -179,7 +213,6 @@ console.log(payload);
                   value={state}
                   onChange={e => {
                     const selectedId = e.target.value;
-                    console.log('Selected state ID:', selectedId);
                     setState(selectedId);
                     // Reset county and city when state changes
                     setCounty("");
@@ -192,7 +225,6 @@ console.log(payload);
                 <option value="">{statesLoading ? 'Loading states...' : 'Select state'}</option>
                 {Array.isArray(states) && states.map((stateOption: any, index: number) => {
                   // Debug: log each state option structure
-                  if (index === 0) console.log('Sample state option:', stateOption);
                   return (
                     <option key={stateOption.id || index} value={stateOption.id || stateOption.value || stateOption}>
                       {stateOption.name || stateOption.title || stateOption.label || stateOption}
@@ -211,7 +243,6 @@ console.log(payload);
                   value={county}
                   onChange={e => {
                     const selectedId = e.target.value;
-                    console.log('Selected county ID:', selectedId);
                     setCounty(selectedId);
                     setCountry(selectedId);
                     // Reset city when county changes
@@ -223,7 +254,6 @@ console.log(payload);
                 >
                 <option value="">{countiesLoading ? 'Loading counties...' : 'Select county'}</option>
                 {Array.isArray(counties) && counties.map((countyOption: any, index: number) => {
-                  if (index === 0) console.log('Sample county option:', countyOption);
                   return (
                     <option key={countyOption.id || index} value={countyOption.id || countyOption.value || countyOption}>
                       {countyOption.name || countyOption.title || countyOption.label || countyOption}
@@ -240,7 +270,6 @@ console.log(payload);
                   value={city}
                   onChange={e => {
                     const selectedId = e.target.value;
-                    console.log('Selected city ID:', selectedId);
                     setCity(selectedId);
                   }}
                   disabled={!county || citiesLoading}
@@ -249,7 +278,6 @@ console.log(payload);
                 >
                 <option value="">{citiesLoading ? 'Loading cities...' : 'Select city'}</option>
                 {Array.isArray(cities) && cities.map((cityOption: any, index: number) => {
-                  if (index === 0) console.log('Sample city option:', cityOption);
                   return (
                     <option key={cityOption.id || index} value={cityOption.id || cityOption.value || cityOption}>
                       {cityOption.name || cityOption.title || cityOption.label || cityOption}

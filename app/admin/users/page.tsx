@@ -48,6 +48,7 @@ interface User {
   avgRating?: number;
   slotFrom?: string;
   slotTo?: string;
+  crm_status?: string;
 }
 
 interface EditUserFormData {
@@ -196,57 +197,59 @@ export default function UsersPage() {
   
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-       const response = await axiosInstance.get('v1/user/customer', {
-          params: { page: currentPage }, // Add page parameter
-        });
-        
-        const data = response.data;
-        
-        // Extract pagination metadata
-        const pagination = data?.meta || data?.pagination || null;
-        setTotalPages(pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1);
-        setTotalItems(pagination?.total || pagination?.totalItems || 0);
-        
-        // Map API response to User interface
-        // Adjust the mapping based on the actual API response structure
-        const mappedUsers: User[] = Array.isArray(data) 
-          ? data.map((user: any, index: number) => ({
-              id: user.id || user.user_id || index + 1,
-              name: user.name || user.full_name || user.username || `User ${index + 1}`,
-              email: user.email || user.email_address || '',
-              role: user.role || user.user_role || 'Agent',
-              status: user.status || user.is_active ? 'Active' : 'Inactive',
-              lastActive: user.last_active || user.last_login || user.updated_at || '',
-              callsHandled: user.calls_handled || user.calls || 0,
-              avgRating: user.avg_rating || user.rating || 0,
-            }))
-          : (data.data || data.users || []).map((user: any, index: number) => ({
-              id: user.id || user.user_id || index + 1,
-              name: user.name || user.full_name || user.username || `User ${index + 1}`,
-              email: user.email || user.email_address || '',
-              role: user.role || user.user_role || 'Agent',
-              status: user.status || user.is_active ? 'Active' : 'Inactive',
-              lastActive: user.last_active || user.last_login || user.updated_at || '',
-              callsHandled: user.calls_handled || user.calls || 0,
-              avgRating: user.avg_rating || user.rating || 0,
-            }));
-        
-        setUsers(mappedUsers);
-      } catch (err: any) {
-        console.error('Error fetching users:', err);
-        // Don't redirect to login, just show error message
-        const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch users';
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+     const response = await axiosInstance.get('v1/user/customer', {
+        params: { page: currentPage }, // Add page parameter
+      });
+      
+      const data = response.data;
+      
+      // Extract pagination metadata
+      const pagination = data?.meta || data?.pagination || null;
+      setTotalPages(pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1);
+      setTotalItems(pagination?.total || pagination?.totalItems || 0);
+      
+      // Map API response to User interface
+      // Adjust the mapping based on the actual API response structure
+      const mappedUsers: User[] = Array.isArray(data) 
+        ? data.map((user: any, index: number) => ({
+            id: user.id || user.user_id || index + 1,
+            name: user.name || user.full_name || user.username || `User ${index + 1}`,
+            email: user.email || user.email_address || '',
+            role: user.role || user.user_role || 'Agent',
+            status: user.status || user.is_active ? 'Active' : 'Inactive',
+            lastActive: user.last_active || user.last_login || user.updated_at || '',
+            callsHandled: user.calls_handled || user.calls || 0,
+            avgRating: user.avg_rating || user.rating || 0,
+            crm_status: user.crm_status ?? "0",
+          }))
+        : (data.data || data.users || []).map((user: any, index: number) => ({
+            id: user.id || user.user_id || index + 1,
+            name: user.name || user.full_name || user.username || `User ${index + 1}`,
+            email: user.email || user.email_address || '',
+            role: user.role || user.user_role || 'Agent',
+            status: user.status || user.is_active ? 'Active' : 'Inactive',
+            lastActive: user.last_active || user.last_login || user.updated_at || '',
+            callsHandled: user.calls_handled || user.calls || 0,
+            avgRating: user.avg_rating || user.rating || 0,
+            crm_status: user.crm_status ?? "0",
+          }));
+      
+      setUsers(mappedUsers);
+    } catch (err: any) {
+      console.error('Error fetching users:', err);
+      // Don't redirect to login, just show error message
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch users';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchUsers();
   }, [currentPage]);
 
@@ -298,6 +301,9 @@ export default function UsersPage() {
       } else {
         alert('Customer successfully synced to CRM');
       }
+      
+      // Reload customer list after successful sync
+      await fetchUsers();
     } catch (error: any) {
       console.error('Error pushing to CRM:', error);
       
@@ -349,15 +355,17 @@ export default function UsersPage() {
     }
     
     return (
-      <div className="flex flex-col items-center justify-center gap-4 mt-6 pb-6">
-        <div className="flex items-center justify-center gap-2">
+      <div className="flex flex-col items-center justify-center gap-3 sm:gap-4 mt-4 sm:mt-6 pb-4 sm:pb-6">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
           <Button
             variant="outline"
             size="sm"
+            className="h-8 px-2 sm:px-3 text-xs sm:text-sm"
             onClick={() => handlePageChange(currentPageNum - 1)}
             disabled={currentPageNum === 1 || loading}
           >
-            Previous
+            <span className="hidden sm:inline">Previous</span>
+            <span className="sm:hidden">Prev</span>
           </Button>
           
           {startPage > 1 && (
@@ -365,12 +373,13 @@ export default function UsersPage() {
               <Button
                 variant={1 === currentPageNum ? "default" : "outline"}
                 size="sm"
+                className="h-8 w-8 sm:w-auto sm:px-3 text-xs sm:text-sm p-0 sm:p-2"
                 onClick={() => handlePageChange(1)}
                 disabled={loading}
               >
                 1
               </Button>
-              {startPage > 2 && <span className="px-2 text-muted-foreground">...</span>}
+              {startPage > 2 && <span className="px-1 sm:px-2 text-muted-foreground text-xs">...</span>}
             </>
           )}
           
@@ -379,6 +388,7 @@ export default function UsersPage() {
               key={page}
               variant={page === currentPageNum ? "default" : "outline"}
               size="sm"
+              className="h-8 w-8 sm:w-auto sm:px-3 text-xs sm:text-sm p-0 sm:p-2"
               onClick={() => handlePageChange(page)}
               disabled={loading}
             >
@@ -388,10 +398,11 @@ export default function UsersPage() {
           
           {endPage < totalPages && (
             <>
-              {endPage < totalPages - 1 && <span className="px-2 text-muted-foreground">...</span>}
+              {endPage < totalPages - 1 && <span className="px-1 sm:px-2 text-muted-foreground text-xs">...</span>}
               <Button
                 variant={totalPages === currentPageNum ? "default" : "outline"}
                 size="sm"
+                className="h-8 w-8 sm:w-auto sm:px-3 text-xs sm:text-sm p-0 sm:p-2"
                 onClick={() => handlePageChange(totalPages)}
                 disabled={loading}
               >
@@ -403,6 +414,7 @@ export default function UsersPage() {
           <Button
             variant="outline"
             size="sm"
+            className="h-8 px-2 sm:px-3 text-xs sm:text-sm"
             onClick={() => handlePageChange(currentPageNum + 1)}
             disabled={currentPageNum === totalPages || loading}
           >
@@ -410,8 +422,9 @@ export default function UsersPage() {
           </Button>
         </div>
         
-        <div className="text-sm text-muted-foreground">
-          Page {currentPageNum} of {totalPages} ({totalItems} total users)
+        <div className="text-xs sm:text-sm text-muted-foreground text-center px-2">
+          Page {currentPageNum} of {totalPages} 
+          <span className="hidden sm:inline"> ({totalItems} total users)</span>
         </div>
       </div>
     );
@@ -444,34 +457,39 @@ export default function UsersPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <Skeleton className="h-8 w-40 mb-2" />
-            <Skeleton className="h-5 w-64" />
+      <div className="container mx-auto py-3 sm:py-6 px-2 sm:px-4 lg:px-6 space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="w-full sm:w-auto">
+            <Skeleton className="h-6 sm:h-8 w-32 sm:w-40 mb-2" />
+            <Skeleton className="h-4 sm:h-5 w-48 sm:w-64" />
           </div>
-          <Skeleton className="h-10 w-32 rounded" />
+          <Skeleton className="h-9 sm:h-10 w-full sm:w-32 rounded" />
         </div>
-        <Skeleton className="h-20 w-full rounded-xl mb-4" />
-        <Skeleton className="h-96 w-full rounded-xl" />
+        <Skeleton className="h-16 sm:h-20 w-full rounded-xl mb-3 sm:mb-4" />
+        <Skeleton className="h-64 sm:h-96 w-full rounded-xl" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="container mx-auto py-3 sm:py-6 px-2 sm:px-4 lg:px-6 space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-serif text-dark">Users</h1>
-            <p className="text-dark-secondary">Manage system users and their roles</p>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif text-dark">Users</h1>
+            <p className="text-xs sm:text-sm text-dark-secondary mt-1">Manage system users and their roles</p>
           </div>
         </div>
         <Card>
-          <CardContent className="p-6">
-            <div className="text-center py-8">
-              <p className="text-red-600 mb-4">Error: {error}</p>
-              <Button onClick={() => window.location.reload()}>Retry</Button>
+          <CardContent className="p-4 sm:p-6">
+            <div className="text-center py-6 sm:py-8">
+              <p className="text-red-600 mb-3 sm:mb-4 text-sm sm:text-base px-2">Error: {error}</p>
+              <Button 
+                onClick={() => window.location.reload()}
+                className="w-full sm:w-auto"
+              >
+                Retry
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -480,19 +498,19 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
+    <div className="container mx-auto py-3 sm:py-6 px-2 sm:px-4 lg:px-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <div>
-          <h1 className="text-xl sm:text-2xl font-serif text-dark">Users</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif text-dark">Users</h1>
+          <p className="text-xs sm:text-sm text-dark-secondary mt-1">Manage system users and their roles</p>
         </div>
       </div>
 
       {/* Search and Filter Bar */}
 
-      {/* Users Table */}
-      <Card>
-      
+      {/* Users Table - Desktop View */}
+      <Card className="hidden md:block">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -505,7 +523,7 @@ export default function UsersPage() {
             }
           }}
         >
-          <CardContent>
+          <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -528,14 +546,14 @@ export default function UsersPage() {
                           return (
                             <td key="user" className="px-4 py-3">
                               <div className="flex items-center space-x-3">
-                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <span className="text-primary font-medium">
+                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-primary font-medium text-sm">
                                     {user.name.split(' ').map(n => n[0]).join('')}
                                   </span>
                                 </div>
-                                <div>
-                                  <div className="font-medium text-sm">{user.name}</div>
-                                  <div className="text-sm text-gray-500">{user.email}</div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-medium text-sm truncate">{user.name}</div>
+                                  <div className="text-sm text-gray-500 truncate">{user.email}</div>
                                 </div>
                               </div>
                             </td>
@@ -593,10 +611,11 @@ export default function UsersPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="h-8 px-3 text-xs"
+                                  className="h-8 px-3 text-xs whitespace-nowrap"
                                   onClick={() => handlePushToCRM(user)}
+                                  disabled={user.crm_status !== "0"}
                                 >
-                                  Push to CRM
+                                  {user.crm_status === "0" ? 'Push to CRM' : 'Already in CRM'}
                                 </Button>
                                 {/* <Button
                                   variant="ghost"
@@ -629,23 +648,63 @@ export default function UsersPage() {
       </DndContext>
       </Card>
 
+      {/* Users Cards - Mobile View */}
+      <div className="md:hidden space-y-3">
+        {filteredUsers.map((user) => (
+          <Card key={user.id} className="overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-center space-x-3 min-w-0 flex-1">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-primary font-medium text-sm">
+                      {user.name.split(' ').map(n => n[0]).join('')}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-sm truncate">{user.name}</div>
+                    <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                  </div>
+                </div>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0
+                  ${user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {user.status}
+                </span>
+              </div>
+              
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs h-8"
+                  onClick={() => handlePushToCRM(user)}
+                  disabled={user.crm_status !== "0"}
+                >
+                  {user.crm_status === "0" ? 'Push to CRM' : 'Already in CRM'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* Pagination Controls */}
       {renderPagination()}
 
       {/* Edit User Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">Edit User</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Make changes to user details and permissions. Click save when done.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name" className="text-sm">Full Name</Label>
               <Input
                 id="name"
+                className="text-sm"
                 value={editingUser?.name || ''}
                 onChange={(e) =>
                   setEditingUser(prev =>
@@ -655,10 +714,11 @@ export default function UsersPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm">Email</Label>
               <Input
                 id="email"
                 type="email"
+                className="text-sm"
                 value={editingUser?.email || ''}
                 onChange={(e) =>
                   setEditingUser(prev =>
@@ -668,7 +728,7 @@ export default function UsersPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role" className="text-sm">Role</Label>
               <Select
                 value={editingUser?.role || ''}
                 onValueChange={(value: string) =>
@@ -677,12 +737,12 @@ export default function UsersPage() {
                   )
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
                   {roles.map((role) => (
-                    <SelectItem key={role} value={role}>
+                    <SelectItem key={role} value={role} className="text-sm">
                       {role}
                     </SelectItem>
                   ))}
@@ -690,7 +750,7 @@ export default function UsersPage() {
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status" className="text-sm">Status</Label>
               <Select
                 value={editingUser?.status || ''}
                 onValueChange={(value: string) =>
@@ -699,18 +759,18 @@ export default function UsersPage() {
                   )
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="Active" className="text-sm">Active</SelectItem>
+                  <SelectItem value="Inactive" className="text-sm">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="slot">Book a Slot Range</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <Label htmlFor="slot" className="text-sm">Book a Slot Range</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2 max-h-60 overflow-y-auto p-1">
                 {slotOptions.map((slot, idx) => {
                   const fromIdx = editingUser?.slotFrom ? slotOptions.indexOf(editingUser.slotFrom) : -1;
                   const toIdx = editingUser?.slotTo ? slotOptions.indexOf(editingUser.slotTo) : -1;
@@ -721,7 +781,7 @@ export default function UsersPage() {
                     <button
                       key={slot}
                       type="button"
-                      className={`rounded-lg px-3 py-2 border text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+                      className={`rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 border text-xs sm:text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1
                         ${isSelected ? 'bg-primary/80 text-white border-primary' : 'bg-white text-dark border-gray-200 hover:border-primary'}
                         ${isFrom ? 'ring-2 ring-green-400' : ''}
                         ${isTo ? 'ring-2 ring-blue-400' : ''}`}
@@ -749,7 +809,7 @@ export default function UsersPage() {
                   );
                 })}
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-gray-500 mt-1 px-1">
                 {editingUser?.slotFrom && editingUser?.slotTo
                   ? `Selected: ${editingUser.slotFrom} to ${editingUser.slotTo}`
                   : editingUser?.slotFrom
@@ -758,11 +818,20 @@ export default function UsersPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setEditDialogOpen(false)}
+              className="w-full sm:w-auto text-sm"
+            >
               Cancel
             </Button>
-            <Button onClick={handleSaveUser}>Save changes</Button>
+            <Button 
+              onClick={handleSaveUser}
+              className="w-full sm:w-auto text-sm"
+            >
+              Save changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

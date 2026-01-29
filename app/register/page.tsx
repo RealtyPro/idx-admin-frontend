@@ -5,20 +5,25 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useRegister } from '@/services/auth/AuthQueries';
+import { RegisterPayload } from '@/services/auth/AuthServices';
 
 export default function Register() {
   const router = useRouter();
+  const registerMutation = useRegister();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
+    phone: '',
   });
   const [errors, setErrors] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
+    phone: '',
   });
 
   const validateForm = () => {
@@ -28,6 +33,7 @@ export default function Register() {
       email: '',
       password: '',
       confirmPassword: '',
+      phone: '',
     };
 
     if (!formData.name) {
@@ -40,6 +46,14 @@ export default function Register() {
       isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
+      isValid = false;
+    }
+
+    if (!formData.phone) {
+      newErrors.phone = 'Phone number is required';
+      isValid = false;
+    } else if (!/^\d{10}$/.test(formData.phone)) {
+      newErrors.phone = 'Please enter a valid 10-digit phone number';
       isValid = false;
     }
 
@@ -63,11 +77,40 @@ export default function Register() {
     return isValid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // Handle registration logic here
-      console.log('Form submitted:', formData);
+      try {
+        const uuid = process.env.NEXT_PUBLIC_REALTY_PRO_AGENT || '';
+        
+        const payload: RegisterPayload = {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          password_confirmation: formData.confirmPassword,
+          phone: formData.phone,
+          uuid: uuid,
+        };
+
+        console.log('Sending registration payload:', payload);
+        const response = await registerMutation.mutateAsync(payload);
+        console.log('Registration successful:', response);
+        
+        // Redirect to login page or dashboard after successful registration
+        router.push('/login');
+      } catch (error: any) {
+        console.error('Registration failed:', error);
+        // Handle error display
+        if (error.response?.data?.errors) {
+          const apiErrors = error.response.data.errors;
+          setErrors(prev => ({
+            ...prev,
+            ...apiErrors,
+          }));
+        } else {
+          alert(error.response?.data?.message || 'Registration failed. Please try again.');
+        }
+      }
     }
   };
 
@@ -142,6 +185,28 @@ export default function Register() {
               />
               {errors.email && (
                 <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-dark">
+                Phone number
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                required
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="10-digit phone number"
+                className={`mt-1 block w-full rounded-lg border ${
+                  errors.phone ? 'border-red-500' : 'border-border'
+                } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
+              />
+              {errors.phone && (
+                <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
               )}
             </div>
 

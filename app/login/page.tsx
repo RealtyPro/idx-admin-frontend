@@ -98,7 +98,7 @@ export default function Login() {
               console.error("Failed to fetch profile:", profileError);
             }
             
-            router.push("/admin/blog");
+            router.push("/admin");
           } else {
             setErrors((prev) => ({
               ...prev,

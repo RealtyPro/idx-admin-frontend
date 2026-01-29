@@ -14,6 +14,17 @@ export default function ListingDetailsPage() {
   const { data, isLoading, isError } = useSingleProperty(id);
   const listing = data?.data || data;
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  
+  // Navigation functions for slider
+  const handlePrevImage = () => {
+    const images = getImages();
+    setSelectedImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = () => {
+    const images = getImages();
+    setSelectedImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
 
   // Parse views if it's a JSON string
   const parseViews = (views: any) => {
@@ -28,18 +39,23 @@ export default function ListingDetailsPage() {
     return Array.isArray(views) ? views : [];
   };
 
-  // Get images array (photos or images)
+  // Get images array - combine cover_photo and additional images
   const getImages = () => {
-    if (listing?.photos && Array.isArray(listing.photos) && listing.photos.length > 0) {
-      return listing.photos.map((photo: any) => photo.MediaURL || photo.mediaURL || photo.url);
-    }
-    if (listing?.images && Array.isArray(listing.images) && listing.images.length > 0) {
-      return listing.images;
-    }
+    const allImages: string[] = [];
+    
+    // First add cover_photo (this will be shown first)
     if (listing?.cover_photo && Array.isArray(listing.cover_photo) && listing.cover_photo.length > 0) {
-      return listing.cover_photo;
+      allImages.push(...listing.cover_photo);
     }
-    return [];
+    
+    // Then append additional images from the images array
+    if (listing?.images && Array.isArray(listing.images) && listing.images.length > 0) {
+      // Filter out duplicates if cover_photo already contains some images
+      const uniqueImages = listing.images.filter((img: string) => !allImages.includes(img));
+      allImages.push(...uniqueImages);
+    }
+    
+    return allImages;
   };
 
   const images = getImages();
@@ -98,40 +114,142 @@ export default function ListingDetailsPage() {
         </Button>
       </div>
 
-      {/* Main Photo Gallery */}
+      {/* Main Photo Gallery with Slider */}
       {images.length > 0 && (
         <Card>
           <CardContent className="p-0">
-            <div className="relative w-full h-96 bg-gray-100 rounded-t-lg overflow-hidden">
+            {/* Main Image with Navigation */}
+            <div className="relative w-full h-96 bg-gray-100 rounded-t-lg overflow-hidden group">
               <img
-                src={images[selectedImageIndex]}
-                alt={listing.title || 'Property image'}
-                className="w-full h-full object-cover"
+                src={images[selectedImageIndex] || '/placeholder-image.jpg'}
+                alt={`${listing.title || 'Property'} - Image ${selectedImageIndex + 1}`}
+                className="w-full h-full object-cover transition-opacity duration-300"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
                 }}
               />
-            </div>
-            {images.length > 1 && (
-              <div className="p-4 grid grid-cols-6 gap-2">
-                {images.slice(0, 6).map((img: string, index: number) => (
+              
+              {/* Image Counter */}
+              <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm font-medium">
+                {selectedImageIndex + 1} / {images.length}
+              </div>
+
+              {/* Navigation Arrows */}
+              {images.length > 1 && (
+                <>
+                  {/* Previous Button */}
                   <button
-                    key={index}
-                    onClick={() => setSelectedImageIndex(index)}
-                    className={`relative h-20 rounded overflow-hidden border-2 ${
-                      selectedImageIndex === index ? 'border-primary' : 'border-transparent'
-                    }`}
+                    onClick={handlePrevImage}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                    aria-label="Previous image"
                   >
-                    <img
-                      src={img}
-                      alt={`Thumbnail ${index + 1}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
-                      }}
-                    />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
                   </button>
-                ))}
+
+                  {/* Next Button */}
+                  <button
+                    onClick={handleNextImage}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                    aria-label="Next image"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </>
+              )}
+
+              {/* Dot Indicators */}
+              {images.length > 1 && images.length <= 10 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  {images.map((_, index: number) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        selectedImageIndex === index 
+                          ? 'bg-white w-6' 
+                          : 'bg-white/50 hover:bg-white/75'
+                      }`}
+                      aria-label={`Go to image ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Thumbnail Slider */}
+            {images.length > 1 && (
+              <div className="relative p-4">
+                {/* Scroll Left Button */}
+                {images.length > 6 && (
+                  <button
+                    onClick={() => {
+                      const container = document.getElementById('thumbnail-container');
+                      if (container) container.scrollBy({ left: -200, behavior: 'smooth' });
+                    }}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg"
+                    aria-label="Scroll thumbnails left"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                )}
+
+                {/* Thumbnails Container */}
+                <div
+                  id="thumbnail-container"
+                  className="flex gap-2 overflow-x-auto scroll-smooth scrollbar-hide px-8"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {images.map((img: string, index: number) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`relative flex-shrink-0 w-20 h-20 rounded overflow-hidden border-2 transition-all ${
+                        selectedImageIndex === index 
+                          ? 'border-primary ring-2 ring-primary ring-offset-2' 
+                          : 'border-gray-300 hover:border-primary/50'
+                      }`}
+                    >
+                      <img
+                        src={img}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
+                        }}
+                      />
+                      {/* Active Overlay */}
+                      {selectedImageIndex === index && (
+                        <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                          <svg className="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Scroll Right Button */}
+                {images.length > 6 && (
+                  <button
+                    onClick={() => {
+                      const container = document.getElementById('thumbnail-container');
+                      if (container) container.scrollBy({ left: 200, behavior: 'smooth' });
+                    }}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg"
+                    aria-label="Scroll thumbnails right"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
               </div>
             )}
           </CardContent>

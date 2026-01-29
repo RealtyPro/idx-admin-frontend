@@ -176,9 +176,9 @@ const handleDelete =(id:string)=>{
       ) : (
         <div className="grid gap-4">
           {blogs.map((blog) => (
-            <Card key={blog.id}>
+            <Card key={blog.id} onClick={() => window.location.href = `/admin/blog/${blog.id}`}>
               <CardHeader className="flex flex-row justify-between items-center">
-                <div>
+                <div  className="cursor-pointer">
                   <CardTitle className="text-lg">
                     <Link href={`/admin/blog/${blog.id}`}>{blog.title}</Link>
                   </CardTitle>
@@ -192,11 +192,14 @@ const handleDelete =(id:string)=>{
                     {blog.isFeatured && <span className="ml-2 px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 text-xs font-semibold">Featured</span>}
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                   <Button asChild variant="outline" size="sm">
                     <Link href={`/admin/blog/${blog.id}/edit`}>Edit</Link>
                   </Button>
-                  <Button variant="destructive" size="sm" onClick={() => handleDelete(blog.id)}>Delete</Button>
+                  <Button variant="destructive" size="sm" onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(blog.id);
+                  }}>Delete</Button>
                 </div>
               </CardHeader>
             </Card>
