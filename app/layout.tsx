@@ -4,8 +4,8 @@ import React from 'react';
 import Providers from './provider/QueryProvider';
 
 export const metadata: Metadata = {
-  title: 'RealtiPro - Smart Interaction Logger',
-  description: 'Capture, Store, and Analyze WhatsApp & call interactions with ease.',
+  title: 'RealtiPro - Admin',
+  description: 'RealtiPro Admin',
 }
 
 export default function RootLayout({

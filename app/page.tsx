@@ -5,7 +5,6 @@ import Link from 'next/link';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
 export default function Home() {
   const router = useRouter();
   const [hasToken, setHasToken] = useState(false);
