@@ -118,24 +118,24 @@ export default function adminLayout({
             className={`flex items-center gap-2 p-6 ${collapsed ? "justify-center" : ""}`}
           >
             {collapsed ? (
-              <span className="font-serif text-2xl font-bold text-primary">
-                IDX
-              </span>
+              <Image
+                src="/images/realtipro-logo.png"
+                alt="RealtiPro Logo"
+                width={40}
+                height={40}
+                className="w-10 h-auto"
+              />
             ) : (
-              <>
-                <Image
-                  src="/images/logo.svg"
-                  alt="IDX Logo"
-                  width={32}
-                  height={32}
-                />
-                <span className="font-serif text-xl text-dark">
-                  IDX Dashboard
-                </span>
-              </>
+              <Image
+                src="/images/realtipro-logo.png"
+                alt="RealtiPro Logo"
+                width={140}
+                height={46}
+                className="h-10 w-auto"
+              />
             )}
             <button
-              className={`ml-auto p-1 rounded-lg hover:bg-gray-100 transition ${collapsed ? "" : "ml-4"}`}
+              className={`ml-auto p-1 rounded-lg hover:bg-gray-100 transition ${collapsed ? "ml-0" : "ml-4"}`}
               onClick={() => setCollapsed((c) => !c)}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               type="button"

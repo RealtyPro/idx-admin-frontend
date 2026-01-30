@@ -72,13 +72,10 @@ export default function Login() {
     if (validateForm()) {
       loginMutation.mutate(formData, {
         onSuccess: async (data) => {
-          // Store access token in sessionStorage
           if (data?.access_token) {
             sessionStorage.setItem("access_token_type", data.token_type);
             sessionStorage.setItem("access_token", data.access_token);
-            
-            // Fetch profile and save name, email, and profile picture to sessionStorage
-            try {
+              try {
               const profileData = await fetchProfile();
               const profile = profileData?.data || profileData;
               
@@ -88,13 +85,11 @@ export default function Login() {
               if (profile?.email) {
                 sessionStorage.setItem("user_email", profile.email);
               }
-              // Save profile picture (checking various possible field names)
               const profilePic = profile?.profile_pic || profile?.profile_picture || profile?.avatar || profile?.image || profile?.photo || profile?.picture;
               if (profilePic) {
                 sessionStorage.setItem("user_profile_pic", profilePic);
               }
             } catch (profileError) {
-              // If profile fetch fails, still proceed with login
               console.error("Failed to fetch profile:", profileError);
             }
             
@@ -122,7 +117,6 @@ export default function Login() {
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({
         ...prev,
@@ -133,22 +127,20 @@ export default function Login() {
 
   return (
     <main className="min-h-screen bg-white flex">
-      {/* Left Section - Form */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-md w-full mx-auto space-y-8">
           <div>
-            <Link href="/" className="flex items-center gap-2 mb-8">
+            <Link href="/" className="flex items-center mb-8">
               <Image
-                src="/images/logo.svg"
+                src="/images/realtipro-logo.png"
                 alt="RealtiPro Logo"
-                width={40}
-                height={40}
+                width={180}
+                height={60}
+                className="h-10 w-auto"
+                priority
               />
-              <span className="font-serif text-heading text-dark">
-                RealtiPro
-              </span>
             </Link>
-            <h2 className="font-serif text-heading text-dark">Welcome back</h2>
+            <h2 className="font-serif  text-dark">Welcome back</h2>
             <p className="mt-2 text-body text-dark-secondary">
               Please enter your details to sign in
             </p>
@@ -240,16 +232,6 @@ export default function Login() {
               </p>
             )}
           </form>
-
-          <p className="text-center text-sm text-dark-secondary">
-            Don't have an account?{" "}
-            <Link
-              href="/register"
-              className="text-primary hover:text-primary-light"
-            >
-              Sign up
-            </Link>
-          </p>
         </div>
       </div>
 

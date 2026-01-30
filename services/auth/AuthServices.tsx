@@ -19,3 +19,12 @@ export const logoutUser = async () => {
   return response.data;
 };
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export const forgotPassword = async (payload: ForgotPasswordPayload) => {
+  const response = await axiosInstance.post('user/forgot-user-password', payload);
+  return response.data;
+};
+

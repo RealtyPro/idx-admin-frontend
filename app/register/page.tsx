@@ -135,9 +135,15 @@ export default function Register() {
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-md w-full mx-auto space-y-8">
           <div>
-            <Link href="/" className="flex items-center gap-2 mb-8">
-              <Image src="/images/logo.svg" alt="RealtiPro Logo" width={40} height={40} />
-              <span className="font-serif text-heading text-dark">RealtiPro</span>
+            <Link href="/" className="flex items-center mb-8">
+              <Image
+                src="/images/realtipro-logo.png"
+                alt="RealtiPro Logo"
+                width={180}
+                height={60}
+                className="h-10 w-auto"
+                priority
+              />
             </Link>
             <h2 className="font-serif text-heading text-dark">Create an account</h2>
             <p className="mt-2 text-body text-dark-secondary">
