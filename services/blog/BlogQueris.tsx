@@ -1,9 +1,9 @@
 
 import {useQuery} from '@tanstack/react-query'
-import { fetchBlogList, fetchSingleBlog } from './BlogServices';
-export const useBlogList = (page: number = 1) => {
-    return useQuery({ queryKey: ['bloglist', page],
-       queryFn: () =>  fetchBlogList(page ) });
+import { fetchBlogList, fetchSingleBlog, BlogSearchParams } from './BlogServices';
+export const useBlogList = (params: BlogSearchParams = {}) => {
+    return useQuery({ queryKey: ['bloglist', params],
+       queryFn: () =>  fetchBlogList(params) });
   };
   interface UseSingleBlogProps {
     id: string;

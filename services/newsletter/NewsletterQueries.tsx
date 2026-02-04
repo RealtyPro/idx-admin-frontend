@@ -1,11 +1,11 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { fetchNewsletterSubscribers, addNewsletterSubscriber, deleteNewsletterSubscriber } from './NewsletterServices';
+import { fetchNewsletterSubscribers, addNewsletterSubscriber, deleteNewsletterSubscriber, NewsletterSearchParams } from './NewsletterServices';
 
 // Query hook for fetching newsletter subscribers
-export const useNewsletterSubscribers = (page: number = 1) => {
+export const useNewsletterSubscribers = (params: NewsletterSearchParams = {}) => {
   return useQuery({
-    queryKey: ['newsletter-subscribers', page],
-    queryFn: () => fetchNewsletterSubscribers(page),
+    queryKey: ['newsletter-subscribers', params],
+    queryFn: () => fetchNewsletterSubscribers(params),
   });
 };
 

@@ -1,17 +1,89 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useTestimonials, useDeleteTestimonial } from '@/services/testimonial/TestimonialQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { TestimonialSearchParams } from '@/services/testimonial/TestimonialServices';
+
 export default function TestimonialsListPage() {
-  const [currentPage, setCurrentPage] = useState(1);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const { data, isLoading, isError, error } = useTestimonials(currentPage);
-  const deleteTestimonialMutation = useDeleteTestimonial();
+  
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  // Initialize state from URL params
+  const pageFromUrl = parseInt(searchParams.get('page') || '1', 10);
+  const [currentPage, setCurrentPage] = useState(pageFromUrl);
+  
+  // Search filter states (for form inputs - updates on every keystroke)
+  const [filters, setFilters] = useState<TestimonialSearchParams>({
+    page: pageFromUrl,
+    q: searchParams.get('q') || '',
+  });
+  
+  // Active search filters (only updates when search is triggered - prevents API calls on every keystroke)
+  const [activeFilters, setActiveFilters] = useState<TestimonialSearchParams>({
+    page: pageFromUrl,
+    q: searchParams.get('q') || '',
+  });
+  
+  const { data, isLoading, isError, error } = useTestimonials(activeFilters);
+  const deleteTestimonialMutation = useDeleteTestimonial();
+  
+  // Sync filters with URL parameters
+  useEffect(() => {
+    const newFilters: TestimonialSearchParams = {
+      page: parseInt(searchParams.get('page') || '1', 10),
+      q: searchParams.get('q') || '',
+    };
+    setFilters(newFilters);
+    setActiveFilters(newFilters); // Also update active filters to trigger API call
+    setCurrentPage(newFilters.page || 1);
+  }, [searchParams]);
+  
+  const buildQueryString = (newFilters: TestimonialSearchParams) => {
+    const params = new URLSearchParams();
+    
+    if (newFilters.page) params.append('page', newFilters.page.toString());
+    // Only include keyword if it's empty or has at least 3 characters
+    if (newFilters.q && newFilters.q.length >= 3) params.append('q', newFilters.q);
+    
+    return params.toString();
+  };
+  
+  const handleSearch = () => {
+    // Validate keyword length
+    if (filters.q && filters.q.trim().length > 0 && filters.q.trim().length < 3) {
+      setSearchError('Search keyword must be at least 3 characters long');
+      setTimeout(() => setSearchError(null), 3000);
+      return;
+    }
+    
+    const newFilters = { ...filters, page: 1 }; // Reset to page 1 on new search
+    setActiveFilters(newFilters); // Update active filters to trigger API call
+    const queryString = buildQueryString(newFilters);
+    router.push(`/admin/testimonials?${queryString}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const handleClearFilters = () => {
+    const newFilters: TestimonialSearchParams = { page: 1 };
+    setFilters(newFilters);
+    setActiveFilters(newFilters);
+    router.push('/admin/testimonials?page=1');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const hasActiveFilters = !!(filters.q && filters.q.length >= 3);
+  const isKeywordValid = !filters.q || filters.q.length === 0 || filters.q.length >= 3;
 
   if (isLoading) {
     return (
@@ -48,7 +120,9 @@ export default function TestimonialsListPage() {
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+      const newFilters = { ...filters, page };
+      const queryString = buildQueryString(newFilters);
+      router.push(`/admin/testimonials?${queryString}`, { scroll: false });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -146,7 +220,7 @@ export default function TestimonialsListPage() {
         deleteTestimonialMutation.mutate(id, {
       onSuccess: () => {
         // Refresh list after delete
-        queryClient.invalidateQueries({ queryKey: ['testimonials', currentPage] });
+        queryClient.invalidateQueries({ queryKey: ['testimonials', activeFilters] });
         setDeletingId(null);
       },
       onError: (err: any) => {
@@ -162,11 +236,83 @@ export default function TestimonialsListPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Testimonials</h1>
         <div className="flex gap-2">
+          <Button 
+            variant={showFilters ? "default" : "outline"} 
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            {showFilters ? "Hide Search" : "Show Search"}
+          </Button>
           <Button asChild>
             <Link href="/admin/testimonials/create">Add Testimonial</Link>
           </Button>
         </div>
       </div>
+      
+      {/* Search Filter */}
+      {showFilters && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Search Testimonials</CardTitle>
+          </CardHeader>
+          <div className="px-6 pb-6">
+            <div className="grid grid-cols-1 gap-4 mb-4">
+              {/* Keyword Search */}
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Search Keyword</label>
+                <Input
+                  type="text"
+                  placeholder="Search testimonials... (minimum 3 characters)"
+                  value={filters.q || ''}
+                  onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && isKeywordValid && handleSearch()}
+                  className={!isKeywordValid ? 'border-red-500' : ''}
+                />
+                {!isKeywordValid && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Please enter at least 3 characters to search
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Button onClick={handleSearch} disabled={isLoading || !isKeywordValid}>
+                  Search
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleClearFilters}
+                  disabled={!hasActiveFilters || isLoading}
+                >
+                  Clear Search
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                {hasActiveFilters && (
+                  <span className="flex items-center text-sm text-muted-foreground">
+                    Search active: "{filters.q}"
+                  </span>
+                )}
+                {!isKeywordValid && (
+                  <span className="flex items-center text-xs text-red-500">
+                    ⚠️ Search keyword must be at least 3 characters
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+      
+      {/* Error Message */}
+      {searchError && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded relative" role="alert">
+          <span className="block sm:inline">{searchError}</span>
+        </div>
+      )}
+      
       <div className="grid gap-4">
         {Array.isArray(testimonials) && testimonials.length > 0 ? (
           testimonials.map((t: any) => (
@@ -174,13 +320,23 @@ export default function TestimonialsListPage() {
               <CardHeader className="flex flex-row justify-between items-center">
                 <div>
                   <CardTitle className="text-lg">
-                    <Link href={`/admin/testimonials/${t.id}`}>{t.name}</Link>
+                    <Link 
+                      href={`/admin/testimonials/${t.id}`}
+                      className="hover:text-primary hover:underline transition-colors"
+                    >
+                      {t.name}
+                    </Link>
                   </CardTitle>
                   <div className="text-sm text-muted-foreground">
-                    {t.date || t.created_at}
+                    {t.position && <span>{t.position}</span>}
+                    {t.position && (t.date || t.created_at) && <span> • </span>}
+                    {(t.date || t.created_at) && <span>{new Date(t.date || t.created_at).toLocaleDateString()}</span>}
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <Button asChild variant="default" size="sm">
+                    <Link href={`/admin/testimonials/${t.id}`}>View</Link>
+                  </Button>
                   <Button asChild variant="outline" size="sm">
                     <Link href={`/admin/testimonials/${t.id}/edit`}>Edit</Link>
                   </Button>

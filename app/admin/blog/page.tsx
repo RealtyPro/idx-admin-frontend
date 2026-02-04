@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { mockBlogs } from '@/lib/mockData';
@@ -9,7 +10,8 @@ import React from 'react';
 import { useBlogList } from "@/services/blog/BlogQueris";
 import {  useMutation } from "@tanstack/react-query";
 import { useQueryClient } from '@tanstack/react-query';
-import { deleteBlog } from "@/services/blog/BlogServices";
+import { deleteBlog, BlogSearchParams } from "@/services/blog/BlogServices";
+import { useRouter, useSearchParams } from 'next/navigation';
 interface Blog {
   id: string;
   title: string;
@@ -22,28 +24,92 @@ interface Blog {
   content: string;
 }
 export default function BlogListPage() {
-  const [currentPage, setCurrentPage] = useState(1);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Initialize state from URL params
+  const pageFromUrl = parseInt(searchParams.get('page') || '1', 10);
+  const [currentPage, setCurrentPage] = useState(pageFromUrl);
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  
+  // Search filter states (for form inputs - updates on every keystroke)
+  const [filters, setFilters] = useState<BlogSearchParams>({
+    page: pageFromUrl,
+    q: searchParams.get('q') || '',
+  });
+  
+  // Active search filters (only updates when search is triggered - prevents API calls on every keystroke)
+  const [activeFilters, setActiveFilters] = useState<BlogSearchParams>({
+    page: pageFromUrl,
+    q: searchParams.get('q') || '',
+  });
 
-  const { data: blogListDatas, isLoading, error} = useBlogList(currentPage);
+  const { data: blogListDatas, isLoading, error} = useBlogList(activeFilters);
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const queryClient = useQueryClient();
-  
-  // Extract pagination metadata from API response
   const pagination = blogListDatas?.meta || blogListDatas?.pagination || null;
   const totalPages = pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1;
   const totalItems = pagination?.total || pagination?.totalItems || blogs.length;
+  
+  // Sync filters with URL parameters
+  useEffect(() => {
+    const newFilters: BlogSearchParams = {
+      page: parseInt(searchParams.get('page') || '1', 10),
+      q: searchParams.get('q') || '',
+    };
+    setFilters(newFilters);
+    setActiveFilters(newFilters); // Also update active filters to trigger API call
+    setCurrentPage(newFilters.page || 1);
+  }, [searchParams]); // Only watch keyword to avoid loops
+  
   const removeBlogMutation = useMutation({
     mutationFn: (id:string) => deleteBlog(id),
 
     onSuccess: (data) => {
       console.log("blog deleted successfully:", data);
       alert("Blog deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ['bloglist', currentPage] });
+      queryClient.invalidateQueries({ queryKey: ['bloglist', activeFilters] });
     },
     onError: (error) => {
       console.error("Error  while loggin:", error);
     },
   });
+  
+  const buildQueryString = (newFilters: BlogSearchParams) => {
+    const params = new URLSearchParams();
+    
+    if (newFilters.page) params.append('page', newFilters.page.toString());
+    // Only include keyword if it's empty or has at least 3 characters
+    if (newFilters.q && newFilters.q.length >= 3) params.append('q', newFilters.q);
+    
+    return params.toString();
+  };
+  
+  const handleSearch = () => {
+    // Validate keyword length
+    if (filters.q && filters.q.trim().length > 0 && filters.q.trim().length < 3) {
+      setSearchError('Search keyword must be at least 3 characters long');
+      setTimeout(() => setSearchError(null), 3000);
+      return;
+    }
+    
+    const newFilters = { ...filters, page: 1 }; // Reset to page 1 on new search
+    setActiveFilters(newFilters); // Update active filters to trigger API call
+    const queryString = buildQueryString(newFilters);
+    router.push(`/admin/blog?${queryString}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const handleClearFilters = () => {
+    const newFilters: BlogSearchParams = { page: 1 };
+    setFilters(newFilters);
+    router.push('/admin/blog?page=1');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const hasActiveFilters = !!(filters.q && filters.q.length >= 3);
+  const isKeywordValid = !filters.q || filters.q.length === 0 || filters.q.length >= 3;
   useEffect(()=>{
     if(blogListDatas && !isLoading && !error) {
      setBlogs(blogListDatas.data || blogListDatas)
@@ -53,13 +119,14 @@ export default function BlogListPage() {
   
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+      const newFilters = { ...filters, page };
+      const queryString = buildQueryString(newFilters);
+      router.push(`/admin/blog?${queryString}`, { scroll: false });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
   
   const renderPagination = () => {
-    // Show pagination if we have multiple pages or pagination metadata
     if (totalPages <= 1 && !pagination) return null;
     
     const pages = [];
@@ -166,21 +233,98 @@ const handleDelete =(id:string)=>{
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Blog Posts</h1>
         <div className="flex gap-2">
+          <Button 
+            variant={showFilters ? "default" : "outline"} 
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            {showFilters ? "Hide Search" : "Show Search"}
+          </Button>
           <Button asChild>
             <Link href="/admin/blog/create">New Blog Post</Link>
           </Button>
         </div>
       </div>
+      
+      {/* Search Filter */}
+      {showFilters && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Search Blog Posts</CardTitle>
+          </CardHeader>
+          <div className="px-6 pb-6">
+            <div className="grid grid-cols-1 gap-4 mb-4">
+              {/* Keyword Search */}
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Search Keyword</label>
+                <Input
+                  type="text"
+                  placeholder="Search blog posts... (minimum 3 characters)"
+                  value={filters.q || ''}
+                  onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && isKeywordValid && handleSearch()}
+                  className={!isKeywordValid ? 'border-red-500' : ''}
+                />
+                {!isKeywordValid && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Please enter at least 3 characters to search
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Button onClick={handleSearch} disabled={isLoading || !isKeywordValid}>
+                  Search
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleClearFilters}
+                  disabled={!hasActiveFilters || isLoading}
+                >
+                  Clear Search
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                {hasActiveFilters && (
+                  <span className="flex items-center text-sm text-muted-foreground">
+                    Search active: "{filters.q}"
+                  </span>
+                )}
+                {!isKeywordValid && (
+                  <span className="flex items-center text-xs text-red-500">
+                    ⚠️ Search keyword must be at least 3 characters
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+      
+      {/* Error Message */}
+      {searchError && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded relative" role="alert">
+          <span className="block sm:inline">{searchError}</span>
+        </div>
+      )}
+      
       {blogs.length === 0 ? (
         <div className="text-center text-muted-foreground py-8">No blog posts found.</div>
       ) : (
         <div className="grid gap-4">
           {blogs.map((blog) => (
-            <Card key={blog.id} onClick={() => window.location.href = `/admin/blog/${blog.id}`}>
+            <Card key={blog.id}>
               <CardHeader className="flex flex-row justify-between items-center">
-                <div  className="cursor-pointer">
+                <div>
                   <CardTitle className="text-lg">
-                    <Link href={`/admin/blog/${blog.id}`}>{blog.title}</Link>
+                    <Link 
+                      href={`/admin/blog/${blog.id}`}
+                      className="hover:text-primary hover:underline transition-colors"
+                    >
+                      {blog.title}
+                    </Link>
                   </CardTitle>
                   <div className="text-sm text-muted-foreground">
                     {blog.subtitle && <div className="italic mb-1">{blog.subtitle}</div>}
@@ -192,14 +336,16 @@ const handleDelete =(id:string)=>{
                     {blog.isFeatured && <span className="ml-2 px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 text-xs font-semibold">Featured</span>}
                   </div>
                 </div>
-                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                <div className="flex gap-2">
+                  <Button asChild variant="default" size="sm">
+                    <Link href={`/admin/blog/${blog.id}`}>View</Link>
+                  </Button>
                   <Button asChild variant="outline" size="sm">
                     <Link href={`/admin/blog/${blog.id}/edit`}>Edit</Link>
                   </Button>
-                  <Button variant="destructive" size="sm" onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(blog.id);
-                  }}>Delete</Button>
+                  <Button variant="destructive" size="sm" onClick={() => handleDelete(blog.id)}>
+                    Delete
+                  </Button>
                 </div>
               </CardHeader>
             </Card>

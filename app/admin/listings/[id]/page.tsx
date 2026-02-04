@@ -3,12 +3,14 @@ import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import React, { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSingleProperty } from '@/services/property/PropertyQueries';
 
 export default function ListingDetailsPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const fromPage = searchParams.get('from_page') || '1';
   const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '';
   
   const { data, isLoading, isError } = useSingleProperty(id);
@@ -27,16 +29,17 @@ export default function ListingDetailsPage() {
   };
 
   // Parse views if it's a JSON string
-  const parseViews = (views: any) => {
-    if (!views) return [];
+  const parseViews = (views: any): string[] => {
+    if (!views || views === null || views === undefined) return [];
     if (typeof views === 'string') {
       try {
-        return JSON.parse(views);
+        const parsed = JSON.parse(views);
+        return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
       } catch {
         return [];
       }
     }
-    return Array.isArray(views) ? views : [];
+    return Array.isArray(views) ? views.filter(Boolean) : [];
   };
 
   // Get images array - combine cover_photo and additional images
@@ -59,7 +62,7 @@ export default function ListingDetailsPage() {
   };
 
   const images = getImages();
-  const views = parseViews(listing?.views);
+  const views = parseViews(listing?.views) || [];
 
   if (isLoading) {
     return (
@@ -81,7 +84,7 @@ export default function ListingDetailsPage() {
           <CardContent>
             <p className="text-muted-foreground">The listing you are looking for does not exist.</p>
             <Button asChild variant="secondary" className="mt-4">
-              <Link href="/admin/listings">Back to Listings</Link>
+              <Link href={`/admin/listings?page=${fromPage}`}>Back to Listings</Link>
             </Button>
           </CardContent>
         </Card>
@@ -110,7 +113,7 @@ export default function ListingDetailsPage() {
           </div>
         </div>
         <Button asChild variant="secondary" size="sm">
-          <Link href="/admin/listings">Back</Link>
+          <Link href={`/admin/listings?page=${fromPage}`}>Back</Link>
         </Button>
       </div>
 
@@ -336,7 +339,7 @@ export default function ListingDetailsPage() {
           )}
 
           {/* Views */}
-          {views.length > 0 && (
+          {views && Array.isArray(views) && views.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Views</CardTitle>
@@ -480,34 +483,7 @@ export default function ListingDetailsPage() {
             </Card>
           )}
 
-          {/* Dates */}
-          {(listing.created_at || listing.published_at || listing.updated_at) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Dates</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {listing.created_at && (
-                  <div>
-                    <p className="text-muted-foreground">Created</p>
-                    <p>{new Date(listing.created_at).toLocaleDateString()}</p>
-                  </div>
-                )}
-                {listing.published_at && (
-                  <div>
-                    <p className="text-muted-foreground">Published</p>
-                    <p>{new Date(listing.published_at).toLocaleDateString()}</p>
-                  </div>
-                )}
-                {listing.updated_at && (
-                  <div>
-                    <p className="text-muted-foreground">Last Updated</p>
-                    <p>{new Date(listing.updated_at).toLocaleDateString()}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          
         </div>
       </div>
     </div>

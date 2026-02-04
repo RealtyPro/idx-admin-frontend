@@ -1,11 +1,11 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { fetchNeighbourhoods, fetchSingleNeighbourhood, createNeighbourhood, updateNeighbourhood, deleteNeighbourhood } from './NeighbourhoodServices';
+import { fetchNeighbourhoods, fetchSingleNeighbourhood, createNeighbourhood, updateNeighbourhood, deleteNeighbourhood, NeighbourhoodSearchParams } from './NeighbourhoodServices';
 
 // React Query hook for fetching neighbourhoods
-export const useNeighbourhoods = (page: number = 1) => {
+export const useNeighbourhoods = (params: NeighbourhoodSearchParams = {}) => {
 	return useQuery({
-		queryKey: ['neighbourhoods', page],
-		queryFn: () => fetchNeighbourhoods(page),
+		queryKey: ['neighbourhoods', params],
+		queryFn: () => fetchNeighbourhoods(params),
 	});
 };
 

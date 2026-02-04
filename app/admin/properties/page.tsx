@@ -170,21 +170,25 @@ export default function PropertiesListPage() {
               <CardHeader className="flex flex-row justify-between items-center">
                 <div>
                   <CardTitle className="text-lg">
-                    <Link href={`/admin/properties/${property.id}`}>
+                    <Link 
+                      href={`/admin/properties/${property.id}`}
+                      className="hover:text-primary hover:underline transition-colors"
+                    >
                       {property.title || property.name || property.address || `Property ${property.id}`}
                     </Link>
                   </CardTitle>
                   <div className="text-sm text-muted-foreground">
                     {property.address && <span>{property.address}</span>}
                     {property.address && property.price && <span> • </span>}
-                    {property.price && <span>{property.price}</span>}
+                    {property.price && <span>${property.price}</span>}
                     {property.status && (property.address || property.price) && <span> • </span>}
-                    {property.status && <span>{property.status}</span>}
-                    {property.created_at && !property.status && (property.address || property.price) && <span> • </span>}
-                    {property.created_at && !property.status && <span>{property.created_at}</span>}
+                    {property.status && <span>Status: {property.status}</span>}
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <Button asChild variant="default" size="sm">
+                    <Link href={`/admin/properties/${property.id}`}>View</Link>
+                  </Button>
                   <Button asChild variant="outline" size="sm">
                     <Link href={`/admin/properties/${property.id}/edit`}>Edit</Link>
                   </Button>

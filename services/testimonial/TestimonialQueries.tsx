@@ -1,6 +1,6 @@
 
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { fetchTestimonials, fetchSingleTestimonial, updateTestimonial, deleteTestimonial } from './TestimonialServices';
+import { fetchTestimonials, fetchSingleTestimonial, updateTestimonial, deleteTestimonial, TestimonialSearchParams } from './TestimonialServices';
 // React Query mutation hook for updating a testimonial
 export const useUpdateTestimonial = () => {
 	return useMutation({
@@ -24,9 +24,9 @@ export const useSingleTestimonial = (id: string) => {
 };
 
 // React Query hook for fetching testimonials
-export const useTestimonials = (page: number = 1) => {
+export const useTestimonials = (params: TestimonialSearchParams = {}) => {
 	return useQuery({
-		queryKey: ['testimonials', page],
-		queryFn: () => fetchTestimonials(page),
+		queryKey: ['testimonials', params],
+		queryFn: () => fetchTestimonials(params),
 	});
 };

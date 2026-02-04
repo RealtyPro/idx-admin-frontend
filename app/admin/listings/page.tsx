@@ -2,18 +2,64 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import React, { useState } from 'react';
+import { Input } from "@/components/ui/input";
+import React, { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProperties } from '@/services/property/PropertyQueries';
 import { useQueryClient } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { PropertySearchParams } from '@/services/property/PropertyServices';
 
 export default function ListingsPage() {
   const queryClient = useQueryClient();
-  const [currentPage, setCurrentPage] = useState(1);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Initialize state from URL params
+  const pageFromUrl = parseInt(searchParams.get('page') || '1', 10);
+  const [currentPage, setCurrentPage] = useState(pageFromUrl);
   const [featuringListingId, setFeaturingListingId] = useState<string | null>(null);
   const [featuredError, setFeaturedError] = useState<string | null>(null);
   const [featuredSuccess, setFeaturedSuccess] = useState<string | null>(null);
-  const { data, isLoading, isError, error } = useProperties(currentPage);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Search filter states (for form inputs - updates on every keystroke)
+  const [filters, setFilters] = useState<PropertySearchParams>({
+    page: pageFromUrl,
+    bath_min: searchParams.get('bath_min') || '',
+    bath_max: searchParams.get('bath_max') || '',
+    bed_min: searchParams.get('bed_min') || '',
+    bed_max: searchParams.get('bed_max') || '',
+    keyword: searchParams.get('keyword') || '',
+  });
+  
+  // Active search filters (only updates when search is triggered - prevents API calls on every keystroke)
+  const [activeFilters, setActiveFilters] = useState<PropertySearchParams>({
+    page: pageFromUrl,
+    bath_min: searchParams.get('bath_min') || '',
+    bath_max: searchParams.get('bath_max') || '',
+    bed_min: searchParams.get('bed_min') || '',
+    bed_max: searchParams.get('bed_max') || '',
+    keyword: searchParams.get('keyword') || '',
+  });
+  
+  // Fetch properties with active filters (not form filters)
+  const { data, isLoading, isError, error } = useProperties(activeFilters);
+  
+  // Sync filters with URL parameters
+  useEffect(() => {
+    const newFilters: PropertySearchParams = {
+      page: parseInt(searchParams.get('page') || '1', 10),
+      bath_min: searchParams.get('bath_min') || '',
+      bath_max: searchParams.get('bath_max') || '',
+      bed_min: searchParams.get('bed_min') || '',
+      bed_max: searchParams.get('bed_max') || '',
+      keyword: searchParams.get('keyword') || '',
+    };
+    setFilters(newFilters);
+    setActiveFilters(newFilters); // Also update active filters to trigger API call
+    setCurrentPage(newFilters.page || 1);
+  }, [searchParams]); // Only watch keyword to avoid loops
   
   // Extract listings (properties) from API response
   const listings = data?.data || data || [];
@@ -24,12 +70,53 @@ export default function ListingsPage() {
   const currentPageNum = pagination?.current_page || pagination?.currentPage || currentPage;
   const totalItems = pagination?.total || pagination?.totalItems || listings.length;
   
+  const buildQueryString = (newFilters: PropertySearchParams) => {
+    const params = new URLSearchParams();
+    
+    if (newFilters.page) params.append('page', newFilters.page.toString());
+    if (newFilters.bath_min) params.append('bath_min', newFilters.bath_min);
+    if (newFilters.bath_max) params.append('bath_max', newFilters.bath_max);
+    if (newFilters.bed_min) params.append('bed_min', newFilters.bed_min);
+    if (newFilters.bed_max) params.append('bed_max', newFilters.bed_max);
+    // Only include keyword if it's empty or has at least 3 characters
+    if (newFilters.keyword && newFilters.keyword.length >= 3) params.append('keyword', newFilters.keyword);
+    
+    return params.toString();
+  };
+  
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+      const newFilters = { ...filters, page };
+      const queryString = buildQueryString(newFilters);
+      router.push(`/admin/listings?${queryString}`, { scroll: false });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+  
+  const handleSearch = () => {
+    // Validate keyword length
+    if (filters.keyword && filters.keyword.trim().length > 0 && filters.keyword.trim().length < 3) {
+      setFeaturedError('Keyword must be at least 3 characters long');
+      setTimeout(() => setFeaturedError(null), 3000);
+      return;
+    }
+    
+    const newFilters = { ...filters, page: 1 }; // Reset to page 1 on new search
+    setActiveFilters(newFilters); // Update active filters to trigger API call
+    const queryString = buildQueryString(newFilters);
+    router.push(`/admin/listings?${queryString}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const handleClearFilters = () => {
+    const newFilters: PropertySearchParams = { page: 1 };
+    setFilters(newFilters);
+    router.push('/admin/listings?page=1');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const hasActiveFilters = !!(filters.bath_min || filters.bath_max || filters.bed_min || filters.bed_max || (filters.keyword && filters.keyword.length >= 3));
+  const isKeywordValid = !filters.keyword || filters.keyword.length === 0 || filters.keyword.length >= 3;
   
   const handleSetAsFeatured = async (listingId: string) => {
     try {
@@ -62,7 +149,7 @@ export default function ListingsPage() {
       if (!response.ok) {
         throw new Error(result.message || 'Failed to set property as featured');
       }
-      await queryClient.invalidateQueries({ queryKey: ['properties', currentPage] });
+      await queryClient.invalidateQueries({ queryKey: ['properties', activeFilters] });
 
       setFeaturedSuccess(`Property successfully set as featured!`);
       
@@ -210,7 +297,115 @@ export default function ListingsPage() {
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Listings</h1>
+        <Button 
+          variant={showFilters ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          {showFilters ? "Hide Filters" : "Show Filters"}
+        </Button>
       </div>
+      
+      {/* Search Filters */}
+      {showFilters && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Search Filters</CardTitle>
+          </CardHeader>
+          <div className="px-6 pb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+              {/* Keyword */}
+              <div className="lg:col-span-3">
+                <label className="text-sm font-medium mb-1.5 block">Keyword</label>
+                <Input
+                  type="text"
+                  placeholder="Search by keyword... (minimum 3 characters)"
+                  value={filters.keyword || ''}
+                  onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && isKeywordValid && handleSearch()}
+                  className={!isKeywordValid ? 'border-red-500' : ''}
+                />
+                {!isKeywordValid && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Please enter at least 3 characters to search
+                  </p>
+                )}
+              </div>
+              
+              {/* Bedrooms */}
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Min Bedrooms</label>
+                <Input
+                  type="number"
+                  placeholder="Min beds"
+                  value={filters.bed_min || ''}
+                  onChange={(e) => setFilters({ ...filters, bed_min: e.target.value })}
+                  min="0"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Max Bedrooms</label>
+                <Input
+                  type="number"
+                  placeholder="Max beds"
+                  value={filters.bed_max || ''}
+                  onChange={(e) => setFilters({ ...filters, bed_max: e.target.value })}
+                  min="0"
+                />
+              </div>
+              
+              {/* Bathrooms */}
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Min Bathrooms</label>
+                <Input
+                  type="number"
+                  placeholder="Min baths"
+                  value={filters.bath_min || ''}
+                  onChange={(e) => setFilters({ ...filters, bath_min: e.target.value })}
+                  min="0"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Max Bathrooms</label>
+                <Input
+                  type="number"
+                  placeholder="Max baths"
+                  value={filters.bath_max || ''}
+                  onChange={(e) => setFilters({ ...filters, bath_max: e.target.value })}
+                  min="0"
+                />
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Button onClick={handleSearch} disabled={isLoading || !isKeywordValid}>
+                  Search
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleClearFilters}
+                  disabled={!hasActiveFilters || isLoading}
+                >
+                  Clear Filters
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                {hasActiveFilters && (
+                  <span className="flex items-center text-sm text-muted-foreground">
+                    Active filters applied
+                  </span>
+                )}
+                {!isKeywordValid && (
+                  <span className="flex items-center text-xs text-red-500">
+                    ⚠️ Keyword must be at least 3 characters
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
       
       {/* Success/Error Messages */}
       {featuredSuccess && (
@@ -232,7 +427,7 @@ export default function ListingsPage() {
               <CardHeader className="flex flex-row justify-between items-center">
                 <div>
                   <CardTitle className="text-lg">
-                    <Link href={`/admin/listings/${listing.id}`}>
+                    <Link href={`/admin/listings/${listing.id}?from_page=${currentPage}`}>
                       {listing.title || listing.name || listing.address || `Listing ${listing.id}`}
                     </Link>
                   </CardTitle>
@@ -240,7 +435,25 @@ export default function ListingsPage() {
                     {/* {listing.address && <span>{listing.address}</span>} */}
                     {/* {listing.price && <span> • </span>} */}
                     {listing.price && <span>{listing.price}</span>}
-                    {listing.status && (listing.address || listing.price) && <span> • </span>}
+                    {(listing.beds || listing.baths) && (listing.price) && <span> • </span>}
+                    {listing.beds !== undefined && listing.beds !== null && (
+                      <span className="inline-flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        {listing.beds} Bed{listing.beds !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {listing.beds !== undefined && listing.beds !== null && listing.baths !== undefined && listing.baths !== null && <span> • </span>}
+                    {listing.baths !== undefined && listing.baths !== null && (
+                      <span className="inline-flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                        </svg>
+                        {listing.baths} Bath{listing.baths !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {listing.status && (listing.address || listing.price || listing.beds || listing.baths) && <span> • </span>}
                     {listing.status && <span>{listing.status}</span>}
                     {listing.agent && (listing.address || listing.price || listing.status) && <span> • </span>}
                     {listing.agent && <span>Agent: {listing.agent}</span>}
@@ -266,7 +479,7 @@ export default function ListingsPage() {
                 </div>
                 <div className="flex gap-2 ml-auto">
                   <Button asChild variant="outline" size="sm">
-                    <Link href={`/admin/listings/${listing.id}`}>View</Link>
+                    <Link href={`/admin/listings/${listing.id}?from_page=${currentPage}`}>View</Link>
                   </Button>
                   <Button 
                     variant="outline" 

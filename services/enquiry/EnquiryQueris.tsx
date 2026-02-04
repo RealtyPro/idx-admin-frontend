@@ -1,11 +1,11 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { fetchEnquiries } from './EnquiryServices';
+import { fetchEnquiries, EnquirySearchParams } from './EnquiryServices';
 
 // React Query hook for fetching enquiries
-export const useEnquiries = (page: number = 1) => {
+export const useEnquiries = (params: EnquirySearchParams = {}) => {
 	return useQuery({
-		queryKey: ['enquiries', page],
-		queryFn: () => fetchEnquiries(page),
+		queryKey: ['enquiries', params],
+		queryFn: () => fetchEnquiries(params),
 	});
 };

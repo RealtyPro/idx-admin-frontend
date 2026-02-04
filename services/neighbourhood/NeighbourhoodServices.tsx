@@ -1,8 +1,38 @@
 import axiosInstance from '@/services/Api';
 
+export interface NeighbourhoodSearchParams {
+  page?: number;
+  city_id?: string;
+  region_id?: string;
+  county_id?: string;
+}
+
 // Fetch neighbourhoods (GET v1/admin/neighbourhood?page=1)
-export const fetchNeighbourhoods = async (page: number = 1) => {
-	const response = await axiosInstance.get(`v1/admin/neighbourhood?page=${page}`);
+export const fetchNeighbourhoods = async (params: NeighbourhoodSearchParams = {}) => {
+	const { page = 1, city_id, region_id, county_id } = params;
+	
+	const queryParts: string[] = [];
+	
+	if (city_id) {
+		queryParts.push(`city_id:=,${city_id}`);
+	}
+	
+	if (region_id) {
+		queryParts.push(`region_id:=,${region_id}`);
+	}
+	
+	if (county_id) {
+		queryParts.push(`county_id:=,${county_id}`);
+	}
+	
+	const queryParams = new URLSearchParams();
+	queryParams.append('page', page.toString());
+	
+	if (queryParts.length > 0) {
+		queryParams.append('q', queryParts.join(';'));
+	}
+	
+	const response = await axiosInstance.get(`v1/admin/neighbourhood?${queryParams.toString()}`);
 	return response.data;
 };
 

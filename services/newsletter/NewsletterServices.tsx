@@ -1,8 +1,23 @@
 import axiosInstance from '@/services/Api';
 
+export interface NewsletterSearchParams {
+  page?: number;
+  q?: string;
+}
+
 // Fetch newsletter subscribers (GET v1/admin/newsletter?page=1)
-export const fetchNewsletterSubscribers = async (page: number = 1) => {
-  const response = await axiosInstance.get(`v1/admin/newsletter?page=${page}`);
+export const fetchNewsletterSubscribers = async (params: NewsletterSearchParams = {}) => {
+  const { page = 1, q } = params;
+  
+  const queryParams = new URLSearchParams();
+  queryParams.append('page', page.toString());
+  
+  // Only add keyword if it has at least 3 characters
+  if (q && q.trim().length >= 3) {
+    queryParams.append('q', q.trim());
+  }
+  
+  const response = await axiosInstance.get(`v1/admin/newsletter?${queryParams.toString()}`);
   return response.data;
 };
 
