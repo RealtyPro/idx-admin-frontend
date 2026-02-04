@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TestimonialSearchParams } from '@/services/testimonial/TestimonialServices';
 
-export default function TestimonialsListPage() {
+function TestimonialsListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -358,5 +358,23 @@ export default function TestimonialsListPage() {
       </div>
       {renderPagination()}
     </div>
+  );
+}
+
+export default function TestimonialsListPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        {[...Array(3)].map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+        ))}
+      </div>
+    }>
+      <TestimonialsListContent />
+    </Suspense>
   );
 } 

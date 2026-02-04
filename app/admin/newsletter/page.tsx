@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useNewsletterSubscribers, useDeleteNewsletterSubscriber } from '@/services/newsletter/NewsletterQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { NewsletterSearchParams } from '@/services/newsletter/NewsletterServices';
 
-export default function NewsletterPage() {
+function NewsletterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -370,5 +370,23 @@ export default function NewsletterPage() {
       </div>
       {renderPagination()}
     </div>
+  );
+}
+
+export default function NewsletterPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        {[...Array(3)].map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+        ))}
+      </div>
+    }>
+      <NewsletterContent />
+    </Suspense>
   );
 }

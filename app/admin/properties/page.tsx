@@ -10,7 +10,7 @@ import { deleteProperty } from '@/services/property/PropertyServices';
 
 export default function PropertiesListPage() {
   const [currentPage, setCurrentPage] = useState(1);
-  const { data, isLoading, isError, error } = useProperties(currentPage);
+  const { data, isLoading, isError, error } = useProperties({ page: currentPage });
   const queryClient = useQueryClient();
   
   // Extract properties from API response
@@ -24,7 +24,7 @@ export default function PropertiesListPage() {
   const deletePropertyMutation = useMutation({
     mutationFn: (id: string) => deleteProperty(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['properties', currentPage] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
       alert("Property deleted successfully");
     },
     onError: (error: any) => {

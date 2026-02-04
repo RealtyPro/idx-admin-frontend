@@ -3,14 +3,14 @@ import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProperties } from '@/services/property/PropertyQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PropertySearchParams } from '@/services/property/PropertyServices';
 
-export default function ListingsPage() {
+function ListingsContent() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -510,5 +510,23 @@ export default function ListingsPage() {
       </div>
       {renderPagination()}
     </div>
+  );
+}
+
+export default function ListingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        {[...Array(3)].map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+        ))}
+      </div>
+    }>
+      <ListingsContent />
+    </Suspense>
   );
 } 

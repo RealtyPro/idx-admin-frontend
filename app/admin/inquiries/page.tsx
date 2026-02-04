@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from '@/components/ui/skeleton';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 import { useEnquiries } from '@/services/enquiry/EnquiryQueris';
@@ -13,7 +13,7 @@ import axiosInstance from '@/services/Api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { EnquirySearchParams } from '@/services/enquiry/EnquiryServices';
 
-export default function InquiriesPage() {
+function InquiriesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -380,5 +380,23 @@ export default function InquiriesPage() {
       </div>
       {renderPagination()}
     </div>
+  );
+}
+
+export default function InquiriesPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        {[...Array(3)].map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+        ))}
+      </div>
+    }>
+      <InquiriesContent />
+    </Suspense>
   );
 } 

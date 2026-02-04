@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { mockBlogs } from '@/lib/mockData';
 import React from 'react';
@@ -23,7 +23,8 @@ interface Blog {
   status: string;
   content: string;
 }
-export default function BlogListPage() {
+
+function BlogListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -354,5 +355,23 @@ const handleDelete =(id:string)=>{
       )}
       {renderPagination()}
     </div>
+  );
+}
+
+export default function BlogListPage() {
+  return (
+    <Suspense fallback={
+      <div className="contain-auto py-6 px-2 sm:px-4 spx-w-2xl">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="mb-6">
+            <Skeleton className="h-10 w-64 mb-2" />
+            <Skeleton className="h-6 w-32 mb-2" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </div>
+        ))}
+      </div>
+    }>
+      <BlogListContent />
+    </Suspense>
   );
 } 
