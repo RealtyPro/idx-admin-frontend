@@ -30,6 +30,9 @@ export default function ProfilePage() {
   // const [state, setState] = useState('');
   const [zip, setZip] = useState('');
   const [country, setCountry] = useState('');
+  const [facebook, setFacebook] = useState('');
+  const [linkedIn, setLinkedIn] = useState('');
+  const [instagram, setInstagram] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   // Helper function to format phone number
@@ -95,6 +98,13 @@ export default function ProfilePage() {
       setZip(profile.zip || '');
       setCountry(profile.country || '');
       setCounty(profile.country || '');
+      
+      // Load social URLs
+      if (profile.social_urls) {
+        setFacebook(profile.social_urls.facebook || '');
+        setLinkedIn(profile.social_urls.linked_in || '');
+        setInstagram(profile.social_urls.instagram || '');
+      }
     }
   }, [profile]);
 
@@ -111,6 +121,11 @@ export default function ProfilePage() {
       state,
       zip,
       country,
+      social_urls: {
+        facebook,
+        linked_in: linkedIn,
+        instagram,
+      },
     };
 console.log(payload);
     updateProfileMutation.mutate(payload, {
@@ -296,6 +311,44 @@ console.log(payload);
                 onChange={(e) => setZip(e.target.value)}
               />
             </div> */}
+
+            {/* Social Media URLs */}
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="text-lg font-semibold">Social Media Links</h3>
+              
+              <div>
+                <Label htmlFor="facebook">Facebook URL</Label>
+                <Input
+                  id="facebook"
+                  type="url"
+                  value={facebook}
+                  onChange={(e) => setFacebook(e.target.value)}
+                  placeholder="https://www.facebook.com/yourpage"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="linkedin">LinkedIn URL</Label>
+                <Input
+                  id="linkedin"
+                  type="url"
+                  value={linkedIn}
+                  onChange={(e) => setLinkedIn(e.target.value)}
+                  placeholder="https://www.linkedin.com/in/yourprofile"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="instagram">Instagram URL</Label>
+                <Input
+                  id="instagram"
+                  type="url"
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value)}
+                  placeholder="https://www.instagram.com/yourprofile"
+                />
+              </div>
+            </div>
 
             {error && (
               <div className="text-red-500 text-sm bg-red-50 p-3 rounded">
