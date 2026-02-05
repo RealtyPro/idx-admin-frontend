@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRegister } from '@/services/auth/AuthQueries';
 import { RegisterPayload } from '@/services/auth/AuthServices';
@@ -11,6 +11,17 @@ import { RegisterPayload } from '@/services/auth/AuthServices';
 export default function Register() {
   const router = useRouter();
   const registerMutation = useRegister();
+
+  // Redirect to dashboard if token already exists
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = sessionStorage.getItem("access_token");
+      if (token) {
+        router.push("/admin");
+      }
+    }
+  }, [router]);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -80,37 +91,37 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      try {
-        const uuid = process.env.NEXT_PUBLIC_REALTY_PRO_AGENT || '';
-        
-        const payload: RegisterPayload = {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          password_confirmation: formData.confirmPassword,
-          phone: formData.phone,
-          uuid: uuid,
-        };
+      const uuid = process.env.NEXT_PUBLIC_REALTY_PRO_AGENT || '';
+      
+      const payload: RegisterPayload = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.confirmPassword,
+        phone: formData.phone,
+        uuid: uuid,
+      };
 
-        console.log('Sending registration payload:', payload);
-        const response = await registerMutation.mutateAsync(payload);
-        console.log('Registration successful:', response);
-        
-        // Redirect to login page or dashboard after successful registration
-        router.push('/login');
-      } catch (error: any) {
-        console.error('Registration failed:', error);
-        // Handle error display
-        if (error.response?.data?.errors) {
-          const apiErrors = error.response.data.errors;
-          setErrors(prev => ({
-            ...prev,
-            ...apiErrors,
-          }));
-        } else {
-          alert(error.response?.data?.message || 'Registration failed. Please try again.');
+      registerMutation.mutate(payload, {
+        onSuccess: (response) => {
+          console.log('Registration successful:', response);
+          // Show success message and redirect
+          alert('Registration successful! Please login with your credentials.');
+          router.push('/login');
+        },
+        onError: (error: any) => {
+          console.error('Registration failed:', error);
+          // Handle error display
+          if (error.response?.data?.errors) {
+            const apiErrors = error.response.data.errors;
+            setErrors(prev => ({
+              ...prev,
+              ...apiErrors,
+            }));
+          }
+          // Error message will be shown by the error state below the button
         }
-      }
+      });
     }
   };
 
@@ -145,32 +156,56 @@ export default function Register() {
                 priority
               />
             </Link>
-            <h2 className="font-serif text-heading text-dark">Create an account</h2>
+            <h2 className="font-serif text-dark">Create your account</h2>
             <p className="mt-2 text-body text-dark-secondary">
-              Join us to start logging your interactions
+              Join RealtiPro to manage your real estate business
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-dark">
-                Full name
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                autoComplete="name"
-                required
-                value={formData.name}
-                onChange={handleChange}
-                className={`mt-1 block w-full rounded-lg border ${
-                  errors.name ? 'border-red-500' : 'border-border'
-                } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
-              />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-500">{errors.name}</p>
-              )}
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-dark">
+                  Full name
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full rounded-lg border ${
+                    errors.name ? 'border-red-500' : 'border-border'
+                  } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
+                />
+                {errors.name && (
+                  <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-dark">
+                  Phone number
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  required
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Phone number"
+                  className={`mt-1 block w-full rounded-lg border ${
+                    errors.phone ? 'border-red-500' : 'border-border'
+                  } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
+                />
+                {errors.phone && (
+                  <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
+                )}
+              </div>
             </div>
 
             <div>
@@ -194,71 +229,51 @@ export default function Register() {
               )}
             </div>
 
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-dark">
-                Phone number
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                autoComplete="tel"
-                required
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="10-digit phone number"
-                className={`mt-1 block w-full rounded-lg border ${
-                  errors.phone ? 'border-red-500' : 'border-border'
-                } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
-              />
-              {errors.phone && (
-                <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-dark">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full rounded-lg border ${
+                    errors.password ? 'border-red-500' : 'border-border'
+                  } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
+                />
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-500">{errors.password}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-dark">
+                  Confirm password
+                </label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full rounded-lg border ${
+                    errors.confirmPassword ? 'border-red-500' : 'border-border'
+                  } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
+                />
+                {errors.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>
+                )}
+              </div>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-dark">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                className={`mt-1 block w-full rounded-lg border ${
-                  errors.password ? 'border-red-500' : 'border-border'
-                } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
-              />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-dark">
-                Confirm password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className={`mt-1 block w-full rounded-lg border ${
-                  errors.confirmPassword ? 'border-red-500' : 'border-border'
-                } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
-              />
-              {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>
-              )}
-            </div>
-
-            <div className="flex items-center">
+            <div className="flex items-center pt-2">
               <input
                 id="terms"
                 name="terms"
@@ -266,7 +281,7 @@ export default function Register() {
                 required
                 className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
               />
-              <label htmlFor="terms" className="ml-2 block text-sm text-dark-secondary">
+              <label htmlFor="terms" className="ml-2 block text-sm text-dark">
                 I agree to the{' '}
                 <Link href="/terms" className="text-primary hover:text-primary-light">
                   Terms of Service
@@ -280,18 +295,27 @@ export default function Register() {
 
             <button
               type="submit"
-              className="w-full flex justify-center py-3 px-4 rounded-[37.5px] bg-gradient-to-br from-primary to-primary-light text-white font-bold text-button hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              disabled={registerMutation.isPending}
+              className="w-full flex justify-center py-3 px-4 rounded-[37.5px] bg-gradient-to-br from-primary to-primary-light text-white font-bold text-button hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
             >
-              Create account
+              {registerMutation.isPending ? 'Creating account...' : 'Create account'}
             </button>
+
+            {registerMutation.isError && (
+              <p className="text-sm text-red-500 text-center">
+                {(registerMutation.error as Error)?.message || 'Registration failed. Please try again.'}
+              </p>
+            )}
           </form>
 
-          <p className="text-center text-sm text-dark-secondary">
-            Already have an account?{' '}
-            <Link href="/login" className="text-primary hover:text-primary-light">
-              Sign in
-            </Link>
-          </p>
+          <div className="text-center space-y-3">
+            <p className="text-sm text-dark-secondary">
+              Already have an account?{' '}
+              <Link href="/login" className="text-primary hover:text-primary-light font-medium">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
 

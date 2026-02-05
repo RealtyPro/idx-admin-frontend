@@ -208,7 +208,7 @@ export default function NeighbourhoodsListPage() {
   if (isError) {
     return (
       <div className="container mx-auto py-6 px-2 sm:px-4">
-        <p className="text-red-500">Error loading neighbourhoods: {error instanceof Error ? error.message : 'Unknown error'}</p>
+        <p className="text-red-500">Error loading neighborhoods: {error instanceof Error ? error.message : 'Unknown error'}</p>
       </div>
     );
   }
@@ -216,7 +216,7 @@ export default function NeighbourhoodsListPage() {
   return (
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Neighbourhood</h1>
+        <h1 className="text-2xl font-bold">Neighborhood</h1>
         <div className="flex gap-2">
           <Button 
             variant="outline" 
@@ -226,7 +226,7 @@ export default function NeighbourhoodsListPage() {
             {showFilters ? 'Hide Filters' : 'Show Filters'}
           </Button>
           <Button asChild>
-            <Link href="/admin/neighbourhoods/create">Add Neighbourhood</Link>
+            <Link href="/admin/neighbourhoods/create">Add Neighborhood</Link>
           </Button>
         </div>
       </div>

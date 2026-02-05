@@ -1,11 +1,17 @@
 import './globals.css'
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import React from 'react';
 import Providers from './provider/QueryProvider';
 
 export const metadata: Metadata = {
   title: 'RealtiPro - Admin',
   description: 'RealtiPro Admin',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({
