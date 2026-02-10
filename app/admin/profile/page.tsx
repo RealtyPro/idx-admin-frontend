@@ -1,14 +1,27 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from '@/components/ui/skeleton';
-import { useProfile, useUpdateProfile } from '@/services/profile/ProfileQueries';
-import { useQueryClient } from '@tanstack/react-query';
-import { useCitiesByCounty, useCountiesByState, useStates } from '@/services/location/LocationQueries';
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  useProfile,
+  useUpdateProfile,
+} from "@/services/profile/ProfileQueries";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useCitiesByCounty,
+  useCountiesByState,
+  useStates,
+} from "@/services/location/LocationQueries";
 
 export default function ProfilePage() {
   const queryClient = useQueryClient();
@@ -16,52 +29,70 @@ export default function ProfilePage() {
   const updateProfileMutation = useUpdateProfile();
   const [county, setCounty] = useState("");
   const [city, setCity] = useState("");
-  const [state, setState] = useState('');
+  const [state, setState] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
+  const [companyState, setCompanyState] = useState("");
+  const [companyCounty, setCompanyCounty] = useState("");
+  const [companyCity, setCompanyCity] = useState("");
+  const [companyEmail, setCompanyEmail] = useState("");
+  const [companyPhone, setCompanyPhone] = useState("");
+  const [companyWebsite, setCompanyWebsite] = useState("");
+  const [companyLogoDataUrl, setCompanyLogoDataUrl] = useState<string>("");
+  const [companyLogoPreview, setCompanyLogoPreview] = useState<string>("");
+  const [aboutShort, setAboutShort] = useState("");
+  const [aboutLong, setAboutLong] = useState("");
   const profile = data?.data || data;
   const { data: statesData, isLoading: statesLoading } = useStates();
-  const { data: countiesData, isLoading: countiesLoading } = useCountiesByState(state);
-  const { data: citiesData, isLoading: citiesLoading } = useCitiesByCounty(county);
+  const { data: countiesData, isLoading: countiesLoading } =
+    useCountiesByState(state);
+  const { data: citiesData, isLoading: citiesLoading } =
+    useCitiesByCounty(county);
+  const { data: companyCountiesData, isLoading: companyCountiesLoading } =
+    useCountiesByState(companyState);
+  const { data: companyCitiesData, isLoading: companyCitiesLoading } =
+    useCitiesByCounty(companyCounty);
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   // const [city, setCity] = useState('');
   // const [state, setState] = useState('');
-  const [zip, setZip] = useState('');
-  const [country, setCountry] = useState('');
-  const [facebook, setFacebook] = useState('');
-  const [linkedIn, setLinkedIn] = useState('');
-  const [instagram, setInstagram] = useState('');
+  const [zip, setZip] = useState("");
+  const [country, setCountry] = useState("");
+  const [facebook, setFacebook] = useState("");
+  const [linkedIn, setLinkedIn] = useState("");
+  const [instagram, setInstagram] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   // Helper function to format phone number
   const formatPhone = (phoneData: any): string => {
-    if (!phoneData) return '';
-    
+    if (!phoneData) return "";
+
     // If it's already a properly formatted string (not JSON), return it
-    if (typeof phoneData === 'string') {
+    if (typeof phoneData === "string") {
       // Check if it's a stringified JSON object
-      if (phoneData.startsWith('{') && phoneData.includes('"code"')) {
+      if (phoneData.startsWith("{") && phoneData.includes('"code"')) {
         try {
           const parsed = JSON.parse(phoneData);
           if (parsed.code && parsed.number) {
             return `${parsed.code} ${parsed.number}`;
           }
         } catch (e) {
-          console.error('Failed to parse phone JSON:', e);
+          console.error("Failed to parse phone JSON:", e);
           return phoneData; // Return as is if parsing fails
         }
       }
       return phoneData;
     }
-    
+
     // If it's an object
-    if (typeof phoneData === 'object' && phoneData.code && phoneData.number) {
+    if (typeof phoneData === "object" && phoneData.code && phoneData.number) {
       return `${phoneData.code} ${phoneData.number}`;
     }
-    
-    return '';
+
+    return "";
   };
   useEffect(() => {
     if (statesData) {
@@ -79,34 +110,92 @@ export default function ProfilePage() {
   const states = statesData?.data || statesData || [];
   const counties = countiesData?.data || countiesData || [];
   const cities = citiesData?.data || citiesData || [];
+  const companyCounties =
+    companyCountiesData?.data || companyCountiesData || [];
+  const companyCities = companyCitiesData?.data || companyCitiesData || [];
   // Update form fields when profile data loads
   useEffect(() => {
     if (profile) {
-      console.log('Profile phone data:', profile.phone, 'Type:', typeof profile.phone);
-      
-      setName(profile.name || '');
-      setEmail(profile.email || '');
-      
+      console.log(
+        "Profile phone data:",
+        profile.phone,
+        "Type:",
+        typeof profile.phone,
+      );
+
+      setName(profile.name || "");
+      setEmail(profile.email || "");
+
       // Handle phone using helper function
       const formattedPhone = formatPhone(profile.phone);
-      console.log('Formatted phone:', formattedPhone);
+      console.log("Formatted phone:", formattedPhone);
       setPhone(formattedPhone);
-      
-      setAddress(profile.address || '');
-      setCity(profile.city || '');
-      setState(profile.state || '');
-      setZip(profile.zip || '');
-      setCountry(profile.country || '');
-      setCounty(profile.country || '');
-      
+
+      setAddress(profile.address || "");
+      setCity(profile.city || "");
+      setState(profile.state || "");
+      setZip(profile.zip || "");
+      setCountry(profile.country || "");
+      setCounty(profile.country || "");
+
       // Load social URLs
       if (profile.social_urls) {
-        setFacebook(profile.social_urls.facebook || '');
-        setLinkedIn(profile.social_urls.linked_in || '');
-        setInstagram(profile.social_urls.instagram || '');
+        setFacebook(profile.social_urls.facebook || "");
+        setLinkedIn(profile.social_urls.linked_in || "");
+        setInstagram(profile.social_urls.instagram || "");
+      }
+
+      if (profile.company) {
+        setCompanyName(profile.company.name || "");
+        setCompanyAddress(profile.company.address || "");
+        if (profile.company.location) {
+          if (typeof profile.company.location === "object") {
+            setCompanyState(profile.company.location.state || "");
+            setCompanyCounty(profile.company.location.county || "");
+            setCompanyCity(profile.company.location.city || "");
+          } else if (typeof profile.company.location === "string") {
+            setCompanyCity(profile.company.location);
+          }
+        }
+        setCompanyEmail(profile.company.email || "");
+        setCompanyPhone(profile.company.phone || "");
+        setCompanyWebsite(profile.company.website || "");
+        if (profile.company.logo) {
+          setCompanyLogoDataUrl(profile.company.logo);
+          setCompanyLogoPreview(profile.company.logo);
+        }
+      }
+
+      if (profile.about) {
+        setAboutShort(profile.about.short_description || "");
+        setAboutLong(profile.about.long_description || "");
       }
     }
   }, [profile]);
+
+  const handleCompanyLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+    setCompanyLogoPreview(previewUrl);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setCompanyLogoDataUrl(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (companyLogoPreview && companyLogoPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(companyLogoPreview);
+      }
+    };
+  }, [companyLogoPreview]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,24 +210,48 @@ export default function ProfilePage() {
       state,
       zip,
       country,
+      company: {
+        name: companyName,
+        address: companyAddress,
+        location: {
+          state: companyState,
+          county: companyCounty,
+          city: companyCity,
+        },
+        email: companyEmail,
+        phone: companyPhone,
+        website: companyWebsite,
+        logo: companyLogoDataUrl,
+      },
+      about: {
+        short_description: aboutShort,
+        long_description: aboutLong,
+      },
       social_urls: {
         facebook,
         linked_in: linkedIn,
         instagram,
       },
     };
-console.log(payload);
+    console.log(payload);
     updateProfileMutation.mutate(payload, {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['profile'] });
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
         alert("Profile updated successfully");
       },
       onError: (error: any) => {
         console.error("Error updating profile:", error);
-        const errorMessage = error?.response?.data?.message || error?.message || "Failed to update profile. Please try again.";
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to update profile. Please try again.";
         setError(errorMessage);
       },
     });
+  };
+
+  const handleUpdateClick = () => {
+    handleSubmit({ preventDefault: () => {} } as React.FormEvent);
   };
 
   if (isLoading) {
@@ -158,7 +271,9 @@ console.log(payload);
             <CardTitle>Error Loading Profile</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-muted-foreground">Failed to load profile data. Please try again later.</div>
+            <div className="text-muted-foreground">
+              Failed to load profile data. Please try again later.
+            </div>
             <Button asChild variant="secondary" className="mt-4">
               <Link href="/admin">Back to Dashboard</Link>
             </Button>
@@ -173,9 +288,7 @@ console.log(payload);
       <Card>
         <CardHeader>
           <CardTitle>Profile Settings</CardTitle>
-          <CardDescription>
-            Update your profile information
-          </CardDescription>
+          <CardDescription>Update your profile information</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
@@ -191,12 +304,7 @@ console.log(payload);
               </div>
               <div>
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  readOnly
-                />
+                <Input id="email" type="email" value={email} readOnly />
               </div>
             </div>
 
@@ -226,7 +334,7 @@ console.log(payload);
                 <select
                   id="state"
                   value={state}
-                  onChange={e => {
+                  onChange={(e) => {
                     const selectedId = e.target.value;
                     setState(selectedId);
                     // Reset county and city when state changes
@@ -235,28 +343,41 @@ console.log(payload);
                   }}
                   disabled={statesLoading}
                   className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
-                  style={{ border: '1px solid #e5e5e5', minHeight: '37px' }}
+                  style={{ border: "1px solid #e5e5e5", minHeight: "37px" }}
                 >
-                <option value="">{statesLoading ? 'Loading states...' : 'Select state'}</option>
-                {Array.isArray(states) && states.map((stateOption: any, index: number) => {
-                  // Debug: log each state option structure
-                  return (
-                    <option key={stateOption.id || index} value={stateOption.id || stateOption.value || stateOption}>
-                      {stateOption.name || stateOption.title || stateOption.label || stateOption}
-                    </option>
-                  );
-                })}
-              </select>
-              {!statesLoading && (!states || states.length === 0) && (
-                <p className="text-xs text-red-500 mt-1">No states available. Check console for API response.</p>
-              )}
-            </div>
+                  <option value="">
+                    {statesLoading ? "Loading states..." : "Select state"}
+                  </option>
+                  {Array.isArray(states) &&
+                    states.map((stateOption: any, index: number) => {
+                      // Debug: log each state option structure
+                      return (
+                        <option
+                          key={stateOption.id || index}
+                          value={
+                            stateOption.id || stateOption.value || stateOption
+                          }
+                        >
+                          {stateOption.name ||
+                            stateOption.title ||
+                            stateOption.label ||
+                            stateOption}
+                        </option>
+                      );
+                    })}
+                </select>
+                {!statesLoading && (!states || states.length === 0) && (
+                  <p className="text-xs text-red-500 mt-1">
+                    No states available. Check console for API response.
+                  </p>
+                )}
+              </div>
               <div>
                 <Label htmlFor="county">County</Label>
                 <select
                   id="county"
                   value={county}
-                  onChange={e => {
+                  onChange={(e) => {
                     const selectedId = e.target.value;
                     setCounty(selectedId);
                     setCountry(selectedId);
@@ -265,41 +386,65 @@ console.log(payload);
                   }}
                   disabled={!state || countiesLoading}
                   className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
-                  style={{ border: '1px solid #e5e5e5', minHeight: '37px' }}
+                  style={{ border: "1px solid #e5e5e5", minHeight: "37px" }}
                 >
-                <option value="">{countiesLoading ? 'Loading counties...' : 'Select county'}</option>
-                {Array.isArray(counties) && counties.map((countyOption: any, index: number) => {
-                  return (
-                    <option key={countyOption.id || index} value={countyOption.id || countyOption.value || countyOption}>
-                      {countyOption.name || countyOption.title || countyOption.label || countyOption}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
+                  <option value="">
+                    {countiesLoading ? "Loading counties..." : "Select county"}
+                  </option>
+                  {Array.isArray(counties) &&
+                    counties.map((countyOption: any, index: number) => {
+                      return (
+                        <option
+                          key={countyOption.id || index}
+                          value={
+                            countyOption.id ||
+                            countyOption.value ||
+                            countyOption
+                          }
+                        >
+                          {countyOption.name ||
+                            countyOption.title ||
+                            countyOption.label ||
+                            countyOption}
+                        </option>
+                      );
+                    })}
+                </select>
+              </div>
 
               <div>
                 <Label htmlFor="city">City</Label>
                 <select
                   id="city"
                   value={city}
-                  onChange={e => {
+                  onChange={(e) => {
                     const selectedId = e.target.value;
                     setCity(selectedId);
                   }}
                   disabled={!county || citiesLoading}
                   className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
-                  style={{ border: '1px solid #e5e5e5', minHeight: '37px' }}
+                  style={{ border: "1px solid #e5e5e5", minHeight: "37px" }}
                 >
-                <option value="">{citiesLoading ? 'Loading cities...' : 'Select city'}</option>
-                {Array.isArray(cities) && cities.map((cityOption: any, index: number) => {
-                  return (
-                    <option key={cityOption.id || index} value={cityOption.id || cityOption.value || cityOption}>
-                      {cityOption.name || cityOption.title || cityOption.label || cityOption}
-                    </option>
-                  );
-                })}
-              </select>
+                  <option value="">
+                    {citiesLoading ? "Loading cities..." : "Select city"}
+                  </option>
+                  {Array.isArray(cities) &&
+                    cities.map((cityOption: any, index: number) => {
+                      return (
+                        <option
+                          key={cityOption.id || index}
+                          value={
+                            cityOption.id || cityOption.value || cityOption
+                          }
+                        >
+                          {cityOption.name ||
+                            cityOption.title ||
+                            cityOption.label ||
+                            cityOption}
+                        </option>
+                      );
+                    })}
+                </select>
               </div>
             </div>
 
@@ -315,7 +460,7 @@ console.log(payload);
             {/* Social Media URLs */}
             <div className="space-y-4 pt-4 border-t">
               <h3 className="text-lg font-semibold">Social Media Links</h3>
-              
+
               <div>
                 <Label htmlFor="facebook">Facebook URL</Label>
                 <Input
@@ -358,8 +503,13 @@ console.log(payload);
 
             <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
               <div className="flex gap-2">
-                <Button type="submit" disabled={updateProfileMutation.isPending}>
-                  {updateProfileMutation.isPending ? "Updating..." : "Update Profile"}
+                <Button
+                  type="submit"
+                  disabled={updateProfileMutation.isPending}
+                >
+                  {updateProfileMutation.isPending
+                    ? "Updating..."
+                    : "Update Profile"}
                 </Button>
                 <Button asChild variant="secondary" type="button">
                   <Link href="/admin">Cancel</Link>
@@ -372,7 +522,11 @@ console.log(payload);
                 className="sm:ml-auto"
               >
                 <Link
-                  href={email ? `/admin/reset-password?email=${encodeURIComponent(email)}` : "/admin/reset-password"}
+                  href={
+                    email
+                      ? `/admin/reset-password?email=${encodeURIComponent(email)}`
+                      : "/admin/reset-password"
+                  }
                 >
                   Reset password
                 </Link>
@@ -381,7 +535,257 @@ console.log(payload);
           </form>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Company</CardTitle>
+          <CardDescription>Company details and branding</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="company_logo">Company Logo</Label>
+              <Input
+                id="company_logo"
+                type="file"
+                accept="image/*"
+                onChange={handleCompanyLogoChange}
+              />
+              {companyLogoPreview && (
+                <div className="mt-3">
+                  <img
+                    src={companyLogoPreview}
+                    alt="Company logo preview"
+                    className="h-20 w-20 rounded border object-cover"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="company_name">Company Name</Label>
+              <Input
+                id="company_name"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Company name"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="company_address">Address</Label>
+              <Input
+                id="company_address"
+                value={companyAddress}
+                onChange={(e) => setCompanyAddress(e.target.value)}
+                placeholder="Company address"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="company_state">State</Label>
+                <select
+                  id="company_state"
+                  value={companyState}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    setCompanyState(selectedId);
+                    setCompanyCounty("");
+                    setCompanyCity("");
+                  }}
+                  disabled={statesLoading}
+                  className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
+                  style={{ border: "1px solid #e5e5e5", minHeight: "37px" }}
+                >
+                  <option value="">
+                    {statesLoading ? "Loading states..." : "Select state"}
+                  </option>
+                  {Array.isArray(states) &&
+                    states.map((stateOption: any, index: number) => (
+                      <option
+                        key={stateOption.id || index}
+                        value={
+                          stateOption.id || stateOption.value || stateOption
+                        }
+                      >
+                        {stateOption.name ||
+                          stateOption.title ||
+                          stateOption.label ||
+                          stateOption}
+                      </option>
+                    ))}
+                </select>
+                {!statesLoading && (!states || states.length === 0) && (
+                  <p className="text-xs text-red-500 mt-1">
+                    No states available. Check console for API response.
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="company_county">County</Label>
+                <select
+                  id="company_county"
+                  value={companyCounty}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    setCompanyCounty(selectedId);
+                    setCompanyCity("");
+                  }}
+                  disabled={!companyState || companyCountiesLoading}
+                  className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
+                  style={{ border: "1px solid #e5e5e5", minHeight: "37px" }}
+                >
+                  <option value="">
+                    {companyCountiesLoading
+                      ? "Loading counties..."
+                      : "Select county"}
+                  </option>
+                  {Array.isArray(companyCounties) &&
+                    companyCounties.map((countyOption: any, index: number) => (
+                      <option
+                        key={countyOption.id || index}
+                        value={
+                          countyOption.id || countyOption.value || countyOption
+                        }
+                      >
+                        {countyOption.name ||
+                          countyOption.title ||
+                          countyOption.label ||
+                          countyOption}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="company_city">City</Label>
+                <select
+                  id="company_city"
+                  value={companyCity}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    setCompanyCity(selectedId);
+                  }}
+                  disabled={!companyCounty || companyCitiesLoading}
+                  className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
+                  style={{ border: "1px solid #e5e5e5", minHeight: "37px" }}
+                >
+                  <option value="">
+                    {companyCitiesLoading ? "Loading cities..." : "Select city"}
+                  </option>
+                  {Array.isArray(companyCities) &&
+                    companyCities.map((cityOption: any, index: number) => (
+                      <option
+                        key={cityOption.id || index}
+                        value={cityOption.id || cityOption.value || cityOption}
+                      >
+                        {cityOption.name ||
+                          cityOption.title ||
+                          cityOption.label ||
+                          cityOption}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="company_email">Company Email</Label>
+                <Input
+                  id="company_email"
+                  type="email"
+                  value={companyEmail}
+                  onChange={(e) => setCompanyEmail(e.target.value)}
+                  placeholder="company@email.com"
+                />
+              </div>
+              <div>
+                <Label htmlFor="company_phone">Company Phone</Label>
+                <Input
+                  id="company_phone"
+                  type="tel"
+                  value={companyPhone}
+                  onChange={(e) => setCompanyPhone(e.target.value)}
+                  placeholder="+971 1234567890"
+                />
+              </div>
+              <div>
+                <Label htmlFor="company_website">Website</Label>
+                <Input
+                  id="company_website"
+                  type="url"
+                  value={companyWebsite}
+                  onChange={(e) => setCompanyWebsite(e.target.value)}
+                  placeholder="https://company.com"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center pt-2">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  onClick={handleUpdateClick}
+                  disabled={updateProfileMutation.isPending}
+                >
+                  {updateProfileMutation.isPending ? "Updating..." : "Update"}
+                </Button>
+                <Button asChild variant="secondary" type="button">
+                  <Link href="/admin">Cancel</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>About</CardTitle>
+          <CardDescription>Describe your company and services</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="about_short">Short Description</Label>
+              <textarea
+                id="about_short"
+                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={aboutShort}
+                onChange={(e) => setAboutShort(e.target.value)}
+                placeholder="Short summary"
+              />
+            </div>
+            <div>
+              <Label htmlFor="about_long">Long Description</Label>
+              <textarea
+                id="about_long"
+                className="w-full min-h-[140px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={aboutLong}
+                onChange={(e) => setAboutLong(e.target.value)}
+                placeholder="Detailed description"
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center pt-2">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  onClick={handleUpdateClick}
+                  disabled={updateProfileMutation.isPending}
+                >
+                  {updateProfileMutation.isPending ? "Updating..." : "Update"}
+                </Button>
+                <Button asChild variant="secondary" type="button">
+                  <Link href="/admin">Cancel</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-

@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import React, { useState, useEffect } from 'react';
+import { useRouter } from "next/navigation";
+import SearchFilters from "@/components/SearchFilters";
 import axiosInstance from '@/services/Api';
 
 interface User {
@@ -24,9 +26,11 @@ interface SearchFilters {
   email: string;
   name: string;
   crm_status: string;
+  keyword: string;
 }
 
 export default function UsersPage() {
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,35 +41,35 @@ export default function UsersPage() {
     email: '',
     name: '',
     crm_status: '',
+    keyword: "",
   });
-  const [showFilters, setShowFilters] = useState(false);
 
   // Build query string from search filters
-  const buildQueryString = () => {
+  const buildQueryString = (filters: SearchFilters = searchFilters) => {
     const queryParts: string[] = [];
     
-    if (searchFilters.email.trim()) {
-      queryParts.push(`email:LIKE,${searchFilters.email.trim()}`);
+    if (filters.email.trim()) {
+      queryParts.push(`email:LIKE,${filters.email.trim()}`);
     }
     
-    if (searchFilters.name.trim()) {
-      queryParts.push(`name:LIKE,${searchFilters.name.trim()}`);
+    if (filters.name.trim()) {
+      queryParts.push(`name:LIKE,${filters.name.trim()}`);
     }
     
-    if (searchFilters.crm_status) {
-      queryParts.push(`crm_status:=,${searchFilters.crm_status}`);
+    if (filters.crm_status) {
+      queryParts.push(`crm_status:=,${filters.crm_status}`);
     }
     
     return queryParts.length > 0 ? queryParts.join(';') : '';
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (filtersToUse?: SearchFilters) => {
     try {
       setLoading(true);
       setError(null);
       
       const params: any = { page: currentPage };
-      const queryString = buildQueryString();
+      const queryString = buildQueryString(filtersToUse);
       
       if (queryString) {
         params.q = queryString;
@@ -123,14 +127,32 @@ export default function UsersPage() {
   };
 
   const handleClearSearch = () => {
-    setSearchFilters({
+    const clearedFilters: SearchFilters = {
       email: '',
       name: '',
       crm_status: '',
-    });
+      keyword: '',
+    };
+    setSearchFilters(clearedFilters);
     setCurrentPage(1);
-    // Trigger a re-fetch after clearing
-    setTimeout(() => fetchUsers(), 0);
+    // Pass cleared filters directly to fetchUsers to avoid stale state
+    setTimeout(() => fetchUsers(clearedFilters), 0);
+  };
+
+  const handleKeywordClear = () => {
+    if (searchFilters.keyword.trim()) {
+      setSearchFilters(prev => ({
+        ...prev,
+        keyword: ''
+      }));
+      setCurrentPage(1);
+      setTimeout(() => fetchUsers(), 0);
+    } else {
+      setSearchFilters(prev => ({
+        ...prev,
+        keyword: ''
+      }));
+    }
   };
 
   const handleFilterChange = (field: keyof SearchFilters, value: string) => {
@@ -298,73 +320,68 @@ export default function UsersPage() {
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Users</h1>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          {showFilters ? 'Hide Filters' : 'Show Filters'}
-        </Button>
+        <SearchFilters
+          className="max-w-2xl"
+          keyword={searchFilters.keyword}
+          isKeywordValid={!searchFilters.keyword || searchFilters.keyword.length === 0 || searchFilters.keyword.length >= 3}
+          hasActiveFilters={!!(searchFilters.email.trim() || searchFilters.name.trim() || searchFilters.crm_status)}
+          isLoading={loading}
+          onKeywordChange={(value) => handleFilterChange('name', value)}
+          onKeywordClear={handleKeywordClear}
+          onSearch={handleSearch}
+          onClear={handleClearSearch}
+          renderFields={() => (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="email-search">Email</Label>
+                <Input
+                  id="email-search"
+                  placeholder="Search by email..."
+                  value={searchFilters.email}
+                  onChange={(e) => handleFilterChange('email', e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="name-search">Name</Label>
+                <Input
+                  id="name-search"
+                  placeholder="Search by name..."
+                  value={searchFilters.name}
+                  onChange={(e) => handleFilterChange('name', e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="crm-status-search">CRM Status</Label>
+                <Select
+                  value={searchFilters.crm_status}
+                  onValueChange={(value) => handleFilterChange('crm_status', value)}
+                >
+                  <SelectTrigger id="crm-status-search">
+                    <SelectValue placeholder="Select CRM status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Not in CRM</SelectItem>
+                    <SelectItem value="1">In CRM</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+        />
       </div>
-
-      {/* Search Filters */}
-      {showFilters && (
-        <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email-search">Email</Label>
-              <Input
-                id="email-search"
-                placeholder="Search by email..."
-                value={searchFilters.email}
-                onChange={(e) => handleFilterChange('email', e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="name-search">Name</Label>
-              <Input
-                id="name-search"
-                placeholder="Search by name..."
-                value={searchFilters.name}
-                onChange={(e) => handleFilterChange('name', e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="crm-status-search">CRM Status</Label>
-              <Select
-                value={searchFilters.crm_status}
-                onValueChange={(value) => handleFilterChange('crm_status', value)}
-              >
-                <SelectTrigger id="crm-status-search">
-                  <SelectValue placeholder="Select CRM status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Not in CRM</SelectItem>
-                  <SelectItem value="1">In CRM</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex gap-2 mt-4">
-            <Button onClick={handleSearch} size="sm">
-              Search
-            </Button>
-            <Button onClick={handleClearSearch} variant="outline" size="sm">
-              Clear
-            </Button>
-          </div>
-        </Card>
-      )}
 
       <div className="grid gap-4">
         {Array.isArray(users) && users.length > 0 ? (
           users.map((user) => (
-            <Card key={user.id}>
+            <Card
+              key={user.id}
+              className="cursor-pointer"
+              onClick={() => router.push(`/admin/users/${user.id}`)}
+            >
               <CardHeader className="flex flex-row justify-between items-center">
                 <div>
                   <CardTitle className="text-lg">
@@ -381,7 +398,7 @@ export default function UsersPage() {
                     {user.created_at && <span> • Joined: {new Date(user.created_at).toLocaleDateString()}</span>}
                   </div>
                 </div>
-                <div className="flex gap-2 items-center flex-wrap">
+                <div className="flex gap-2 items-center flex-wrap" onClick={(e) => e.stopPropagation()}>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                     user.status === 'Active' 
                       ? 'bg-green-100 text-green-800' 

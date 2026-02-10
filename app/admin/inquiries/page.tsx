@@ -2,10 +2,10 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from '@/components/ui/skeleton';
 import React, { useState, useEffect, Suspense } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import SearchFilters from "@/components/SearchFilters";
 
 import { useEnquiries } from '@/services/enquiry/EnquiryQueris';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,7 +20,6 @@ function InquiriesContent() {
   
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   
   // Initialize state from URL params
@@ -83,6 +82,19 @@ function InquiriesContent() {
     setActiveFilters(newFilters);
     router.push('/admin/inquiries?page=1');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleKeywordClear = () => {
+    const nextFilters = { ...filters, q: "" };
+    setFilters(nextFilters);
+
+    if (activeFilters.q && activeFilters.q.length >= 3) {
+      const newFilters = { ...nextFilters, page: 1 };
+      setActiveFilters(newFilters);
+      const queryString = buildQueryString(newFilters);
+      router.push(`/admin/inquiries?${queryString}`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
   
   const hasActiveFilters = !!(filters.q && filters.q.length >= 3);
@@ -236,71 +248,19 @@ function InquiriesContent() {
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Enquiries</h1>
-        <Button 
-          variant={showFilters ? "default" : "outline"} 
-          size="sm"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          {showFilters ? "Hide Search" : "Show Search"}
-        </Button>
+        <SearchFilters
+          className="max-w-lg"
+          keyword={filters.q || ""}
+          isKeywordValid={isKeywordValid}
+          hasActiveFilters={hasActiveFilters}
+          isLoading={isLoading}
+          onKeywordChange={(value) => setFilters({ ...filters, q: value })}
+          onKeywordClear={handleKeywordClear}
+          onSearch={handleSearch}
+          onClear={handleClearFilters}
+          renderFields={() => null}
+        />
       </div>
-      
-      {/* Search Filter */}
-      {showFilters && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Search Enquiries</CardTitle>
-          </CardHeader>
-          <div className="px-6 pb-6">
-            <div className="grid grid-cols-1 gap-4 mb-4">
-              {/* Keyword Search */}
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Search Keyword</label>
-                <Input
-                  type="text"
-                  placeholder="Search enquiries... (minimum 3 characters)"
-                  value={filters.q || ''}
-                  onChange={(e) => setFilters({ ...filters, q: e.target.value })}
-                  onKeyDown={(e) => e.key === 'Enter' && isKeywordValid && handleSearch()}
-                  className={!isKeywordValid ? 'border-red-500' : ''}
-                />
-                {!isKeywordValid && (
-                  <p className="text-xs text-red-500 mt-1">
-                    Please enter at least 3 characters to search
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <Button onClick={handleSearch} disabled={isLoading || !isKeywordValid}>
-                  Search
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleClearFilters}
-                  disabled={!hasActiveFilters || isLoading}
-                >
-                  Clear Search
-                </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                {hasActiveFilters && (
-                  <span className="flex items-center text-sm text-muted-foreground">
-                    Search active: "{filters.q}"
-                  </span>
-                )}
-                {!isKeywordValid && (
-                  <span className="flex items-center text-xs text-red-500">
-                    ⚠️ Search keyword must be at least 3 characters
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
       
       {/* Error Message */}
       {searchError && (
@@ -312,7 +272,11 @@ function InquiriesContent() {
       <div className="grid gap-4">
         {Array.isArray(inquiries) && inquiries.length > 0 ? (
           inquiries.map((inquiry: any) => (
-            <Card key={inquiry.id}>
+            <Card
+              key={inquiry.id}
+              className="cursor-pointer"
+              onClick={() => router.push(`/admin/inquiries/${inquiry.id}`)}
+            >
               <CardHeader className="flex flex-row justify-between items-center">
                 <div>
                   <CardTitle className="text-lg">
@@ -334,7 +298,10 @@ function InquiriesContent() {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div
+                  className="flex gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Button asChild variant="outline" size="sm">
                     <Link href={`/admin/inquiries/${inquiry.id}`}>View</Link>
                   </Button>
