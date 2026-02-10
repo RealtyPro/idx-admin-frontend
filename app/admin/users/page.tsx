@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from "next/navigation";
 import SearchFilters from "@/components/SearchFilters";
 import axiosInstance from '@/services/Api';
@@ -20,6 +20,7 @@ interface User {
   lastActive?: string;
   crm_status?: string;
   created_at?: string;
+  avatar?: string;
 }
 
 interface SearchFilters {
@@ -37,12 +38,32 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const lastFetchKeyRef = useRef<string | null>(null);
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
     email: '',
     name: '',
     crm_status: '',
     keyword: "",
   });
+
+  const getInitials = (name?: string, email?: string) => {
+    const source = name?.trim() || email?.trim() || "";
+    if (!source) return "U";
+    const parts = source.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+  };
+
+  const formatJoinedDate = (value?: string) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   // Build query string from search filters
   const buildQueryString = (filters: SearchFilters = searchFilters) => {
@@ -63,13 +84,19 @@ export default function UsersPage() {
     return queryParts.length > 0 ? queryParts.join(';') : '';
   };
 
-  const fetchUsers = async (filtersToUse?: SearchFilters) => {
+  const fetchUsers = async (filtersToUse?: SearchFilters, force = false) => {
     try {
       setLoading(true);
       setError(null);
       
       const params: any = { page: currentPage };
       const queryString = buildQueryString(filtersToUse);
+      const fetchKey = `${currentPage}|${queryString}`;
+      if (!force && lastFetchKeyRef.current === fetchKey) {
+        setLoading(false);
+        return;
+      }
+      lastFetchKeyRef.current = fetchKey;
       
       if (queryString) {
         params.q = queryString;
@@ -95,6 +122,7 @@ export default function UsersPage() {
             lastActive: user.last_active || user.last_login || user.updated_at || '',
             crm_status: user.crm_status ?? "0",
             created_at: user.created_at || '',
+            avatar: user.avatar || user.photo || user.profile_image || user.image || user.profile_photo || '',
           }))
         : (data.data || data.users || []).map((user: any, index: number) => ({
             id: user.id || user.user_id || index + 1,
@@ -105,6 +133,7 @@ export default function UsersPage() {
             lastActive: user.last_active || user.last_login || user.updated_at || '',
             crm_status: user.crm_status ?? "0",
             created_at: user.created_at || '',
+            avatar: user.avatar || user.photo || user.profile_image || user.image || user.profile_photo || '',
           }));
       
       setUsers(mappedUsers);
@@ -123,7 +152,7 @@ export default function UsersPage() {
 
   const handleSearch = () => {
     setCurrentPage(1); // Reset to first page when searching
-    fetchUsers();
+    fetchUsers(undefined, true);
   };
 
   const handleClearSearch = () => {
@@ -136,7 +165,7 @@ export default function UsersPage() {
     setSearchFilters(clearedFilters);
     setCurrentPage(1);
     // Pass cleared filters directly to fetchUsers to avoid stale state
-    setTimeout(() => fetchUsers(clearedFilters), 0);
+    setTimeout(() => fetchUsers(clearedFilters, true), 0);
   };
 
   const handleKeywordClear = () => {
@@ -146,7 +175,7 @@ export default function UsersPage() {
         keyword: ''
       }));
       setCurrentPage(1);
-      setTimeout(() => fetchUsers(), 0);
+      setTimeout(() => fetchUsers(undefined, true), 0);
     } else {
       setSearchFilters(prev => ({
         ...prev,
@@ -374,7 +403,7 @@ export default function UsersPage() {
         />
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-2">
         {Array.isArray(users) && users.length > 0 ? (
           users.map((user) => (
             <Card
@@ -383,29 +412,101 @@ export default function UsersPage() {
               onClick={() => router.push(`/admin/users/${user.id}`)}
             >
               <CardHeader className="flex flex-row justify-between items-center">
-                <div>
-                  <CardTitle className="text-lg">
-                    <Link 
-                      href={`/admin/users/${user.id}`}
-                      className="hover:text-primary hover:underline transition-colors"
-                    >
-                      {user.name}
-                    </Link>
-                  </CardTitle>
-                  <div className="text-sm text-muted-foreground">
-                    {user.email}
-                    {user.role && <span> • Role: {user.role}</span>}
-                    {user.created_at && <span> • Joined: {new Date(user.created_at).toLocaleDateString()}</span>}
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full overflow-hidden bg-slate-100 text-slate-600 flex items-center justify-center text-sm font-semibold">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name || "User"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span>{getInitials(user.name, user.email)}</span>
+                    )}
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <Link 
+                        href={`/admin/users/${user.id}`}
+                        className="hover:text-primary hover:underline transition-colors"
+                      >
+                        {user.name}
+                      </Link>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                        user.status === 'Active' 
+                          ? 'bg-[#a0b76e]/15 text-[#a0b76e] border-[#a0b76e]' 
+                          : 'bg-red-50 text-red-600 border-red-400'
+                      }`}>
+                        {user.status}
+                      </span>
+                    </CardTitle>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
+                      {user.email && (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                            <svg
+                              className="h-3.5 w-3.5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <rect x="2" y="4" width="20" height="16" rx="4" />
+                              <path d="m22 6-10 7L2 6" />
+                            </svg>
+                          </span>
+                          <span>{user.email}</span>
+                        </span>
+                      )}
+                      {user.role && (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                            <svg
+                              className="h-3.5 w-3.5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <circle cx="12" cy="12" r="9" />
+                              <circle cx="12" cy="10" r="3" />
+                              <path d="M6.5 18a5.5 5.5 0 0 1 11 0" />
+                            </svg>
+                          </span>
+                          <span>{user.role}</span>
+                        </span>
+                      )}
+                      {user.created_at && (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                            <svg
+                              className="h-3.5 w-3.5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <rect x="3" y="4" width="18" height="18" rx="4" />
+                              <path d="M16 2v4" />
+                              <path d="M8 2v4" />
+                              <path d="M3 10h18" />
+                              <path d="M12 14v6" />
+                              <path d="M9 17h6" />
+                            </svg>
+                          </span>
+                          <span>{formatJoinedDate(user.created_at)}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-2 items-center flex-wrap" onClick={(e) => e.stopPropagation()}>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    user.status === 'Active' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {user.status}
-                  </span>
                   <Button 
                     variant="outline" 
                     size="sm"

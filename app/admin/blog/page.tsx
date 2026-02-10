@@ -28,6 +28,12 @@ function BlogListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const capitalizeFirst = (value?: string) => {
+    const text = (value || "").trim();
+    if (!text) return "";
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  };
+
   // Initialize state from URL params
   const pageFromUrl = parseInt(searchParams.get("page") || "1", 10);
   const [currentPage, setCurrentPage] = useState(pageFromUrl);
@@ -296,7 +302,7 @@ function BlogListContent() {
           No blog posts found.
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-2">
           {blogs.map((blog) => (
             <Card
               key={blog.id}
@@ -305,28 +311,47 @@ function BlogListContent() {
             >
               <CardHeader className="flex flex-row justify-between items-center">
                 <div>
-                  <CardTitle className="text-lg">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
                     <Link
                       href={`/admin/blog/${blog.id}`}
                       className="hover:text-primary hover:underline transition-colors"
                     >
                       {blog.title}
                     </Link>
-                  </CardTitle>
-                  <div className="text-sm text-muted-foreground">
-                    {blog.subtitle && (
-                      <div className="italic mb-1">{blog.subtitle}</div>
-                    )}
-                    <span>By {blog.author}</span>
-                    <span className="mx-2">|</span>
-                    <span>Category: {blog.category}</span>
-                    <span className="mx-2">|</span>
-                    <span>Status: {blog.status}</span>
                     {blog.isFeatured && (
-                      <span className="ml-2 px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 text-xs font-semibold">
+                      <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 px-2 py-0.5 text-[11px] text-yellow-800">
                         Featured
                       </span>
                     )}
+                  </CardTitle>
+                  <div className="text-xs text-muted-foreground">
+                    {blog.subtitle && (
+                      <div className="italic mb-1">{blog.subtitle}</div>
+                    )}
+
+                    <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                      <span>By {blog.author}</span>
+                      <span className="mx-2">|</span>
+                      <span>Category</span>
+                      {blog.category && (
+                        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-slate-700">
+                          {capitalizeFirst(blog.category)}
+                        </span>
+                      )}
+                      <span className="mx-2">|</span>
+                      <span>Status</span>
+                      {blog.status && (
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 ${
+                            String(blog.status).toLowerCase() === "published"
+                              ? "border-green-200 bg-green-50 text-green-700"
+                              : "border-amber-200 bg-amber-50 text-amber-700"
+                          }`}
+                        >
+                          {capitalizeFirst(blog.status)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div

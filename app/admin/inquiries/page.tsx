@@ -21,6 +21,25 @@ function InquiriesContent() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  const getInitials = (name?: string, email?: string) => {
+    const source = name?.trim() || email?.trim() || "";
+    if (!source) return "U";
+    const parts = source.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+  };
+
+  const formatDate = (value?: string) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
   
   // Initialize state from URL params
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10);
@@ -269,7 +288,7 @@ function InquiriesContent() {
         </div>
       )}
       
-      <div className="grid gap-4">
+      <div className="grid gap-2">
         {Array.isArray(inquiries) && inquiries.length > 0 ? (
           inquiries.map((inquiry: any) => (
             <Card
@@ -278,25 +297,97 @@ function InquiriesContent() {
               onClick={() => router.push(`/admin/inquiries/${inquiry.id}`)}
             >
               <CardHeader className="flex flex-row justify-between items-center">
-                <div>
-                  <CardTitle className="text-lg">
-                    <Link 
-                      href={`/admin/inquiries/${inquiry.id}`}
-                      className="hover:text-primary hover:underline transition-colors"
-                    >
-                      {inquiry.name || inquiry.full_name || 'No Name'}
-                    </Link>
-                  </CardTitle>
-                  <div className="text-sm text-muted-foreground">
-                    {inquiry.email}
-                    {(inquiry.date || inquiry.created_at) && <span> • {new Date(inquiry.date || inquiry.created_at).toLocaleDateString()}</span>}
-                    {(inquiry.listingId || inquiry.listing_id) && <span> • Listing: {inquiry.listingId || inquiry.listing_id}</span>}
+                <div className="flex items-start gap-3">
+                  <div className="h-12 w-12 rounded-full overflow-hidden bg-slate-100 text-slate-600 flex items-center justify-center text-sm font-semibold">
+                    {inquiry.photo || inquiry.avatar || inquiry.image ? (
+                      <img
+                        src={inquiry.photo || inquiry.avatar || inquiry.image}
+                        alt={inquiry.name || inquiry.full_name || "Inquiry"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span>
+                        {getInitials(inquiry.name || inquiry.full_name, inquiry.email)}
+                      </span>
+                    )}
                   </div>
-                  {inquiry.message && (
-                    <div className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                      {inquiry.message}
+                  <div>
+                    <CardTitle className="text-base font-semibold">
+                      <Link 
+                        href={`/admin/inquiries/${inquiry.id}`}
+                        className="hover:text-primary hover:underline transition-colors"
+                      >
+                        {inquiry.name || inquiry.full_name || 'No Name'}
+                      </Link>
+                    </CardTitle>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
+                      {inquiry.email && (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                            <svg
+                              className="h-3.5 w-3.5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <rect x="2" y="4" width="20" height="16" rx="4" />
+                              <path d="m22 6-10 7L2 6" />
+                            </svg>
+                          </span>
+                          <span>{inquiry.email}</span>
+                        </span>
+                      )}
+                      {(inquiry.date || inquiry.created_at) && (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                            <svg
+                              className="h-3.5 w-3.5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <rect x="3" y="4" width="18" height="18" rx="4" />
+                              <path d="M16 2v4" />
+                              <path d="M8 2v4" />
+                              <path d="M3 10h18" />
+                            </svg>
+                          </span>
+                          <span>{formatDate(inquiry.date || inquiry.created_at)}</span>
+                        </span>
+                      )}
+                      {(inquiry.listingId || inquiry.listing_id) && (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                            <svg
+                              className="h-3.5 w-3.5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <rect x="3" y="4" width="18" height="16" rx="3" />
+                              <path d="M7 8h10" />
+                              <path d="M7 12h6" />
+                            </svg>
+                          </span>
+                          <span>{inquiry.listingId || inquiry.listing_id}</span>
+                        </span>
+                      )}
                     </div>
-                  )}
+                    {inquiry.message && (
+                      <div className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                        {inquiry.message}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div
                   className="flex gap-2"
