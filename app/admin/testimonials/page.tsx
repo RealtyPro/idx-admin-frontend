@@ -3,19 +3,18 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useTestimonials, useDeleteTestimonial } from '@/services/testimonial/TestimonialQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TestimonialSearchParams } from '@/services/testimonial/TestimonialServices';
+import SearchFilters from "@/components/SearchFilters";
 
 function TestimonialsListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   
-  const [showFilters, setShowFilters] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   
@@ -80,6 +79,19 @@ function TestimonialsListContent() {
     setActiveFilters(newFilters);
     router.push('/admin/testimonials?page=1');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleKeywordClear = () => {
+    const nextFilters = { ...filters, q: "" };
+    setFilters(nextFilters);
+
+    if (activeFilters.q && activeFilters.q.length >= 3) {
+      const newFilters = { ...nextFilters, page: 1 };
+      setActiveFilters(newFilters);
+      const queryString = buildQueryString(newFilters);
+      router.push(`/admin/testimonials?${queryString}`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
   
   const hasActiveFilters = !!(filters.q && filters.q.length >= 3);
@@ -235,76 +247,24 @@ function TestimonialsListContent() {
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Testimonials</h1>
-        <div className="flex gap-2">
-          <Button 
-            variant={showFilters ? "default" : "outline"} 
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            {showFilters ? "Hide Search" : "Show Search"}
-          </Button>
+        <div className="flex gap-2 items-center flex-1 justify-end">
+          <SearchFilters
+            className="max-w-lg"
+            keyword={filters.q || ""}
+            isKeywordValid={isKeywordValid}
+            hasActiveFilters={hasActiveFilters}
+            isLoading={isLoading}
+            onKeywordChange={(value) => setFilters({ ...filters, q: value })}
+            onKeywordClear={handleKeywordClear}
+            onSearch={handleSearch}
+            onClear={handleClearFilters}
+            renderFields={() => null}
+          />
           <Button asChild>
             <Link href="/admin/testimonials/create">Add Testimonial</Link>
           </Button>
         </div>
       </div>
-      
-      {/* Search Filter */}
-      {showFilters && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Search Testimonials</CardTitle>
-          </CardHeader>
-          <div className="px-6 pb-6">
-            <div className="grid grid-cols-1 gap-4 mb-4">
-              {/* Keyword Search */}
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Search Keyword</label>
-                <Input
-                  type="text"
-                  placeholder="Search testimonials... (minimum 3 characters)"
-                  value={filters.q || ''}
-                  onChange={(e) => setFilters({ ...filters, q: e.target.value })}
-                  onKeyDown={(e) => e.key === 'Enter' && isKeywordValid && handleSearch()}
-                  className={!isKeywordValid ? 'border-red-500' : ''}
-                />
-                {!isKeywordValid && (
-                  <p className="text-xs text-red-500 mt-1">
-                    Please enter at least 3 characters to search
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <Button onClick={handleSearch} disabled={isLoading || !isKeywordValid}>
-                  Search
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleClearFilters}
-                  disabled={!hasActiveFilters || isLoading}
-                >
-                  Clear Search
-                </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                {hasActiveFilters && (
-                  <span className="flex items-center text-sm text-muted-foreground">
-                    Search active: "{filters.q}"
-                  </span>
-                )}
-                {!isKeywordValid && (
-                  <span className="flex items-center text-xs text-red-500">
-                    ⚠️ Search keyword must be at least 3 characters
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
       
       {/* Error Message */}
       {searchError && (
@@ -316,7 +276,11 @@ function TestimonialsListContent() {
       <div className="grid gap-4">
         {Array.isArray(testimonials) && testimonials.length > 0 ? (
           testimonials.map((t: any) => (
-            <Card key={t.id}>
+            <Card
+              key={t.id}
+              className="cursor-pointer"
+              onClick={() => router.push(`/admin/testimonials/${t.id}`)}
+            >
               <CardHeader className="flex flex-row justify-between items-center">
                 <div>
                   <CardTitle className="text-lg">
@@ -333,7 +297,10 @@ function TestimonialsListContent() {
                     {(t.date || t.created_at) && <span>{new Date(t.date || t.created_at).toLocaleDateString()}</span>}
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div
+                  className="flex gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Button asChild variant="default" size="sm">
                     <Link href={`/admin/testimonials/${t.id}`}>View</Link>
                   </Button>

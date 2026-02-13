@@ -5,11 +5,12 @@ export interface NeighbourhoodSearchParams {
   city_id?: string;
   region_id?: string;
   county_id?: string;
+  keyword?: string;
 }
 
 // Fetch neighbourhoods (GET v1/admin/neighbourhood?page=1)
 export const fetchNeighbourhoods = async (params: NeighbourhoodSearchParams = {}) => {
-	const { page = 1, city_id, region_id, county_id } = params;
+	const { page = 1, city_id, region_id, county_id, keyword } = params;
 	
 	const queryParts: string[] = [];
 	
@@ -23,6 +24,10 @@ export const fetchNeighbourhoods = async (params: NeighbourhoodSearchParams = {}
 	
 	if (county_id) {
 		queryParts.push(`county_id:=,${county_id}`);
+	}
+
+	if (keyword && keyword.trim().length >= 3) {
+		queryParts.push(`keyword:LIKE,${keyword.trim()}`);
 	}
 	
 	const queryParams = new URLSearchParams();
