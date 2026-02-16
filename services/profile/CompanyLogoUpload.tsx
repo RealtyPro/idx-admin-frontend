@@ -17,17 +17,19 @@ export interface ImageObject {
  * @param config - The config path (e.g., 'idx.company.logo')
  * @returns The uploaded image object
  */
-export const uploadCompanyLogo = async (file: File, config: string = 'idx.company.logo'): Promise<ImageObject> => {
+export const uploadCompanyLogo = async (file: File): Promise<ImageObject> => {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
-  const datetimePath = `${year}/${month}/${day}/${hours}/${minutes}`;
-  const uploadUrl = `filer/upload/${config}/${datetimePath}/image`;
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const mmss = `${minutes}${seconds}`;
+  const datetimePath = `${year}/${month}/${day}/${hours}/${mmss}`;
+  const uploadUrl = `filer/upload/user.user.model/${datetimePath}/company_logo`;
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('company_logo', file);
   const response = await axiosInstance.post(uploadUrl, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
@@ -49,7 +51,7 @@ export const uploadCompanyLogo = async (file: File, config: string = 'idx.compan
   const generatedFileName = `${timestamp}.${fileExtension}`;
   const uploadedPath = imageData?.path || imageData?.url || imageData;
   const pathFromResponse = typeof uploadedPath === 'string' ? uploadedPath : '';
-  const folderPath = `company/logo/${datetimePath}`;
+  const folderPath = `user/user/${datetimePath}`;
   const constructedPath = pathFromResponse || `${folderPath}/${generatedFileName}`;
   const fileName = pathFromResponse.split('/').pop() || generatedFileName;
   const finalFolderPath = pathFromResponse ? constructedPath.substring(0, constructedPath.lastIndexOf('/')) : folderPath;

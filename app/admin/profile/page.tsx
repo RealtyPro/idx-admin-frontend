@@ -34,16 +34,36 @@ export default function ProfilePage() {
       setProfilePhotoError(null);
       setProfilePhotoUploading(true);
       try {
-        const result = await uploadProfilePhoto(file, "idx.profile.photo");
+        const result = await uploadProfilePhoto(file);
         if (result?.path) {
           setProfilePhoto(result.path);
+          // Call profile update API with new photo object
+          const payload = {
+            name,
+            company_logo: companyLogoPreview,
+            company: companyName,
+            company_email: companyEmail,
+            company_phone: companyPhone,
+            short_description: aboutShort,
+            long_description: aboutLong,
+            photo: result,
+          };
+          updateProfileMutation.mutate(payload, {
+            onSuccess: () => {
+              queryClient.invalidateQueries({ queryKey: ["profile"] });
+              // Optionally show a success message
+            },
+            onError: (error: any) => {
+              setProfilePhotoError(error?.response?.data?.message || error?.message || "Failed to update profile with photo.");
+            },
+          });
         }
       } catch (err: any) {
         setProfilePhotoError(err?.message || "Failed to upload photo");
       } finally {
         setProfilePhotoUploading(false);
       }
-    }, []);
+    }, [name, companyLogoPreview, companyName, companyEmail, companyPhone, aboutShort, aboutLong, updateProfileMutation, queryClient]);
   const queryClient = useQueryClient();
   const { data, isLoading, isError } = useProfile();
   const updateProfileMutation = useUpdateProfile();
@@ -208,16 +228,35 @@ export default function ProfilePage() {
     setCompanyLogoUploading(true);
     setCompanyLogoError(null);
     try {
-      const result = await uploadCompanyLogo(file, "idx.company.logo");
+      const result = await uploadCompanyLogo(file);
       if (result?.path) {
         setCompanyLogoPreview(result.path);
+        // Call profile update API with new company_logo object
+        const payload = {
+          name,
+          company_logo: result,
+          company: companyName,
+          company_email: companyEmail,
+          company_phone: companyPhone,
+          short_description: aboutShort,
+          long_description: aboutLong,
+          photo: profilePhoto,
+        };
+        updateProfileMutation.mutate(payload, {
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["profile"] });
+          },
+          onError: (error: any) => {
+            setCompanyLogoError(error?.response?.data?.message || error?.message || "Failed to update profile with company logo.");
+          },
+        });
       }
     } catch (err: any) {
       setCompanyLogoError(err?.message || "Failed to upload logo");
     } finally {
       setCompanyLogoUploading(false);
     }
-  }, []);
+  }, [name, companyName, companyEmail, companyPhone, aboutShort, aboutLong, profilePhoto, updateProfileMutation, queryClient]);
 
   useEffect(() => {
     return () => {
@@ -324,17 +363,14 @@ export default function ProfilePage() {
         <CardContent>
           <div className="flex items-center gap-4">
             <div>
-              {profilePhoto ? (
-                <img
-                  src={profilePhoto}
-                  alt="Profile"
-                  className="h-20 w-20 rounded-full border object-cover"
-                />
-              ) : (
-                <div className="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
-                  No Photo
-                </div>
-              )}
+              <img
+                src={profilePhoto ? profilePhoto : "/images/nopic.png"}
+                alt="Profile"
+                className="h-20 w-20 rounded-full border object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/images/nopic.png";
+                }}
+              />
             </div>
             <div>
               <input

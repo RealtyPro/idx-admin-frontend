@@ -12,17 +12,19 @@ export interface ImageObject {
   time: string;
 }
 
-export const uploadProfilePhoto = async (file: File, config: string = 'idx.profile.photo'): Promise<ImageObject> => {
+export const uploadProfilePhoto = async (file: File): Promise<ImageObject> => {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
-  const datetimePath = `${year}/${month}/${day}/${hours}/${minutes}`;
-  const uploadUrl = `filer/upload/${config}/${datetimePath}/image`;
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const mmss = `${minutes}${seconds}`;
+  const datetimePath = `${year}/${month}/${day}/${hours}/${mmss}`;
+  const uploadUrl = `filer/upload/user.user.model/${datetimePath}/photo`;
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('photo', file);
   const response = await axiosInstance.post(uploadUrl, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
@@ -44,7 +46,7 @@ export const uploadProfilePhoto = async (file: File, config: string = 'idx.profi
   const generatedFileName = `${timestamp}.${fileExtension}`;
   const uploadedPath = imageData?.path || imageData?.url || imageData;
   const pathFromResponse = typeof uploadedPath === 'string' ? uploadedPath : '';
-  const folderPath = `profile/photo/${datetimePath}`;
+  const folderPath = `user/user/${datetimePath}`;
   const constructedPath = pathFromResponse || `${folderPath}/${generatedFileName}`;
   const fileName = pathFromResponse.split('/').pop() || generatedFileName;
   const finalFolderPath = pathFromResponse ? constructedPath.substring(0, constructedPath.lastIndexOf('/')) : folderPath;
