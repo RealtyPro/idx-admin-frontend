@@ -211,7 +211,15 @@ export default function ProfilePage() {
         setCompanyPhone(profile.company.phone || "");
         setCompanyWebsite(profile.company.website || "");
         if (profile.company.logo) {
-          setCompanyLogoPreview(profile.company.logo);
+          if (typeof profile.company.logo === 'string') {
+            setCompanyLogoPreview(profile.company.logo);
+          } else if (typeof profile.company.logo === 'object') {
+            if (profile.company.logo.path) {
+              setCompanyLogoPreview(profile.company.logo.path);
+            } else if (profile.company.logo.url) {
+              setCompanyLogoPreview(profile.company.logo.url);
+            }
+          }
         }
       }
 
@@ -229,9 +237,9 @@ export default function ProfilePage() {
     setCompanyLogoError(null);
     try {
       const result = await uploadCompanyLogo(file);
-      if (result?.path) {
+      // Send the full object as company_logo in the payload
+      if (result && result.path) {
         setCompanyLogoPreview(result.path);
-        // Call profile update API with new company_logo object
         const payload = {
           name,
           company_logo: result,
@@ -240,7 +248,6 @@ export default function ProfilePage() {
           company_phone: companyPhone,
           short_description: aboutShort,
           long_description: aboutLong,
-          photo: profilePhoto,
         };
         updateProfileMutation.mutate(payload, {
           onSuccess: () => {
@@ -256,7 +263,7 @@ export default function ProfilePage() {
     } finally {
       setCompanyLogoUploading(false);
     }
-  }, [name, companyName, companyEmail, companyPhone, aboutShort, aboutLong, profilePhoto, updateProfileMutation, queryClient]);
+  }, [name, companyName, companyEmail, companyPhone, aboutShort, aboutLong, updateProfileMutation, queryClient]);
 
   useEffect(() => {
     return () => {
@@ -270,38 +277,19 @@ export default function ProfilePage() {
     e.preventDefault();
     setError(null);
 
-    const payload = {
+    // Only include company_logo if it was just uploaded (i.e., companyLogoPreview is a new upload result)
+    const payload: any = {
       name,
-      email,
-      phone,
-      address,
-      city,
-      state,
-      zip,
-      country,
-      company: {
-        name: companyName,
-        address: companyAddress,
-        location: {
-          state: companyState,
-          county: companyCounty,
-          city: companyCity,
-        },
-        email: companyEmail,
-        phone: companyPhone,
-        website: companyWebsite,
-        logo: companyLogoPreview,
-      },
-      about: {
-        short_description: aboutShort,
-        long_description: aboutLong,
-      },
-      social_urls: {
-        facebook,
-        linked_in: linkedIn,
-        instagram,
-      },
+      company: companyName,
+      company_email: companyEmail,
+      company_phone: companyPhone,
+      short_description: aboutShort,
+      long_description: aboutLong,
     };
+    // If companyLogoPreview is an object (from upload), include it
+    if (typeof companyLogoPreview === 'object' && companyLogoPreview !== null && companyLogoPreview.path) {
+      payload.company_logo = companyLogoPreview;
+    }
     console.log(payload);
     updateProfileMutation.mutate(payload, {
       onSuccess: () => {
@@ -653,7 +641,7 @@ export default function ProfilePage() {
         <CardContent>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="company_logo">Company Logo</Label>
+              <Label htmlFor="company_logo">Company Logo </Label>
               <input
                 id="company_logo"
                 type="file"
@@ -672,15 +660,22 @@ export default function ProfilePage() {
               {companyLogoError && (
                 <div className="text-red-500 text-xs mt-2">{companyLogoError}</div>
               )}
-              {companyLogoPreview && (
-                <div className="mt-3">
-                  <img
-                    src={companyLogoPreview}
-                    alt="Company logo preview"
-                    className="h-20 w-20 rounded border object-cover"
-                  />
-                </div>
-              )}
+              <div className="mt-3">
+                <img
+                  src={(() => {
+                    const val = typeof profile?.company_logo === 'string' ? profile.company_logo : companyLogoPreview;
+                    if (!val) return "/images/nopic.png";
+                    if (val.startsWith("http://") || val.startsWith("https://")) return val;
+                    // Prepend base URL for relative path
+                    return `https://demorealestate2.webnapps.net/image/local/md/${val}`;
+                  })()}
+                  alt="Company logo preview"
+                  className="h-20 w-20 rounded border object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/images/nopic.png";
+                  }}
+                />
+              </div>
             </div>
 
             <div>
