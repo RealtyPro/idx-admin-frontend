@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -16,6 +16,8 @@ import {
   useProfile,
   useUpdateProfile,
 } from "@/services/profile/ProfileQueries";
+import { uploadProfilePhoto } from "@/services/profile/ProfilePhotoUpload";
+import { uploadCompanyLogo } from "@/services/profile/CompanyLogoUpload";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useCitiesByCounty,
@@ -24,9 +26,32 @@ import {
 } from "@/services/location/LocationQueries";
 
 export default function ProfilePage() {
+    // Profile photo upload handler
+    const handleProfilePhotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setProfilePhotoFile(file);
+      setProfilePhotoError(null);
+      setProfilePhotoUploading(true);
+      try {
+        const result = await uploadProfilePhoto(file, "idx.profile.photo");
+        if (result?.path) {
+          setProfilePhoto(result.path);
+        }
+      } catch (err: any) {
+        setProfilePhotoError(err?.message || "Failed to upload photo");
+      } finally {
+        setProfilePhotoUploading(false);
+      }
+    }, []);
   const queryClient = useQueryClient();
   const { data, isLoading, isError } = useProfile();
   const updateProfileMutation = useUpdateProfile();
+  const [profilePhoto, setProfilePhoto] = useState<string>("");
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+  const [profilePhotoUploading, setProfilePhotoUploading] = useState(false);
+  const [profilePhotoError, setProfilePhotoError] = useState<string | null>(null);
+  const profilePhotoInputRef = useRef<HTMLInputElement>(null);
   const [county, setCounty] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
@@ -38,8 +63,10 @@ export default function ProfilePage() {
   const [companyEmail, setCompanyEmail] = useState("");
   const [companyPhone, setCompanyPhone] = useState("");
   const [companyWebsite, setCompanyWebsite] = useState("");
-  const [companyLogoDataUrl, setCompanyLogoDataUrl] = useState<string>("");
   const [companyLogoPreview, setCompanyLogoPreview] = useState<string>("");
+  const [companyLogoUploading, setCompanyLogoUploading] = useState(false);
+  const [companyLogoError, setCompanyLogoError] = useState<string | null>(null);
+  const companyLogoInputRef = useRef<HTMLInputElement>(null);
   const [aboutShort, setAboutShort] = useState("");
   const [aboutLong, setAboutLong] = useState("");
   const profile = data?.data || data;
@@ -116,6 +143,9 @@ export default function ProfilePage() {
   // Update form fields when profile data loads
   useEffect(() => {
     if (profile) {
+      if (profile.photo) {
+        setProfilePhoto(profile.photo);
+      }
       console.log(
         "Profile phone data:",
         profile.phone,
@@ -161,7 +191,6 @@ export default function ProfilePage() {
         setCompanyPhone(profile.company.phone || "");
         setCompanyWebsite(profile.company.website || "");
         if (profile.company.logo) {
-          setCompanyLogoDataUrl(profile.company.logo);
           setCompanyLogoPreview(profile.company.logo);
         }
       }
@@ -173,21 +202,22 @@ export default function ProfilePage() {
     }
   }, [profile]);
 
-  const handleCompanyLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCompanyLogoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const previewUrl = URL.createObjectURL(file);
-    setCompanyLogoPreview(previewUrl);
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setCompanyLogoDataUrl(reader.result);
+    setCompanyLogoUploading(true);
+    setCompanyLogoError(null);
+    try {
+      const result = await uploadCompanyLogo(file, "idx.company.logo");
+      if (result?.path) {
+        setCompanyLogoPreview(result.path);
       }
-    };
-    reader.readAsDataURL(file);
-  };
+    } catch (err: any) {
+      setCompanyLogoError(err?.message || "Failed to upload logo");
+    } finally {
+      setCompanyLogoUploading(false);
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -221,7 +251,7 @@ export default function ProfilePage() {
         email: companyEmail,
         phone: companyPhone,
         website: companyWebsite,
-        logo: companyLogoDataUrl,
+        logo: companyLogoPreview,
       },
       about: {
         short_description: aboutShort,
@@ -285,6 +315,49 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
+      {/* Profile Photo Upload */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Photo</CardTitle>
+          <CardDescription>Upload your profile photo</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <div>
+              {profilePhoto ? (
+                <img
+                  src={profilePhoto}
+                  alt="Profile"
+                  className="h-20 w-20 rounded-full border object-cover"
+                />
+              ) : (
+                <div className="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
+                  No Photo
+                </div>
+              )}
+            </div>
+            <div>
+              <input
+                type="file"
+                accept="image/*"
+                ref={profilePhotoInputRef}
+                style={{ display: "none" }}
+                onChange={handleProfilePhotoChange}
+              />
+              <Button
+                type="button"
+                onClick={() => profilePhotoInputRef.current?.click()}
+                disabled={profilePhotoUploading}
+              >
+                {profilePhotoUploading ? "Uploading..." : "Upload Photo"}
+              </Button>
+              {profilePhotoError && (
+                <div className="text-red-500 text-xs mt-2">{profilePhotoError}</div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle>Profile Settings</CardTitle>
@@ -545,12 +618,24 @@ export default function ProfilePage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="company_logo">Company Logo</Label>
-              <Input
+              <input
                 id="company_logo"
                 type="file"
                 accept="image/*"
+                ref={companyLogoInputRef}
+                style={{ display: "none" }}
                 onChange={handleCompanyLogoChange}
               />
+              <Button
+                type="button"
+                onClick={() => companyLogoInputRef.current?.click()}
+                disabled={companyLogoUploading}
+              >
+                {companyLogoUploading ? "Uploading..." : "Upload Logo"}
+              </Button>
+              {companyLogoError && (
+                <div className="text-red-500 text-xs mt-2">{companyLogoError}</div>
+              )}
               {companyLogoPreview && (
                 <div className="mt-3">
                   <img

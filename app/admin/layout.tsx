@@ -31,7 +31,7 @@ const navigation = [
   },
   { name: "Newsletter", href: "/admin/newsletter", icon: DocumentTextIcon },
   // { name: "Pages", href: "/admin/pages", icon: DocumentTextIcon },
-  { name: "Neighbourhoods", href: "/admin/neighbourhoods", icon: MapPinIcon },
+  { name: "Neighborhoods", href: "/admin/neighbourhoods", icon: MapPinIcon },
 ];
 
 export default function adminLayout({
