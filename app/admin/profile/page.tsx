@@ -26,6 +26,53 @@ import {
 } from "@/services/location/LocationQueries";
 
 export default function ProfilePage() {
+    const queryClient = useQueryClient();
+    const { data, isLoading, isError } = useProfile();
+    const updateProfileMutation = useUpdateProfile();
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [address, setAddress] = useState("");
+    // const [city, setCity] = useState('');
+    const [profilePhoto, setProfilePhoto] = useState<string>("");
+    const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+    const [profilePhotoUploading, setProfilePhotoUploading] = useState(false);
+    const [profilePhotoError, setProfilePhotoError] = useState<string | null>(null);
+    const profilePhotoInputRef = useRef<HTMLInputElement>(null);
+    const [county, setCounty] = useState("");
+    const [city, setCity] = useState("");
+    const [state, setState] = useState("");
+    const [companyName, setCompanyName] = useState("");
+    const [companyAddress, setCompanyAddress] = useState("");
+    const [companyState, setCompanyState] = useState("");
+    const [companyCounty, setCompanyCounty] = useState("");
+    const [companyCity, setCompanyCity] = useState("");
+    const [companyEmail, setCompanyEmail] = useState("");
+    const [companyPhone, setCompanyPhone] = useState("");
+    const [companyWebsite, setCompanyWebsite] = useState("");
+    const [companyLogoPreview, setCompanyLogoPreview] = useState<string>("");
+    const [companyLogoUploading, setCompanyLogoUploading] = useState(false);
+    const [companyLogoError, setCompanyLogoError] = useState<string | null>(null);
+    const companyLogoInputRef = useRef<HTMLInputElement>(null);
+    const [aboutShort, setAboutShort] = useState("");
+    const [aboutLong, setAboutLong] = useState("");
+    const profile = data?.data || data;
+    const { data: statesData, isLoading: statesLoading } = useStates();
+    const { data: countiesData, isLoading: countiesLoading } =
+      useCountiesByState(state);
+    const { data: citiesData, isLoading: citiesLoading } =
+      useCitiesByCounty(county);
+    const { data: companyCountiesData, isLoading: companyCountiesLoading } =
+      useCountiesByState(companyState);
+    const { data: companyCitiesData, isLoading: companyCitiesLoading } =
+      useCitiesByCounty(companyCounty);
+    const [zip, setZip] = useState("");
+    const [country, setCountry] = useState("");
+    const [facebook, setFacebook] = useState("");
+    const [linkedIn, setLinkedIn] = useState("");
+    const [instagram, setInstagram] = useState("");
+    const [error, setError] = useState<string | null>(null);
+
     // Profile photo upload handler
     const handleProfilePhotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -64,54 +111,6 @@ export default function ProfilePage() {
         setProfilePhotoUploading(false);
       }
     }, [name, companyLogoPreview, companyName, companyEmail, companyPhone, aboutShort, aboutLong, updateProfileMutation, queryClient]);
-  const queryClient = useQueryClient();
-  const { data, isLoading, isError } = useProfile();
-  const updateProfileMutation = useUpdateProfile();
-  const [profilePhoto, setProfilePhoto] = useState<string>("");
-  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
-  const [profilePhotoUploading, setProfilePhotoUploading] = useState(false);
-  const [profilePhotoError, setProfilePhotoError] = useState<string | null>(null);
-  const profilePhotoInputRef = useRef<HTMLInputElement>(null);
-  const [county, setCounty] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [companyAddress, setCompanyAddress] = useState("");
-  const [companyState, setCompanyState] = useState("");
-  const [companyCounty, setCompanyCounty] = useState("");
-  const [companyCity, setCompanyCity] = useState("");
-  const [companyEmail, setCompanyEmail] = useState("");
-  const [companyPhone, setCompanyPhone] = useState("");
-  const [companyWebsite, setCompanyWebsite] = useState("");
-  const [companyLogoPreview, setCompanyLogoPreview] = useState<string>("");
-  const [companyLogoUploading, setCompanyLogoUploading] = useState(false);
-  const [companyLogoError, setCompanyLogoError] = useState<string | null>(null);
-  const companyLogoInputRef = useRef<HTMLInputElement>(null);
-  const [aboutShort, setAboutShort] = useState("");
-  const [aboutLong, setAboutLong] = useState("");
-  const profile = data?.data || data;
-  const { data: statesData, isLoading: statesLoading } = useStates();
-  const { data: countiesData, isLoading: countiesLoading } =
-    useCountiesByState(state);
-  const { data: citiesData, isLoading: citiesLoading } =
-    useCitiesByCounty(county);
-  const { data: companyCountiesData, isLoading: companyCountiesLoading } =
-    useCountiesByState(companyState);
-  const { data: companyCitiesData, isLoading: companyCitiesLoading } =
-    useCitiesByCounty(companyCounty);
-
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  // const [city, setCity] = useState('');
-  // const [state, setState] = useState('');
-  const [zip, setZip] = useState("");
-  const [country, setCountry] = useState("");
-  const [facebook, setFacebook] = useState("");
-  const [linkedIn, setLinkedIn] = useState("");
-  const [instagram, setInstagram] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
   // Helper function to format phone number
   const formatPhone = (phoneData: any): string => {
@@ -287,7 +286,11 @@ export default function ProfilePage() {
       long_description: aboutLong,
     };
     // If companyLogoPreview is an object (from upload), include it
-    if (typeof companyLogoPreview === 'object' && companyLogoPreview !== null && companyLogoPreview.path) {
+    if (
+      typeof companyLogoPreview === 'object' &&
+      companyLogoPreview !== null &&
+      'path' in (companyLogoPreview as any)
+    ) {
       payload.company_logo = companyLogoPreview;
     }
     console.log(payload);
