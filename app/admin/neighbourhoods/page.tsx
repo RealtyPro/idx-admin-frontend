@@ -271,7 +271,7 @@ export default function NeighbourhoodsListPage() {
   return (
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Neighborhood</h1>
+        <h1 className="text-2xl font-bold">Neighborhoods</h1>
         <div className="flex gap-2 items-center flex-1 justify-end">
           <SearchFilters
             className="max-w-2xl"
