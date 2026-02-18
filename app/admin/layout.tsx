@@ -52,7 +52,7 @@ export default function adminLayout({
     // Check for authentication and load user data from sessionStorage
     if (typeof window !== "undefined") {
       const token = sessionStorage.getItem("access_token");
-      
+
       // Redirect to login if no token exists
       if (!token) {
         router.push("/login");
@@ -119,7 +119,7 @@ export default function adminLayout({
           >
             {collapsed ? (
               <Image
-                src="/images/realtipro-logo.png"
+                src="/images/ailogo.png"
                 alt="RealtiPro Logo"
                 width={40}
                 height={40}
@@ -171,43 +171,63 @@ export default function adminLayout({
           </nav>
 
           {/* User Section */}
-          <div className={`p-4 border-t border-gray-200 ${collapsed ? 'px-2' : ''}`}>
+          <div
+            className={`p-4 border-t border-gray-200 ${collapsed ? "px-2" : ""}`}
+          >
             <div className="flex items-center gap-2">
-              <Link 
+              <Link
                 href="/admin/profile"
-                className={`flex items-center rounded-lg hover:bg-gray-50 transition-colors ${collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2 flex-1'}`}
-                title={collapsed ? 'Profile' : undefined}
+                className={`flex items-center rounded-lg hover:bg-gray-50 transition-colors ${collapsed ? "justify-center px-2 py-2" : "px-3 py-2 flex-1"}`}
+                title={collapsed ? "Profile" : undefined}
               >
-                <div className="flex-shrink-0 relative" style={{ paddingTop: '33px' }}>
+                <div className="flex-shrink-0 relative">
                   {userProfilePic ? (
                     <>
-                      <img 
-                        src={userProfilePic} 
+                      <img
+                        src={userProfilePic}
                         alt={userName}
                         className="w-8 h-8 rounded-full object-cover"
                         onError={(e) => {
                           // Hide image and show fallback
-                          e.currentTarget.style.display = 'none';
-                          const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                          e.currentTarget.style.display = "none";
+                          const fallback = e.currentTarget
+                            .nextElementSibling as HTMLElement;
                           if (fallback) {
-                            fallback.style.display = 'flex';
+                            fallback.style.display = "flex";
                           }
                         }}
                       />
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center absolute inset-0" style={{ display: 'none' }}>
-                        <span className="text-primary font-medium text-xs">{userInitials}</span>
+                      <div
+                        className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center absolute inset-0"
+                        style={{ display: "none" }}
+                      >
+                        <span className="text-primary font-medium text-xs">
+                          {userInitials}
+                        </span>
                       </div>
                     </>
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-primary font-medium text-xs">{userInitials}</span>
+                      <span className="text-primary font-medium text-xs">
+                        {userInitials}
+                      </span>
                     </div>
                   )}
                 </div>
                 {!collapsed && (
-                  <div className="flex-1 min-w-0" style={{ paddingLeft: '40px' }}>
-                    <p className="text-sm font-medium text-dark truncate">{userName}</p>
-                    <p className="text-dark-secondary truncate" style={{ fontSize: '9px' }}>{userEmail}</p>
+                  <div
+                    className="flex-1 min-w-0"
+                    style={{ paddingLeft: "10px" }}
+                  >
+                    <p className="text-sm font-medium text-dark truncate">
+                      {userName}
+                    </p>
+                    <p
+                      className="text-dark-secondary truncate"
+                      style={{ fontSize: "9px" }}
+                    >
+                      {userEmail}
+                    </p>
                   </div>
                 )}
               </Link>

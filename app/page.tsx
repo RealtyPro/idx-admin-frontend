@@ -1,20 +1,22 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import Link from 'next/link';
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import Image from "next/image";
+import Link from "next/link";
+import React from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import Login from "./login/page";
 export default function Home() {
   const router = useRouter();
   const [hasToken, setHasToken] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const token = sessionStorage.getItem('access_token');
+    if (typeof window !== "undefined") {
+      const token = sessionStorage.getItem("access_token");
       if (token) {
         setHasToken(true);
-        router.push('/admin');
+        router.push("/admin");
       } else {
         setHasToken(false);
       }
@@ -24,16 +26,17 @@ export default function Home() {
   const handleLoginClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     if (hasToken) {
-      router.push('/admin');
+      router.push("/admin");
     } else {
-      router.push('/login');
+      router.push("/login");
     }
   };
 
   return (
     <main className="min-h-screen bg-white">
+      <Login />
       {/* Navigation */}
-      <nav className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex justify-between items-center">
+      {/* <nav className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex justify-between items-center">
         <Link href="/" className="flex items-center">
           <Image 
             src="/images/realtipro-logo.png" 
@@ -53,10 +56,10 @@ export default function Home() {
             Login
           </Link>
         </div>
-      </nav>
+      </nav> */}
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16 flex flex-col gap-6 sm:gap-8">
+      {/* <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16 flex flex-col gap-6 sm:gap-8">
         <div className="max-w-3xl">
           <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-dark mb-3 sm:mb-4 leading-tight">
             Smart<br />Interaction Logger
@@ -71,10 +74,10 @@ export default function Home() {
           </div>
         </div>
        
-      </section>
+      </section> */}
 
       {/* Features Section */}
-      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16 grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 md:gap-16">
+      {/* <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16 grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 md:gap-16">
         <div className="space-y-4 sm:space-y-6 md:space-y-8">
           <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl text-dark">Realtime Chat Logging</h2>
           <p className="text-sm sm:text-base md:text-lg text-dark leading-relaxed">
@@ -89,10 +92,10 @@ export default function Home() {
           </p>
           <Image src="/images/call-recording.png" alt="Call Recording" width={600} height={400} className="w-full h-auto rounded-lg" />
         </div>
-      </section>
+      </section> */}
 
       {/* How it works Section */}
-      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
+      {/* <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
         <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-dark mb-2 sm:mb-4">How it works</h2>
         <p className="text-sm sm:text-base md:text-lg text-dark mb-8 sm:mb-12 md:mb-16">Seamless Communication Capture</p>
         
@@ -127,16 +130,18 @@ export default function Home() {
             </p>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Footer */}
-      <footer className="bg-footer-bg text-footer-text py-8 sm:py-12 md:py-16">
+      {/* <footer className="bg-footer-bg text-footer-text py-8 sm:py-12 md:py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-3 sm:space-y-4">
-            <p className="text-sm sm:text-base">© 2026 IDX. All rights reserved.</p>
+            <p className="text-sm sm:text-base">
+              © 2026 IDX. All rights reserved.
+            </p>
           </div>
         </div>
-      </footer>
+      </footer> */}
     </main>
   );
-} 
+}
