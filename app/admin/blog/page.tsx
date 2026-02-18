@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { deleteBlog, BlogSearchParams } from "@/services/blog/BlogServices";
 import { useRouter, useSearchParams } from "next/navigation";
 import SearchFilters from "@/components/SearchFilters";
+import { FileText } from "lucide-react";
 interface Blog {
   id: string;
   title: string;
@@ -141,6 +142,25 @@ function BlogListContent() {
   const hasActiveFilters = !!(filters.q && filters.q.length >= 3);
   const isKeywordValid =
     !filters.q || filters.q.length === 0 || filters.q.length >= 3;
+
+  const getBlogImageUrl = (blog: any): string | null => {
+    const imageData = blog.image || blog.thumbnail || blog.featured_image || blog.cover_image;
+    if (!imageData) return null;
+    if (typeof imageData === "string") {
+      if (imageData.includes("/img/default/") || imageData.includes("default")) return null;
+      return imageData.startsWith("http")
+        ? imageData
+        : `https://demorealestate2.webnapps.net/storage/${imageData}`;
+    }
+    if (typeof imageData === "object" && (imageData.path || imageData.url)) {
+      const src = imageData.path || imageData.url;
+      return src.startsWith("http")
+        ? src
+        : `https://demorealestate2.webnapps.net/storage/${src}`;
+    }
+    return null;
+  };
+
   useEffect(() => {
     if (blogListDatas && !isLoading && !error) {
       setBlogs(blogListDatas.data || blogListDatas);
@@ -309,48 +329,77 @@ function BlogListContent() {
               className="cursor-pointer"
               onClick={() => router.push(`/admin/blog/${blog.id}`)}
             >
-              <CardHeader className="flex flex-row justify-between items-center">
-                <div>
-                  <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <Link
-                      href={`/admin/blog/${blog.id}`}
-                      className="hover:text-primary hover:underline transition-colors"
+              <CardHeader className="flex flex-row justify-between items-center p-4 gap-4">
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  {/* Leading image or placeholder */}
+                  <div className="flex-shrink-0">
+                    {(() => {
+                      const imgUrl = getBlogImageUrl(blog as any);
+                      return imgUrl ? (
+                        <img
+                          src={imgUrl}
+                          alt={blog.title}
+                          className="w-16 h-16 rounded-lg object-cover border"
+                          onError={(e) => {
+                            const t = e.currentTarget;
+                            t.style.display = "none";
+                            const sib = t.nextElementSibling as HTMLElement | null;
+                            if (sib) sib.style.display = "flex";
+                          }}
+                        />
+                      ) : null;
+                    })()}
+                    <div
+                      className="w-16 h-16 rounded-lg bg-muted border flex items-center justify-center"
+                      style={{ display: getBlogImageUrl(blog as any) ? "none" : "flex" }}
                     >
-                      {blog.title}
-                    </Link>
-                    {blog.isFeatured && (
-                      <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 px-2 py-0.5 text-[11px] text-yellow-800">
-                        Featured
-                      </span>
-                    )}
-                  </CardTitle>
-                  <div className="text-xs text-muted-foreground">
-                    {blog.subtitle && (
-                      <div className="italic mb-1">{blog.subtitle}</div>
-                    )}
+                      <FileText className="w-7 h-7 text-muted-foreground" />
+                    </div>
+                  </div>
 
-                    <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-                      <span>By {blog.author}</span>
-                      <span className="mx-2">|</span>
-                      <span>Category</span>
-                      {blog.category && (
-                        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-slate-700">
-                          {capitalizeFirst(blog.category)}
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <Link
+                        href={`/admin/blog/${blog.id}`}
+                        className="hover:text-primary hover:underline transition-colors"
+                      >
+                        {blog.title}
+                      </Link>
+                      {blog.isFeatured && (
+                        <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 px-2 py-0.5 text-[11px] text-yellow-800">
+                          Featured
                         </span>
                       )}
-                      <span className="mx-2">|</span>
-                      <span>Status</span>
-                      {blog.status && (
-                        <span
-                          className={`inline-flex items-center rounded-full border px-2 py-0.5 ${
-                            String(blog.status).toLowerCase() === "published"
-                              ? "border-green-200 bg-green-50 text-green-700"
-                              : "border-amber-200 bg-amber-50 text-amber-700"
-                          }`}
-                        >
-                          {capitalizeFirst(blog.status)}
-                        </span>
+                    </CardTitle>
+                    <div className="text-xs text-muted-foreground">
+                      {blog.subtitle && (
+                        <div className="italic mb-1">{blog.subtitle}</div>
                       )}
+
+                      <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                        <span>By {blog.author}</span>
+                        <span className="mx-2">|</span>
+                        <span>Category</span>
+                        {blog.category && (
+                          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-slate-700">
+                            {capitalizeFirst(blog.category)}
+                          </span>
+                        )}
+                        <span className="mx-2">|</span>
+                        <span>Status</span>
+                        {blog.status && (
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2 py-0.5 ${
+                              String(blog.status).toLowerCase() === "published"
+                                ? "border-green-200 bg-green-50 text-green-700"
+                                : "border-amber-200 bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            {capitalizeFirst(blog.status)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

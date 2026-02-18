@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { NewsletterSearchParams } from '@/services/newsletter/NewsletterServices';
 import SearchFilters from '@/components/SearchFilters';
+import { Clock } from 'lucide-react';
 
 function NewsletterContent() {
   const router = useRouter();
@@ -99,6 +100,27 @@ function NewsletterContent() {
   
   const hasActiveFilters = !!(filters.q && filters.q.length >= 3);
   const isKeywordValid = !filters.q || filters.q.length === 0 || filters.q.length >= 3;
+
+  const getEmailAcronym = (subscriber: any): string => {
+    const email: string = subscriber.email || subscriber.name || 'N';
+    return email.slice(0, 2).toUpperCase();
+  };
+
+  const formatDate = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d
+      .toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })
+      .replace(',', '');
+  };
 
   // Extract pagination metadata from API response
   const pagination = data?.meta || data?.pagination || null;
@@ -264,14 +286,26 @@ function NewsletterContent() {
               className="cursor-pointer"
               onClick={() => router.push(`/admin/newsletter/${subscriber.id}`)}
             >
-              <CardHeader className="flex flex-row justify-between items-center">
-                <div>
-                  <CardTitle className="text-lg">
-                    <Link href={`/admin/newsletter/${subscriber.id}`}>
-                      {subscriber.name || subscriber.email || 'No Name'}
-                    </Link>
-                  </CardTitle>
-                  <div className="text-sm text-dark mt-2">{subscriber.created_at}</div>
+              <CardHeader className="flex flex-row justify-between items-center p-4 gap-4">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  {/* Email Acronym Avatar */}
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-base font-bold text-muted-foreground border">
+                    {getEmailAcronym(subscriber)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg">
+                      <Link href={`/admin/newsletter/${subscriber.id}`}>
+                        {subscriber.name || subscriber.email || 'No Name'}
+                      </Link>
+                    </CardTitle>
+                    {subscriber.created_at && (
+                      <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span className="font-medium">Created at:</span>
+                        {formatDate(subscriber.created_at)}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div
                   className="flex gap-2"

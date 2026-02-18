@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TestimonialSearchParams } from '@/services/testimonial/TestimonialServices';
 import SearchFilters from "@/components/SearchFilters";
+import { Clock } from 'lucide-react';
 
 function TestimonialsListContent() {
   const router = useRouter();
@@ -96,6 +97,32 @@ function TestimonialsListContent() {
   
   const hasActiveFilters = !!(filters.q && filters.q.length >= 3);
   const isKeywordValid = !filters.q || filters.q.length === 0 || filters.q.length >= 3;
+
+  const getAcronym = (t: any): string => {
+    const label: string = t.name || t.email || 'N';
+    return label
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w: string) => w[0].toUpperCase())
+      .join('');
+  };
+
+  const formatDate = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d
+      .toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })
+      .replace(',', '');
+  };
 
   if (isLoading) {
     return (
@@ -281,20 +308,31 @@ function TestimonialsListContent() {
               className="cursor-pointer"
               onClick={() => router.push(`/admin/testimonials/${t.id}`)}
             >
-              <CardHeader className="flex flex-row justify-between items-center">
-                <div>
-                  <CardTitle className="text-lg">
-                    <Link 
-                      href={`/admin/testimonials/${t.id}`}
-                      className="hover:text-primary hover:underline transition-colors"
-                    >
-                      {t.name}
-                    </Link>
-                  </CardTitle>
-                  <div className="text-sm text-muted-foreground">
-                    {t.position && <span>{t.position}</span>}
-                    {t.position && (t.date || t.created_at) && <span> • </span>}
-                    {(t.date || t.created_at) && <span>{new Date(t.date || t.created_at).toLocaleDateString()}</span>}
+              <CardHeader className="flex flex-row justify-between items-center p-4 gap-4">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  {/* Acronym Avatar */}
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-base font-bold text-muted-foreground border">
+                    {getAcronym(t)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base font-bold leading-tight">
+                      <Link
+                        href={`/admin/testimonials/${t.id}`}
+                        className="hover:text-primary hover:underline transition-colors"
+                      >
+                        {t.name}
+                      </Link>
+                    </CardTitle>
+                    {t.position && (
+                      <div className="text-sm text-muted-foreground mt-0.5">{t.position}</div>
+                    )}
+                    {(t.date || t.created_at) && (
+                      <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span className="font-medium">Created at:</span>
+                        {formatDate(t.date || t.created_at)}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div

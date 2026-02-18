@@ -21,6 +21,7 @@ import {
 } from "@/services/location/LocationQueries";
 import { useRouter } from "next/navigation";
 import SearchFilters from "@/components/SearchFilters";
+import { Clock } from "lucide-react";
 
 export default function NeighbourhoodsListPage() {
   const router = useRouter();
@@ -138,6 +139,51 @@ export default function NeighbourhoodsListPage() {
     }));
   };
 
+  const getNeighbourhoodImageUrl = (neighbourhood: any): string | null => {
+    const imageData = neighbourhood.images || neighbourhood.image;
+    if (!imageData) return null;
+    if (typeof imageData === "string") {
+      if (imageData.includes("/img/default/") || imageData.includes("default")) return null;
+      return imageData.startsWith("http")
+        ? imageData
+        : `https://demorealestate2.webnapps.net/storage/${imageData}`;
+    }
+    if (typeof imageData === "object" && imageData.path) {
+      return imageData.path.startsWith("http")
+        ? imageData.path
+        : `https://demorealestate2.webnapps.net/storage/${imageData.path}`;
+    }
+    return null;
+  };
+
+  const getAcronym = (neighbourhood: any): string => {
+    const label =
+      neighbourhood.name ||
+      neighbourhood.city?.name ||
+      neighbourhood.city ||
+      "N";
+    return label
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w: string) => w[0].toUpperCase())
+      .join("");
+  };
+
+  const formatDate = (dateStr: string): string => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).replace(",", "");
+  };
+
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -240,7 +286,7 @@ export default function NeighbourhoodsListPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
+      <div className="container mx-auto p-4 space-y-6">
         <div className="flex justify-between items-center">
           <Skeleton className="h-8 w-40 mb-4" />
           <div className="flex gap-2">
@@ -259,7 +305,7 @@ export default function NeighbourhoodsListPage() {
 
   if (isError) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4">
+      <div className="container mx-auto p-4">
         <p className="text-red-500">
           Error loading neighborhoods:{" "}
           {error instanceof Error ? error.message : "Unknown error"}
@@ -269,7 +315,7 @@ export default function NeighbourhoodsListPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
+    <div className="container mx-auto p-4 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Neighborhoods</h1>
         <div className="flex gap-2 items-center flex-1 justify-end">
@@ -381,63 +427,103 @@ export default function NeighbourhoodsListPage() {
 
       <div className="grid gap-4">
         {Array.isArray(neighbourhoods) && neighbourhoods.length > 0 ? (
-          neighbourhoods.map((neighbourhood: any) => (
-            <Card
-              key={neighbourhood.id}
-              className="cursor-pointer"
-              onClick={() =>
-                router.push(`/admin/neighbourhoods/${neighbourhood.id}`)
-              }
-            >
-              <CardHeader className="flex flex-row justify-between items-center">
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    <Link
-                      href={`/admin/neighbourhoods/${neighbourhood.id}`}
-                      className="hover:text-primary hover:underline transition-colors"
-                    >
-                      {neighbourhood.description && (
-                        <span>
-                          {neighbourhood.description.substring(0, 100)}...
-                        </span>
-                      )}
-                    </Link>
+          neighbourhoods.map((neighbourhood: any) => {
+            const imgUrl = getNeighbourhoodImageUrl(neighbourhood);
+            const displayName =
+              neighbourhood.name ||
+              neighbourhood.city?.name ||
+              neighbourhood.city ||
+              "Neighbourhood";
+            return (
+              <Card
+                key={neighbourhood.id}
+                className="cursor-pointer"
+                onClick={() =>
+                  router.push(`/admin/neighbourhoods/${neighbourhood.id}`)
+                }
+              >
+                <CardHeader className="flex flex-row justify-between items-center gap-4 p-4">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    {/* Image / Acronym */}
+                    <div className="flex-shrink-0">
+                      {imgUrl ? (
+                        <img
+                          src={imgUrl}
+                          alt={displayName}
+                          className="w-16 h-16 rounded-lg object-cover border"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = "none";
+                            const sibling = target.nextElementSibling as HTMLElement | null;
+                            if (sibling) sibling.style.display = "flex";
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-lg font-bold text-muted-foreground border"
+                        style={{ display: imgUrl ? "none" : "flex" }}
+                      >
+                        {getAcronym(neighbourhood)}
+                      </div>
+                    </div>
 
-                    {neighbourhood.created_at && (
-                      <span className="ml-2">• {neighbourhood.created_at}</span>
-                    )}
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        href={`/admin/neighbourhoods/${neighbourhood.id}`}
+                        className="hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <p className="font-bold text-base leading-tight truncate">
+                          {displayName}
+                        </p>
+                      </Link>
+                      {neighbourhood.description && (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {neighbourhood.description.substring(0, 120)}
+                        </p>
+                      )}
+                      {neighbourhood.created_at && (
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDate(neighbourhood.created_at)}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div
-                  className="flex gap-2"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Button asChild variant="default" size="sm">
-                    <Link href={`/admin/neighbourhoods/${neighbourhood.id}`}>
-                      View
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" size="sm">
-                    <Link
-                      href={`/admin/neighbourhoods/${neighbourhood.id}/edit`}
-                    >
-                      Edit
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(neighbourhood.id)}
-                    disabled={deleteNeighbourhoodMutation.isPending}
+
+                  {/* Actions */}
+                  <div
+                    className="flex gap-2 flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {deleteNeighbourhoodMutation.isPending
-                      ? "Deleting..."
-                      : "Delete"}
-                  </Button>
-                </div>
-              </CardHeader>
-            </Card>
-          ))
+                    <Button asChild variant="default" size="sm">
+                      <Link href={`/admin/neighbourhoods/${neighbourhood.id}`}>
+                        View
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                      <Link
+                        href={`/admin/neighbourhoods/${neighbourhood.id}/edit`}
+                      >
+                        Edit
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(neighbourhood.id)}
+                      disabled={deleteNeighbourhoodMutation.isPending}
+                    >
+                      {deleteNeighbourhoodMutation.isPending
+                        ? "Deleting..."
+                        : "Delete"}
+                    </Button>
+                  </div>
+                </CardHeader>
+              </Card>
+            );
+          })
         ) : (
           <p className="text-center text-muted-foreground">
             No Neighbourhoods Found.
