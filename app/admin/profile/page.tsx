@@ -24,6 +24,8 @@ import {
   useCountiesByState,
   useStates,
 } from "@/services/location/LocationQueries";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function ProfilePage() {
     const queryClient = useQueryClient();
@@ -98,7 +100,7 @@ export default function ProfilePage() {
           updateProfileMutation.mutate(payload, {
             onSuccess: () => {
               queryClient.invalidateQueries({ queryKey: ["profile"] });
-              // Optionally show a success message
+              toast.success("Profile updated successfully");
             },
             onError: (error: any) => {
               setProfilePhotoError(error?.response?.data?.message || error?.message || "Failed to update profile with photo.");
@@ -297,7 +299,7 @@ export default function ProfilePage() {
     updateProfileMutation.mutate(payload, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["profile"] });
-        alert("Profile updated successfully");
+        toast.success("Profile updated successfully");
       },
       onError: (error: any) => {
         console.error("Error updating profile:", error);
@@ -345,6 +347,7 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-2xl">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       {/* Profile Photo Upload */}
       <Card>
         <CardHeader>
@@ -357,7 +360,7 @@ export default function ProfilePage() {
               <img
                 src={profilePhoto ? profilePhoto : "/images/nopic.png"}
                 alt="Profile"
-                className="h-20 w-20 rounded-full border object-cover"
+                className="h-20 w-20 border"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "/images/nopic.png";
                 }}
@@ -673,7 +676,7 @@ export default function ProfilePage() {
                     return `https://demorealestate2.webnapps.net/image/local/md/${val}`;
                   })()}
                   alt="Company logo preview"
-                  className="h-20 w-20 rounded border object-cover"
+                  className="h-20 w-20 border"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = "/images/nopic.png";
                   }}
