@@ -68,14 +68,14 @@ export default function NeighbourhoodDetails() {
 			
 			return imageData.startsWith('http')
 				? imageData
-				: `https://demorealestate2.webnapps.net/storage/${imageData}`;
+				: `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${imageData}`;
 		}
 		
 		// Handle image object
 		if (typeof imageData === 'object' && imageData.path) {
 			return imageData.path.startsWith('http')
 				? imageData.path
-				: `https://demorealestate2.webnapps.net/storage/${imageData.path}`;
+				: `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${imageData.path}`;
 		}
 		
 		return null;

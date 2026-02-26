@@ -104,7 +104,7 @@ export default function NeighbourhoodEditPage() {
           
           const imageUrl = imageData.startsWith('http')
             ? imageData
-            : `https://demorealestate2.webnapps.net/storage/${imageData}`;
+            : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${imageData}`;
           setImage(imageUrl);
           
           // Only set originalImage if it's not a default image
@@ -120,7 +120,7 @@ export default function NeighbourhoodEditPage() {
           // Set preview URL
           const imageUrl = imageData.path?.startsWith('http') 
             ? imageData.path 
-            : `https://demorealestate2.webnapps.net/storage/${imageData.path}`;
+            : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${imageData.path}`;
           setImage(imageUrl);
           setOriginalImage(imageUrl);
         }
@@ -363,7 +363,7 @@ export default function NeighbourhoodEditPage() {
                       // Set preview image URL
                       const previewUrl = uploadedImageObj.path.startsWith('http') 
                         ? uploadedImageObj.path 
-                        : `https://demorealestate2.webnapps.net/image/local/xs/${uploadedImageObj.path}`;
+                        : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/image/local/xs/${uploadedImageObj.path}`;
                       
                       console.log("Setting preview URL:", previewUrl);
                       setImage(previewUrl);

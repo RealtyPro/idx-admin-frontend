@@ -73,7 +73,7 @@ export default function BlogEditPage() {
           // Set preview URL
           const imageUrl = blog.image.path?.startsWith('http') 
             ? blog.image.path 
-            : `https://demorealestate2.webnapps.net/storage/${blog.image.path}`;
+            : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${blog.image.path}`;
           setImage(imageUrl);
           setOriginalImage(imageUrl);
         }
@@ -116,7 +116,7 @@ export default function BlogEditPage() {
         // Set preview image URL
         const previewUrl = uploadedImageObj.path.startsWith('http') 
           ? uploadedImageObj.path 
-          : `https://demorealestate2.webnapps.net/storage/${uploadedImageObj.path}`;
+          : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${uploadedImageObj.path}`;
         setImage(previewUrl);
         
         alert("Image uploaded successfully");

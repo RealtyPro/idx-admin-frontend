@@ -150,13 +150,13 @@ function BlogListContent() {
       if (imageData.includes("/img/default/") || imageData.includes("default")) return null;
       return imageData.startsWith("http")
         ? imageData
-        : `https://demorealestate2.webnapps.net/storage/${imageData}`;
+        : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${imageData}`;
     }
     if (typeof imageData === "object" && (imageData.path || imageData.url)) {
       const src = imageData.path || imageData.url;
       return src.startsWith("http")
         ? src
-        : `https://demorealestate2.webnapps.net/storage/${src}`;
+        : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${src}`;
     }
     return null;
   };
