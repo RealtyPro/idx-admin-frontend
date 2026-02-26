@@ -1,538 +1,221 @@
 ﻿"use client";
 import Link from "next/link";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import React, { useState, useEffect } from "react";
-import {
-  useNeighbourhoods,
-  useDeleteNeighbourhood,
-} from "@/services/neighbourhood/NeighbourhoodQueries";
+import { useNeighbourhoods, useDeleteNeighbourhood } from "@/services/neighbourhood/NeighbourhoodQueries";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  deleteNeighbourhood,
-  NeighbourhoodSearchParams,
-} from "@/services/neighbourhood/NeighbourhoodServices";
-import {
-  useStates,
-  useCountiesByState,
-  useCitiesByCounty,
-} from "@/services/location/LocationQueries";
+import { deleteNeighbourhood, NeighbourhoodSearchParams } from "@/services/neighbourhood/NeighbourhoodServices";
+import { useStates, useCountiesByState, useCitiesByCounty } from "@/services/location/LocationQueries";
 import { useRouter } from "next/navigation";
-import SearchFilters from "@/components/SearchFilters";
-import { Clock } from "lucide-react";
+import {
+  MagnifyingGlassIcon,
+  PlusIcon,
+  EyeIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  CalendarDaysIcon,
+  MapPinIcon,
+  FunnelIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 
 export default function NeighbourhoodsListPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchParams, setSearchParams] = useState<NeighbourhoodSearchParams>({
-    region_id: "",
-    county_id: "",
-    city_id: "",
-    keyword: "",
-  });
-  const [activeFilters, setActiveFilters] = useState<NeighbourhoodSearchParams>(
-    {
-      region_id: "",
-      county_id: "",
-      city_id: "",
-      keyword: "",
-    },
-  );
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Fetch location options dynamically
+  const [searchParams, setSearchParams] = useState<NeighbourhoodSearchParams>({ region_id: "", county_id: "", city_id: "", keyword: "" });
+  const [activeFilters, setActiveFilters] = useState<NeighbourhoodSearchParams>({ region_id: "", county_id: "", city_id: "", keyword: "" });
+
   const { data: statesData, isLoading: statesLoading } = useStates();
-  const { data: countiesData, isLoading: countiesLoading } = useCountiesByState(
-    searchParams.region_id,
-  );
-  const { data: citiesData, isLoading: citiesLoading } = useCitiesByCounty(
-    searchParams.county_id,
-  );
+  const { data: countiesData, isLoading: countiesLoading } = useCountiesByState(searchParams.region_id);
+  const { data: citiesData, isLoading: citiesLoading } = useCitiesByCounty(searchParams.county_id);
 
-  // Handle different possible response structures
   const states = statesData?.data || statesData || [];
   const counties = countiesData?.data || countiesData || [];
   const cities = citiesData?.data || citiesData || [];
 
-  // Reset county when state changes
-  useEffect(() => {
-    if (searchParams.region_id) {
-      setSearchParams((prev) => ({ ...prev, county_id: "", city_id: "" }));
-    }
-  }, [searchParams.region_id]);
+  useEffect(() => { if (searchParams.region_id) setSearchParams(p => ({ ...p, county_id: "", city_id: "" })); }, [searchParams.region_id]);
+  useEffect(() => { if (searchParams.county_id) setSearchParams(p => ({ ...p, city_id: "" })); }, [searchParams.county_id]);
 
-  // Reset city when county changes
-  useEffect(() => {
-    if (searchParams.county_id) {
-      setSearchParams((prev) => ({ ...prev, city_id: "" }));
-    }
-  }, [searchParams.county_id]);
-
-  const { data, isLoading, isError, error } = useNeighbourhoods({
-    ...activeFilters,
-    page: currentPage,
-  });
-  const queryClient = useQueryClient();
-
-  // Extract neighbourhoods from API response
+  const { data, isLoading, isError, error } = useNeighbourhoods({ ...activeFilters, page: currentPage });
   const neighbourhoods = data?.data || data || [];
-
-  // Extract pagination metadata from API response
   const pagination = data?.meta || data?.pagination || null;
-  const totalPages =
-    pagination?.last_page ||
-    pagination?.total_pages ||
-    pagination?.totalPages ||
-    1;
-  const currentPageNum =
-    pagination?.current_page || pagination?.currentPage || currentPage;
-  const totalItems =
-    pagination?.total || pagination?.totalItems || neighbourhoods.length;
+  const totalPages = pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1;
+  const currentPageNum = pagination?.current_page || pagination?.currentPage || currentPage;
+  const totalItems = pagination?.total || pagination?.totalItems || neighbourhoods.length;
 
   const deleteNeighbourhoodMutation = useMutation({
     mutationFn: (id: string) => deleteNeighbourhood(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["neighbourhoods"] });
-      alert("Neighbourhood deleted successfully");
-    },
-    onError: (error: any) => {
-      console.error("Error deleting neighbourhood:", error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to delete neighbourhood. Please try again.";
-      alert(errorMessage);
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["neighbourhoods"] }); setShowDeleteModal(false); setDeleteId(null); },
+    onError: (error: any) => { alert(error?.response?.data?.message || error?.message || "Failed to delete neighbourhood."); },
   });
 
-  const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this neighbourhood?")) {
-      deleteNeighbourhoodMutation.mutate(id);
-    }
-  };
+  const hasActiveFilters = !!(activeFilters.region_id || activeFilters.county_id || activeFilters.city_id || activeFilters.keyword);
 
-  const handleSearch = () => {
-    setActiveFilters({ ...searchParams });
-    setCurrentPage(1); // Reset to first page when searching
-  };
-
+  const handleSearch = () => { setActiveFilters({ ...searchParams }); setCurrentPage(1); };
   const handleClearSearch = () => {
-    const clearedFilters: NeighbourhoodSearchParams = {
-      region_id: "",
-      county_id: "",
-      city_id: "",
-      keyword: "",
-    };
-    setSearchParams(clearedFilters);
-    setActiveFilters(clearedFilters);
-    setCurrentPage(1);
+    const cleared: NeighbourhoodSearchParams = { region_id: "", county_id: "", city_id: "", keyword: "" };
+    setSearchParams(cleared); setActiveFilters(cleared); setCurrentPage(1);
   };
 
-  const handleFilterChange = (
-    field: keyof NeighbourhoodSearchParams,
-    value: string,
-  ) => {
-    setSearchParams((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const getNeighbourhoodImageUrl = (neighbourhood: any): string | null => {
-    const imageData = neighbourhood.images || neighbourhood.image;
-    if (!imageData) return null;
-    if (typeof imageData === "string") {
-      if (imageData.includes("/img/default/") || imageData.includes("default")) return null;
-      return imageData.startsWith("http")
-        ? imageData
-        : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${imageData}`;
+  const getNeighbourhoodImageUrl = (n: any): string | null => {
+    const img = n.images || n.image;
+    if (!img) return null;
+    if (typeof img === "string") {
+      if (img.includes("/img/default/") || img.includes("default")) return null;
+      return img.startsWith("http") ? img : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img}`;
     }
-    if (typeof imageData === "object" && imageData.path) {
-      return imageData.path.startsWith("http")
-        ? imageData.path
-        : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${imageData.path}`;
-    }
+    if (typeof img === "object" && img.path) return img.path.startsWith("http") ? img.path : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img.path}`;
     return null;
   };
 
-  const getAcronym = (neighbourhood: any): string => {
-    const label =
-      neighbourhood.name ||
-      neighbourhood.city?.name ||
-      neighbourhood.city ||
-      "N";
-    return label
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w: string) => w[0].toUpperCase())
-      .join("");
+  const getAcronym = (n: any): string => {
+    const label = n.name || n.city?.name || n.city || "N";
+    return label.split(" ").filter(Boolean).slice(0, 2).map((w: string) => w[0].toUpperCase()).join("");
   };
 
-  const formatDate = (dateStr: string): string => {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    }).replace(",", "");
-  };
+  const avatarColors = ["bg-emerald-100 text-emerald-700", "bg-blue-100 text-blue-700", "bg-purple-100 text-purple-700", "bg-amber-100 text-amber-700", "bg-rose-100 text-rose-700", "bg-cyan-100 text-cyan-700"];
+  const getAvatarColor = (str: string) => { let h = 0; for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h); return avatarColors[Math.abs(h) % avatarColors.length]; };
 
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
+  const formatDate = (d: string) => { if (!d) return ""; const dt = new Date(d); if (isNaN(dt.getTime())) return d; return dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }); };
+
+  const handlePageChange = (page: number) => { if (page >= 1 && page <= totalPages) { setCurrentPage(page); window.scrollTo({ top: 0, behavior: "smooth" }); } };
 
   const renderPagination = () => {
-    if (totalPages <= 1 && (!pagination || neighbourhoods.length < 10))
-      return null;
-
-    const pages = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(
-      1,
-      currentPageNum - Math.floor(maxVisiblePages / 2),
-    );
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage < maxVisiblePages - 1) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-
+    if (totalPages <= 1 && (!pagination || neighbourhoods.length < 10)) return null;
+    const pages: number[] = [];
+    const max = 5;
+    let s = Math.max(1, currentPageNum - Math.floor(max / 2));
+    let e = Math.min(totalPages, s + max - 1);
+    if (e - s < max - 1) s = Math.max(1, e - max + 1);
+    for (let i = s; i <= e; i++) pages.push(i);
     return (
-      <div className="flex flex-col items-center justify-center gap-4 mt-6">
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPageNum - 1)}
-            disabled={currentPageNum === 1 || isLoading}
-          >
-            Previous
-          </Button>
-
-          {startPage > 1 && (
-            <>
-              <Button
-                variant={1 === currentPageNum ? "default" : "outline"}
-                size="sm"
-                onClick={() => handlePageChange(1)}
-                disabled={isLoading}
-              >
-                1
-              </Button>
-              {startPage > 2 && (
-                <span className="px-2 text-muted-foreground">...</span>
-              )}
-            </>
-          )}
-
-          {pages.map((page) => (
-            <Button
-              key={page}
-              variant={page === currentPageNum ? "default" : "outline"}
-              size="sm"
-              onClick={() => handlePageChange(page)}
-              disabled={isLoading}
-            >
-              {page}
-            </Button>
-          ))}
-
-          {endPage < totalPages && (
-            <>
-              {endPage < totalPages - 1 && (
-                <span className="px-2 text-muted-foreground">...</span>
-              )}
-              <Button
-                variant={totalPages === currentPageNum ? "default" : "outline"}
-                size="sm"
-                onClick={() => handlePageChange(totalPages)}
-                disabled={isLoading}
-              >
-                {totalPages}
-              </Button>
-            </>
-          )}
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPageNum + 1)}
-            disabled={currentPageNum === totalPages || isLoading}
-          >
-            Next
-          </Button>
+      <div className="flex flex-col items-center gap-3 mt-8">
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => handlePageChange(currentPageNum - 1)} disabled={currentPageNum === 1 || isLoading} className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition">Previous</button>
+          {s > 1 && (<><button onClick={() => handlePageChange(1)} className={`w-8 h-8 text-sm rounded-lg border transition ${1 === currentPageNum ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:bg-white"}`}>1</button>{s > 2 && <span className="px-1 text-slate-400">...</span>}</>)}
+          {pages.map(p => (<button key={p} onClick={() => handlePageChange(p)} disabled={isLoading} className={`w-8 h-8 text-sm rounded-lg border transition ${p === currentPageNum ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:bg-white"}`}>{p}</button>))}
+          {e < totalPages && (<>{e < totalPages - 1 && <span className="px-1 text-slate-400">...</span>}<button onClick={() => handlePageChange(totalPages)} className={`w-8 h-8 text-sm rounded-lg border transition ${totalPages === currentPageNum ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:bg-white"}`}>{totalPages}</button></>)}
+          <button onClick={() => handlePageChange(currentPageNum + 1)} disabled={currentPageNum === totalPages || isLoading} className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition">Next</button>
         </div>
-
-        <div className="text-sm text-muted-foreground">
-          Page {currentPageNum} of {totalPages} ({totalItems} total items)
-        </div>
+        {pagination && <p className="text-xs text-slate-400">Page {currentPageNum} of {totalPages}{totalItems ? ` (${totalItems} total items)` : ""}</p>}
       </div>
     );
   };
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto p-4 space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-8 w-40 mb-4" />
-          <div className="flex gap-2">
-            <Skeleton className="h-10 w-24 rounded" />
-            <Skeleton className="h-10 w-32 rounded" />
-          </div>
-        </div>
-        <div className="grid gap-4">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
+    return (<div className="px-6 lg:px-8 max-w-[1280px] mx-auto space-y-4"><div className="flex justify-between items-center mb-2"><Skeleton className="h-7 w-44" /><div className="flex gap-3"><Skeleton className="h-10 w-[300px] rounded-full" /><Skeleton className="h-10 w-32 rounded-full" /></div></div>{[...Array(4)].map((_, i) => (<Skeleton key={i} className="h-[100px] w-full rounded-2xl" />))}</div>);
   }
 
   if (isError) {
-    return (
-      <div className="container mx-auto p-4">
-        <p className="text-red-500">
-          Error loading neighborhoods:{" "}
-          {error instanceof Error ? error.message : "Unknown error"}
-        </p>
-      </div>
-    );
+    return (<div className="px-6 lg:px-8 max-w-[1280px] mx-auto"><p className="text-red-500">Error: {error instanceof Error ? error.message : "Unknown error"}</p></div>);
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Neighborhoods</h1>
-        <div className="flex gap-2 items-center flex-1 justify-end">
-          <SearchFilters
-            className="max-w-2xl"
-            keyword={searchParams.keyword || ""}
-            isKeywordValid={true}
-            hasActiveFilters={
-              !!(
-                activeFilters.region_id ||
-                activeFilters.county_id ||
-                activeFilters.city_id ||
-                activeFilters.keyword
-              )
-            }
-            isLoading={isLoading}
-            onKeywordChange={(newKeyword) => {
-              handleFilterChange("keyword", newKeyword);
-            }}
-            onKeywordClear={() => handleFilterChange("keyword", "")}
-            onSearch={handleSearch}
-            onClear={handleClearSearch}
-            renderFields={() => (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="state-search">State</Label>
-                  <select
-                    id="state-search"
-                    value={searchParams.region_id || ""}
-                    onChange={(e) =>
-                      handleFilterChange("region_id", e.target.value)
-                    }
-                    disabled={statesLoading}
-                    className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
-                  >
-                    <option value="">
-                      {statesLoading ? "Loading states..." : "Select state"}
-                    </option>
-                    {Array.isArray(states) &&
-                      states.map((stateOption: any) => (
-                        <option key={stateOption.id} value={stateOption.id}>
-                          {stateOption.name ||
-                            stateOption.title ||
-                            stateOption.label}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="county-search">County</Label>
-                  <select
-                    id="county-search"
-                    value={searchParams.county_id || ""}
-                    onChange={(e) =>
-                      handleFilterChange("county_id", e.target.value)
-                    }
-                    disabled={!searchParams.region_id || countiesLoading}
-                    className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
-                  >
-                    <option value="">
-                      {countiesLoading
-                        ? "Loading counties..."
-                        : "Select county"}
-                    </option>
-                    {Array.isArray(counties) &&
-                      counties.map((countyOption: any) => (
-                        <option key={countyOption.id} value={countyOption.id}>
-                          {countyOption.name ||
-                            countyOption.title ||
-                            countyOption.label}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="city-search">City</Label>
-                  <select
-                    id="city-search"
-                    value={searchParams.city_id || ""}
-                    onChange={(e) =>
-                      handleFilterChange("city_id", e.target.value)
-                    }
-                    disabled={!searchParams.county_id || citiesLoading}
-                    className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm disabled:opacity-50"
-                  >
-                    <option value="">
-                      {citiesLoading ? "Loading cities..." : "Select city"}
-                    </option>
-                    {Array.isArray(cities) &&
-                      cities.map((cityOption: any) => (
-                        <option key={cityOption.id} value={cityOption.id}>
-                          {cityOption.name ||
-                            cityOption.title ||
-                            cityOption.label}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              </>
-            )}
-          />
-          <Button asChild>
-            <Link href="/admin/neighbourhoods/create">Add Neighborhood</Link>
-          </Button>
+    <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-[22px] font-semibold text-slate-900">Neighbourhoods</h1>
+        <div className="flex items-center gap-3">
+          <div className="relative hidden md:flex items-center">
+            <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 text-slate-400" />
+            <input type="text" placeholder="Search neighbourhoods..." value={searchParams.keyword || ""}
+              onChange={e => setSearchParams(p => ({ ...p, keyword: e.target.value }))}
+              onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
+              className="w-[260px] pl-9 pr-4 py-2 text-sm rounded-full border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition" />
+          </div>
+          <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full border transition-colors ${hasActiveFilters ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+            <FunnelIcon className="w-4 h-4" /> Filters {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-emerald-500"></span>}
+          </button>
+          <Link href="/admin/neighbourhoods/create" className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors">
+            <PlusIcon className="w-4 h-4" /> Add New
+          </Link>
         </div>
       </div>
 
-      <div className="grid gap-4">
+      {showFilters && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-5 mb-5 space-y-4">
+          <div className="flex items-center justify-between mb-2"><h3 className="text-sm font-semibold text-slate-900">Filter by Location</h3>{hasActiveFilters && <button onClick={handleClearSearch} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"><XMarkIcon className="w-3 h-3" /> Clear all</button>}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">State</label>
+              <select value={searchParams.region_id || ""} onChange={e => setSearchParams(p => ({ ...p, region_id: e.target.value }))} disabled={statesLoading}
+                className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition disabled:opacity-50">
+                <option value="">{statesLoading ? "Loading..." : "All states"}</option>
+                {Array.isArray(states) && states.map((o: any) => <option key={o.id} value={o.id}>{o.name || o.title || o.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">County</label>
+              <select value={searchParams.county_id || ""} onChange={e => setSearchParams(p => ({ ...p, county_id: e.target.value }))} disabled={!searchParams.region_id || countiesLoading}
+                className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition disabled:opacity-50">
+                <option value="">{countiesLoading ? "Loading..." : "All counties"}</option>
+                {Array.isArray(counties) && counties.map((o: any) => <option key={o.id} value={o.id}>{o.name || o.title || o.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">City</label>
+              <select value={searchParams.city_id || ""} onChange={e => setSearchParams(p => ({ ...p, city_id: e.target.value }))} disabled={!searchParams.county_id || citiesLoading}
+                className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition disabled:opacity-50">
+                <option value="">{citiesLoading ? "Loading..." : "All cities"}</option>
+                {Array.isArray(cities) && cities.map((o: any) => <option key={o.id} value={o.id}>{o.name || o.title || o.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <button onClick={handleSearch} className="px-5 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors">Apply Filters</button>
+        </div>
+      )}
+
+      <div className="space-y-3">
         {Array.isArray(neighbourhoods) && neighbourhoods.length > 0 ? (
-          neighbourhoods.map((neighbourhood: any) => {
-            const imgUrl = getNeighbourhoodImageUrl(neighbourhood);
-            const displayName =
-              neighbourhood.name ||
-              neighbourhood.city?.name ||
-              neighbourhood.city ||
-              "Neighbourhood";
+          neighbourhoods.map((n: any) => {
+            const imgUrl = getNeighbourhoodImageUrl(n);
+            const name = n.name || n.city?.name || n.city || "Neighbourhood";
             return (
-              <Card
-                key={neighbourhood.id}
-                className="cursor-pointer"
-                onClick={() =>
-                  router.push(`/admin/neighbourhoods/${neighbourhood.id}`)
-                }
-              >
-                <CardHeader className="flex flex-row justify-between items-center gap-4 p-4">
-                  <div className="flex items-start gap-4 flex-1 min-w-0">
-                    {/* Image / Acronym */}
-                    <div className="flex-shrink-0">
-                      {imgUrl ? (
-                        <img
-                          src={imgUrl}
-                          alt={displayName}
-                          className="w-16 h-16 rounded-lg object-cover border"
-                          onError={(e) => {
-                            const target = e.currentTarget;
-                            target.style.display = "none";
-                            const sibling = target.nextElementSibling as HTMLElement | null;
-                            if (sibling) sibling.style.display = "flex";
-                          }}
-                        />
-                      ) : null}
-                      <div
-                        className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-lg font-bold text-muted-foreground border"
-                        style={{ display: imgUrl ? "none" : "flex" }}
-                      >
-                        {getAcronym(neighbourhood)}
-                      </div>
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <Link
-                        href={`/admin/neighbourhoods/${neighbourhood.id}`}
-                        className="hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <p className="font-bold text-base leading-tight truncate">
-                          {displayName}
-                        </p>
-                      </Link>
-                      {neighbourhood.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {neighbourhood.description.substring(0, 120)}
-                        </p>
-                      )}
-                      {neighbourhood.created_at && (
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatDate(neighbourhood.created_at)}
-                        </p>
-                      )}
-                    </div>
+              <div key={n.id} className="bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow flex overflow-hidden cursor-pointer" onClick={() => router.push(`/admin/neighbourhoods/${n.id}`)}>
+                <div className="w-[100px] min-h-[100px] flex-shrink-0 hidden sm:block relative">
+                  {imgUrl ? (
+                    <img src={imgUrl} alt={name} className="w-full h-full object-cover" onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; const sib = e.currentTarget.nextElementSibling as HTMLElement; if (sib) sib.style.display = "flex"; }} />
+                  ) : null}
+                  <div className={`w-full h-full flex items-center justify-center text-lg font-bold ${getAvatarColor(name)}`} style={{ display: imgUrl ? "none" : "flex" }}>{getAcronym(n)}</div>
+                </div>
+                <div className="flex-1 min-w-0 px-5 py-4 flex flex-col justify-center">
+                  <span className="text-[15px] font-semibold text-slate-900 truncate">{name}</span>
+                  {n.description && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{n.description.substring(0, 120)}</p>}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 mt-2">
+                    {n.created_at && <span className="flex items-center gap-1"><CalendarDaysIcon className="w-3.5 h-3.5 text-slate-400" />{formatDate(n.created_at)}</span>}
+                    {(n.city?.name || n.state?.name) && <span className="flex items-center gap-1"><MapPinIcon className="w-3.5 h-3.5 text-slate-400" />{[n.city?.name, n.state?.name].filter(Boolean).join(", ")}</span>}
                   </div>
-
-                  {/* Actions */}
-                  <div
-                    className="flex gap-2 flex-shrink-0"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Button asChild variant="default" size="sm">
-                      <Link href={`/admin/neighbourhoods/${neighbourhood.id}`}>
-                        View
-                      </Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm">
-                      <Link
-                        href={`/admin/neighbourhoods/${neighbourhood.id}/edit`}
-                      >
-                        Edit
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(neighbourhood.id)}
-                      disabled={deleteNeighbourhoodMutation.isPending}
-                    >
-                      {deleteNeighbourhoodMutation.isPending
-                        ? "Deleting..."
-                        : "Delete"}
-                    </Button>
-                  </div>
-                </CardHeader>
-              </Card>
+                </div>
+                <div className="flex items-center gap-2 pr-5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                  <Link href={`/admin/neighbourhoods/${n.id}`} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors"><EyeIcon className="w-4 h-4" /> View</Link>
+                  <Link href={`/admin/neighbourhoods/${n.id}/edit`} className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:border-emerald-300 transition" title="Edit"><PencilSquareIcon className="w-4 h-4" /></Link>
+                  <button onClick={() => { setDeleteId(n.id); setShowDeleteModal(true); }} className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-red-400 hover:text-red-600 hover:border-red-300 transition" title="Delete"><TrashIcon className="w-4 h-4" /></button>
+                </div>
+              </div>
             );
           })
         ) : (
-          <p className="text-center text-muted-foreground">
-            No Neighbourhoods Found.
-          </p>
+          <div className="text-center py-16 text-slate-400"><MapPinIcon className="w-12 h-12 mx-auto mb-3 text-slate-300" /><p className="text-lg">No neighbourhoods found.</p></div>
         )}
       </div>
 
-      {/* Pagination Controls */}
       {renderPagination()}
+
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent><DialogHeader><DialogTitle>Delete Neighbourhood</DialogTitle></DialogHeader>
+          <p className="text-sm text-slate-500">Are you sure you want to delete this neighbourhood? This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={deleteNeighbourhoodMutation.isPending}>Cancel</Button>
+            <Button variant="destructive" onClick={() => { if (deleteId) deleteNeighbourhoodMutation.mutate(deleteId); }} disabled={deleteNeighbourhoodMutation.isPending}>{deleteNeighbourhoodMutation.isPending ? "Deleting..." : "Delete"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
