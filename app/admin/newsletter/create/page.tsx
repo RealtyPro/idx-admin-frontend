@@ -1,111 +1,94 @@
-"use client";
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { useRouter } from 'next/navigation';
-import axiosInstance from '@/services/Api';
+﻿"use client";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import axiosInstance from "@/services/Api";
+import { ArrowLeftIcon, NewspaperIcon } from "@heroicons/react/24/outline";
 
-export default function NewsletterCreatePage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [contactNo, setContactNo] = useState('');
-  const [description, setDescription] = useState('');
-  const [status, setStatus] = useState('active');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+export default function CreateNewsletterPage() {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    contact_no: "",
+    description: "",
+    status: "active",
+  });
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    setIsSubmitting(true);
     try {
-      await axiosInstance.post('v1/admin/newsletter', {
-        name,
-        email,
-        contact_no: contactNo,
-        description,
-        status,
-      });
-      setLoading(false);
-      showToast('Subscriber added successfully');
-      setTimeout(() => router.push('/admin/newsletter'), 1200);
-    } catch (err: any) {
-      setLoading(false);
-      setError(err?.message || 'Failed to add subscriber');
+      await axiosInstance.post("v1/admin/newsletter", formData);
+      router.push("/admin/newsletter");
+    } catch (err) {
+      console.error("Failed to create subscriber:", err);
+      alert("Failed to create subscriber. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-  }
-
-  function showToast(message: string) {
-    const toast = document.createElement('div');
-    toast.textContent = message;
-    toast.style.position = 'fixed';
-    toast.style.top = '32px';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%)';
-    toast.style.background = '#323232';
-    toast.style.color = '#fff';
-    toast.style.padding = '12px 24px';
-    toast.style.borderRadius = '8px';
-    toast.style.zIndex = '9999';
-    toast.style.fontSize = '1rem';
-    toast.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      toast.style.transition = 'opacity 0.5s';
-      toast.style.opacity = '0';
-      setTimeout(() => document.body.removeChild(toast), 500);
-    }, 2000);
-  }
+  };
 
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
-      <Card>
-        <CardHeader className="flex flex-row justify-between items-center">
-          <CardTitle>Add Newsletter Subscriber</CardTitle>
-          <Button asChild variant="secondary" size="sm">
-            <Link href="/admin/newsletter">Back</Link>
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-            <div>
-              <Label htmlFor="contact_no">Contact No</Label>
-              <Input id="contact_no" value={contactNo} onChange={e => setContactNo(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <textarea id="description" className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm" value={description} onChange={e => setDescription(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <select
-                id="status"
-                value={status}
-                onChange={e => setStatus(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                required
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-            {error && <div className="text-red-500 text-sm">{error}</div>}
-            <Button type="submit" disabled={loading}>{loading ? 'Adding...' : 'Add Subscriber'}</Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <Link href="/admin/newsletter" className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:border-slate-300 transition">
+          <ArrowLeftIcon className="w-4 h-4" />
+        </Link>
+        <h1 className="text-[22px] font-semibold text-slate-900">Add Subscriber</h1>
+      </div>
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8 space-y-6">
+        <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+          <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center"><NewspaperIcon className="w-5 h-5 text-emerald-600" /></div>
+          <div><h2 className="text-base font-semibold text-slate-900">Subscriber Details</h2><p className="text-xs text-slate-500">Add a new newsletter subscriber</p></div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Name <span className="text-red-400">*</span></label>
+            <input name="name" value={formData.name} onChange={handleChange} required placeholder="Full name"
+              className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Email <span className="text-red-400">*</span></label>
+            <input name="email" type="email" value={formData.email} onChange={handleChange} required placeholder="Email address"
+              className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Contact Number</label>
+            <input name="contact_no" value={formData.contact_no} onChange={handleChange} placeholder="Phone number"
+              className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
+            <select name="status" value={formData.status} onChange={handleChange}
+              className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+          <textarea name="description" value={formData.description} onChange={handleChange} rows={4} placeholder="Notes or description..."
+            className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition resize-none" />
+        </div>
+
+        <div className="flex items-center gap-3 pt-2">
+          <button type="submit" disabled={isSubmitting}
+            className="px-6 py-2.5 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors">
+            {isSubmitting ? "Saving..." : "Add Subscriber"}
+          </button>
+          <Link href="/admin/newsletter" className="px-6 py-2.5 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">Cancel</Link>
+        </div>
+      </form>
     </div>
   );
 }

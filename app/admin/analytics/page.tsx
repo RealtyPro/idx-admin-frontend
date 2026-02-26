@@ -1,280 +1,187 @@
-'use client';
-
-import React from 'react';
-import { useState, useEffect } from 'react';
+﻿"use client";
+import React, { useState, useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { StarIcon } from "@heroicons/react/24/solid";
 import {
-  ChartBarIcon,
-  ClockIcon,
-  UserGroupIcon,
-  PhoneIcon,
-  HomeIcon,
+  HomeModernIcon,
   EnvelopeIcon,
   CreditCardIcon,
-  UsersIcon,
-} from '@heroicons/react/24/outline';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { StarIcon } from '@heroicons/react/24/solid';
-import { metrics, listingViews, topAgents } from '@/lib/mockData';
-import { Skeleton } from '@/components/ui/skeleton';
+  UserGroupIcon,
+  ChartBarIcon,
+} from "@heroicons/react/24/outline";
+import { metrics, listingViews, topAgents } from "@/lib/mockData";
 
-export default function Analytics() {
-  const [timeRange, setTimeRange] = useState('week');
-  const [selectedAgent, setSelectedAgent] = useState<typeof topAgents[0] | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', calls: '', rating: '', satisfaction: '' });
+const metricIcons: Record<string, any> = { HomeIcon: HomeModernIcon, EnvelopeIcon, CreditCardIcon, UsersIcon: UserGroupIcon };
+const avatarColors = ["bg-emerald-100 text-emerald-700","bg-blue-100 text-blue-700","bg-violet-100 text-violet-700","bg-amber-100 text-amber-700"];
+
+export default function AnalyticsPage() {
+  const [timeRange, setTimeRange] = useState("week");
   const [metricsData, setMetricsData] = useState<typeof metrics>([]);
   const [distribution, setDistribution] = useState<typeof listingViews>([]);
   const [agents, setAgents] = useState<typeof topAgents>([]);
   const [loading, setLoading] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", calls: "", rating: "", satisfaction: "" });
 
   useEffect(() => {
     setMetricsData(metrics);
     setDistribution(listingViews);
     setAgents(topAgents);
-    const timer = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(t);
   }, []);
 
   const handleAgentClick = (agent: typeof topAgents[0]) => {
-    setSelectedAgent(agent);
-    setEditForm({
-      name: agent.name,
-      calls: agent.calls.toString(),
-      rating: agent.rating.toString(),
-      satisfaction: agent.satisfaction.toString(),
-    });
+    setEditForm({ name: agent.name, calls: agent.calls.toString(), rating: agent.rating.toString(), satisfaction: agent.satisfaction.toString() });
     setEditDialogOpen(true);
   };
 
-  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditForm({ ...editForm, [e.target.name]: e.target.value });
-  };
-
-  const handleSave = () => {
-    // For now, just log the updated agent data
-    console.log('Updated agent:', editForm);
-    setEditDialogOpen(false);
-    setSelectedAgent(null);
-  };
+  const handleSave = () => { console.log("Updated agent:", editForm); setEditDialogOpen(false); };
+  const selectCls = "px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition";
+  const inputCls = "w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition placeholder:text-slate-400";
 
   if (loading) {
     return (
-      <div className="px-2 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <Skeleton className="h-8 w-64 mb-8" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-32 w-full rounded-xl" />
-            ))}
-          </div>
-          <Skeleton className="h-64 w-full rounded-xl mb-8" />
-          <Skeleton className="h-64 w-full rounded-xl" />
-        </div>
+      <div className="px-6 lg:px-8 max-w-[1280px] mx-auto space-y-6">
+        <Skeleton className="h-7 w-40" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}</div>
+        <Skeleton className="h-64 w-full rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     );
   }
 
-  return (
-    <div className="px-2 sm:px-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-serif text-dark">IDX Analytics</h1>
-            <p className="text-dark-secondary">Monitor and analyze your listings and agent performance</p>
-          </div>
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-gray-200 text-dark focus:outline-none focus:border-primary w-full sm:w-auto"
-          >
-            <option value="day">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="year">This Year</option>
-          </select>
-        </div>
+  const maxViews = Math.max(...distribution.map(d => d.views), 1);
 
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {metricsData.map((metric) => {
-            const Icon = { HomeIcon, EnvelopeIcon, CreditCardIcon, UsersIcon }[metric.icon];
+  return (
+    <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-[22px] font-semibold text-slate-900">Analytics</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Monitor listings and agent performance</p>
+        </div>
+        <select value={timeRange} onChange={e => setTimeRange(e.target.value)} className={selectCls}>
+          <option value="day">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="year">This Year</option>
+        </select>
+      </div>
+
+      {/* Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {metricsData.map((m) => {
+          const Icon = metricIcons[m.icon];
+          return (
+            <div key={m.name} className="bg-white rounded-2xl border border-slate-100 p-5 hover:shadow-sm transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">{Icon && <Icon className="w-5 h-5 text-emerald-600" />}</div>
+                <span className={`text-xs font-medium ${m.changeType === "positive" ? "text-emerald-600" : "text-red-500"}`}>{m.change}</span>
+              </div>
+              <p className="text-xs text-slate-500 mb-0.5">{m.name}</p>
+              <p className="text-xl font-bold text-slate-900">{m.value}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Listing Views Chart */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 mb-6">
+        <div className="flex items-center gap-2 mb-5"><ChartBarIcon className="w-5 h-5 text-slate-400" /><h3 className="text-sm font-semibold text-slate-900">Listing Views</h3></div>
+        <div className="flex items-end gap-3 h-48">
+          {distribution.map((d) => {
+            const pct = (d.views / maxViews) * 100;
             return (
-              <div
-                key={metric.name}
-                className="bg-white p-6 rounded-xl border border-gray-200 hover:border-primary/20 transition-colors"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    {Icon && <Icon className="w-6 h-6 text-primary" />}
-                  </div>
-                  <span
-                    className={`text-sm font-medium ${
-                      metric.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {metric.change}
-                  </span>
-                </div>
-                <p className="text-sm text-dark-secondary mb-1">{metric.name}</p>
-                <p className="text-2xl font-semibold text-dark">{metric.value}</p>
+              <div key={d.title} className="flex-1 flex flex-col items-center gap-2">
+                <span className="text-xs font-medium text-slate-700">{d.views}</span>
+                <div className="w-full rounded-t-lg bg-emerald-100 transition-all" style={{ height: `${pct}%` }}><div className="w-full h-full rounded-t-lg bg-emerald-400/60" /></div>
+                <span className="text-[11px] text-slate-500 text-center leading-tight">{d.title}</span>
               </div>
             );
           })}
         </div>
+      </div>
 
-        {/* Listing Views Chart */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 mb-8">
-          <h2 className="text-lg font-medium text-dark mb-4">Listing Views</h2>
-          <div className="h-64">
-            <div className="flex h-full items-end gap-2">
-              {distribution.map((listing) => {
-                const height = (listing.views / 210) * 100;
+      {/* Top Agents Table */}
+      <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100"><h3 className="text-sm font-semibold text-slate-900">Top Performing Agents</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-100">
+                <th className="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Agent</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Listings</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Sales</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Inquiries</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {agents.map((agent, idx) => {
+                const initials = agent.name.split(" ").map(n => n[0]).join("");
                 return (
-                  <div
-                    key={listing.title}
-                    className="flex-1 flex flex-col items-center gap-2"
-                  >
-                    <div
-                      className="w-full bg-primary/20 rounded-t"
-                      style={{ height: `${height}%` }}
-                    ></div>
-                    <span className="text-xs text-dark-secondary">{listing.title}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Top Performing Agents */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-dark">Top Performing Agents</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-dark-secondary uppercase tracking-wider">
-                    Agent
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-dark-secondary uppercase tracking-wider">
-                    Listings
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-dark-secondary uppercase tracking-wider">
-                    Sales
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-dark-secondary uppercase tracking-wider">
-                    Inquiries
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {agents.map((agent) => (
-                  <tr
-                    key={agent.name}
-                    className="hover:bg-gray-50 cursor-pointer"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-primary font-medium">
-                            {agent.name.split(' ').map(n => n[0]).join('')}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-dark">{agent.name}</div>
-                        </div>
+                  <tr key={agent.name} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${avatarColors[idx % avatarColors.length]}`}>{initials}</div>
+                        <span className="text-sm font-medium text-slate-900">{agent.name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-dark">
-                      {agent.listings}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-dark">
-                      {agent.sales}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-dark">
-                      {agent.inquiries}
+                    <td className="px-5 py-4 text-sm text-slate-700">{agent.listings}</td>
+                    <td className="px-5 py-4 text-sm text-slate-700">{agent.sales}</td>
+                    <td className="px-5 py-4 text-sm text-slate-700">{agent.inquiries}</td>
+                    <td className="px-5 py-4 text-right">
+                      <button onClick={() => handleAgentClick(agent)} className="px-3 py-1.5 text-xs font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition">Edit</button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-
-        {/* Agent Edit Dialog */}
-        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Edit Agent</DialogTitle>
-            </DialogHeader>
-            <form className="grid gap-4 py-4" onSubmit={e => { e.preventDefault(); handleSave(); }}>
-              <div className="grid gap-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" name="name" value={editForm.name} onChange={handleEditFormChange} required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="calls">Total Calls</Label>
-                <Input id="calls" name="calls" type="number" value={editForm.calls} onChange={handleEditFormChange} required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="rating">Rating</Label>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      type="button"
-                      key={star}
-                      onClick={() => setEditForm((prev) => ({ ...prev, rating: star.toString() }))}
-                      aria-label={`Set rating to ${star}`}
-                    >
-                      <StarIcon
-                        className={`w-6 h-6 ${star <= Math.round(Number(editForm.rating)) ? 'text-yellow-400' : 'text-gray-300'}`}
-                        fill={star <= Math.round(Number(editForm.rating)) ? 'currentColor' : 'none'}
-                        stroke="currentColor"
-                      />
-                    </button>
-                  ))}
-                  <span className="ml-2 text-sm text-dark-secondary">{editForm.rating} / 5</span>
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="satisfaction">Customer Satisfaction (%)</Label>
-                <div className="flex items-center gap-4">
-                  <Slider
-                    id="satisfaction"
-                    name="satisfaction"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={[Number(editForm.satisfaction)]}
-                    onValueChange={([val]: number[]) => setEditForm((prev) => ({ ...prev, satisfaction: val.toString() }))}
-                    className="flex-1"
-                  />
-                  <span className="w-12 text-right text-sm">{editForm.satisfaction}%</span>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setEditDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Save Changes</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      {/* Agent Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader><DialogTitle>Edit Agent</DialogTitle></DialogHeader>
+          <form className="space-y-4 pt-2" onSubmit={e => { e.preventDefault(); handleSave(); }}>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Name</label>
+              <input className={inputCls} value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Total Calls</label>
+              <input className={inputCls} type="number" value={editForm.calls} onChange={e => setEditForm(f => ({ ...f, calls: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Rating</label>
+              <div className="flex items-center gap-1">
+                {[1,2,3,4,5].map(star => (
+                  <button type="button" key={star} onClick={() => setEditForm(f => ({ ...f, rating: star.toString() }))} aria-label={`Set rating to ${star}`}>
+                    <StarIcon className={`w-6 h-6 ${star <= Math.round(Number(editForm.rating)) ? "text-amber-400" : "text-slate-200"}`} />
+                  </button>
+                ))}
+                <span className="ml-2 text-xs text-slate-500">{editForm.rating} / 5</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Customer Satisfaction (%)</label>
+              <div className="flex items-center gap-4">
+                <Slider min={0} max={100} step={1} value={[Number(editForm.satisfaction)]} onValueChange={([val]: number[]) => setEditForm(f => ({ ...f, satisfaction: val.toString() }))} className="flex-1" />
+                <span className="w-10 text-right text-sm font-medium text-slate-700">{editForm.satisfaction}%</span>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-white">Save Changes</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-} 
+}
