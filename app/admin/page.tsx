@@ -12,13 +12,11 @@ import {
   BellIcon,
   MoonIcon,
   PlusCircleIcon,
-  UserPlusIcon,
-  PaperAirplaneIcon,
   HeartIcon,
   Squares2X2Icon,
   ListBulletIcon,
+  MapPinIcon,
 } from '@heroicons/react/24/outline';
-import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { Skeleton } from '@/components/ui/skeleton';
 import api from '@/services/Api';
 
@@ -35,92 +33,13 @@ type Stat = {
   iconColor: string;
 };
 
-type FeaturedListing = {
-  id: string;
-  image: string;
-  badge: string;
-  badgeColor: string;
-  price: string;
-  title: string;
-  location: string;
-  beds: number;
-  baths: number;
-  sqft: string;
-};
-
-type RecentEnquiry = {
-  id: string;
-  name: string;
-  time: string;
-  message: string;
-  tag: string;
-  tagColor: string;
-  isNew?: boolean;
-};
-
-/* ------------------------------------------------------------------ */
-/*  Mock data for featured listings & enquiries                        */
-/* ------------------------------------------------------------------ */
-const featuredListings: FeaturedListing[] = [
-  {
-    id: '1',
-    image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=600&q=80',
-    badge: 'FOR SALE',
-    badgeColor: 'bg-emerald-500',
-    price: '$1,250,000',
-    title: 'Luxury Modern Villa in Beverly...',
-    location: '90210 Beverly Hills, Los Angeles',
-    beds: 4,
-    baths: 3,
-    sqft: '3,200',
-  },
-  {
-    id: '2',
-    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&q=80',
-    badge: 'UNDER OFFER',
-    badgeColor: 'bg-orange-500',
-    price: '$850,000',
-    title: 'Downtown Waterfront Penthouse',
-    location: 'Brickell, Miami FL',
-    beds: 2,
-    baths: 2,
-    sqft: '1,850',
-  },
-];
-
-const recentEnquiries: RecentEnquiry[] = [
-  {
-    id: '1',
-    name: 'Sarah Jenkins',
-    time: '2 mins ago',
-    message: 'Interested in the Luxury Moder...',
-    tag: 'Listing #442',
-    tagColor: 'text-blue-600 bg-blue-50',
-    isNew: true,
-  },
-  {
-    id: '2',
-    name: 'Robert Fox',
-    time: '45 mins ago',
-    message: 'Can we schedule a viewing for...',
-    tag: 'Listing #128',
-    tagColor: 'text-blue-600 bg-blue-50',
-  },
-  {
-    id: '3',
-    name: 'Jenny Wilson',
-    time: '3 hours ago',
-    message: 'Looking for similar properties in...',
-    tag: 'General Enquiry',
-    tagColor: 'text-slate-600 bg-slate-100',
-  },
-];
-
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 export default function AdminDashboard() {
   const [statsData, setStatsData] = useState<Stat[]>([]);
+  const [featuredListings, setFeaturedListings] = useState<any[]>([]);
+  const [recentListings, setRecentListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [gridView, setGridView] = useState(true);
 
@@ -160,6 +79,26 @@ export default function AdminDashboard() {
           fetchCount('v1/admin/count/blog/blog/all', 'Blogs'),
           fetchCount('v1/admin/count/testimonial/testimonial/all', 'Testimonials'),
         ]);
+
+      // Fetch featured listings from the API
+      try {
+        const featuredRes = await api.get('v1/admin/property?search[is_featured]=1');
+        const featuredData = featuredRes?.data?.data || featuredRes?.data || [];
+        setFeaturedListings(Array.isArray(featuredData) ? featuredData : []);
+      } catch (err) {
+        console.error('Failed to fetch featured listings:', err);
+        setFeaturedListings([]);
+      }
+
+      // Fetch recent listings from the API
+      try {
+        const recentRes = await api.get('v1/admin/property?page=1');
+        const recentData = recentRes?.data?.data || recentRes?.data || [];
+        setRecentListings(Array.isArray(recentData) ? recentData.slice(0, 5) : []);
+      } catch (err) {
+        console.error('Failed to fetch recent listings:', err);
+        setRecentListings([]);
+      }
 
       setStatsData([
         {
@@ -299,31 +238,24 @@ export default function AdminDashboard() {
             <h3 className="text-sm font-semibold text-slate-900 mb-4">Quick Actions</h3>
             <div className="space-y-2.5">
               <Link
-                href="/admin/listings/create"
+                href="/admin/blog/create"
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors group"
               >
                 <PlusCircleIcon className="w-5 h-5 text-emerald-600" />
-                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">Add New Listing</span>
+                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">New Blog Post</span>
               </Link>
               <Link
-                href="/admin/users"
+                href="/admin/neighbourhoods/create"
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors group"
               >
-                <UserPlusIcon className="w-5 h-5 text-blue-500" />
-                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">Create New Lead</span>
-              </Link>
-              <Link
-                href="/admin/newsletter/create"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors group"
-              >
-                <PaperAirplaneIcon className="w-5 h-5 text-violet-500" />
-                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">Send Newsletter</span>
+                <MapPinIcon className="w-5 h-5 text-blue-500" />
+                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">Add Neighbourhood</span>
               </Link>
             </div>
           </div>
         </div>
 
-        {/* ---- Featured Listings + Recent Enquiries ---- */}
+        {/* ---- Featured Listings + Recent Listings ---- */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
           {/* Featured Listings */}
           <div>
@@ -345,94 +277,155 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className={`grid gap-5 ${gridView ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
-              {featuredListings.map((listing) => (
-                <div
-                  key={listing.id}
-                  className="bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-lg transition-shadow group"
-                >
-                  {/* Image */}
-                  <div className="relative h-[200px] overflow-hidden">
-                    <img
-                      src={listing.image}
-                      alt={listing.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    {/* Badge */}
-                    <span className={`absolute top-3 left-3 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white rounded-md ${listing.badgeColor}`}>
-                      {listing.badge}
-                    </span>
-                    {/* Favorite */}
-                    <button className="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition">
-                      <HeartIcon className="w-4 h-4 text-slate-500" />
-                    </button>
-                    {/* Price */}
-                    <div className="absolute bottom-3 left-3">
-                      <span className="text-white text-lg font-bold drop-shadow-lg">{listing.price}</span>
-                    </div>
-                  </div>
-                  {/* Details */}
-                  <div className="p-4">
-                    <h3 className="font-semibold text-slate-900 text-[15px] mb-1 truncate">{listing.title}</h3>
-                    <p className="text-xs text-slate-400 flex items-center gap-1 mb-3">
-                      <svg className="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/></svg>
-                      {listing.location}
-                    </p>
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
-                        {listing.beds}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                        {listing.baths}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"/></svg>
-                        {listing.sqft}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {featuredListings.length > 0 ? (
+              <div className={`grid gap-5 ${gridView ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+                {featuredListings.map((listing: any) => {
+                  const image = (() => {
+                    const imgs = listing?.images ?? listing?.image ?? listing?.photos;
+                    if (typeof imgs === 'string') {
+                      if (imgs.trim().startsWith('[')) {
+                        try { const p = JSON.parse(imgs); if (Array.isArray(p) && p.length) return p[0]; } catch {}
+                      }
+                      return imgs;
+                    }
+                    if (Array.isArray(imgs) && imgs.length) return imgs[0];
+                    return '/images/hero-image.png';
+                  })();
+                  const price = listing?.price
+                    ? typeof listing.price === 'number'
+                      ? `$${listing.price.toLocaleString('en-US')}`
+                      : listing.price.toString().startsWith('$') ? listing.price : `$${listing.price}`
+                    : '';
+                  const sqft = listing?.sqft ?? listing?.square_feet ?? listing?.squareFeet ?? listing?.bua ?? listing?.area;
+                  const statusLabel = listing?.status?.toUpperCase() || 'ACTIVE';
+                  const statusColor = listing?.status?.toLowerCase() === 'sold' ? 'bg-red-500' : listing?.status?.toLowerCase() === 'pending' ? 'bg-orange-500' : 'bg-emerald-500';
+
+                  return (
+                    <Link
+                      key={listing.id}
+                      href={`/admin/listings/${listing.id}`}
+                      className="bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-lg transition-shadow group"
+                    >
+                      <div className="relative h-[200px] overflow-hidden">
+                        <img src={image} alt={listing.title || listing.name || `Listing ${listing.id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <span className={`absolute top-3 left-3 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white rounded-md ${statusColor}`}>
+                          {statusLabel}
+                        </span>
+                        <button className="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition">
+                          <HeartIcon className="w-4 h-4 text-slate-500" />
+                        </button>
+                        {price && (
+                          <div className="absolute bottom-3 left-3">
+                            <span className="text-white text-lg font-bold drop-shadow-lg">{price}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-semibold text-slate-900 text-[15px] mb-1 truncate">{listing.title || listing.name || listing.address || `Listing ${listing.id}`}</h3>
+                        {listing.address && (
+                          <p className="text-xs text-slate-400 flex items-center gap-1 mb-3">
+                            <svg className="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/></svg>
+                            {listing.address}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-4 text-xs text-slate-500">
+                          {listing.beds !== undefined && listing.beds !== null && (
+                            <span className="flex items-center gap-1">
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
+                              {listing.beds}
+                            </span>
+                          )}
+                          {listing.baths !== undefined && listing.baths !== null && (
+                            <span className="flex items-center gap-1">
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                              {listing.baths}
+                            </span>
+                          )}
+                          {sqft && (
+                            <span className="flex items-center gap-1">
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"/></svg>
+                              {sqft}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-slate-100 p-10 text-center">
+                <p className="text-slate-400 text-sm">No featured listings found.</p>
+                <Link href="/admin/listings" className="text-emerald-600 text-sm font-medium hover:text-emerald-700 mt-2 inline-block">
+                  Go to Listings →
+                </Link>
+              </div>
+            )}
           </div>
 
-          {/* Recent Enquiries */}
+          {/* Recent Listings */}
           <div className="bg-white rounded-2xl border border-slate-100 p-5 h-fit">
-            <h3 className="text-[15px] font-semibold text-slate-900 mb-4">Recent Enquiries</h3>
-            <div className="space-y-4">
-              {recentEnquiries.map((enquiry) => (
-                <div key={enquiry.id} className="flex gap-3">
-                  {/* Avatar placeholder */}
-                  <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/></svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-sm font-semibold text-slate-900">{enquiry.name}</span>
-                      <span className="text-[10px] text-slate-400 flex-shrink-0">{enquiry.time}</span>
-                    </div>
-                    <p className="text-xs text-slate-500 mb-1.5 truncate">{enquiry.message}</p>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${enquiry.tagColor}`}>
-                        {enquiry.tag}
-                      </span>
-                      {enquiry.isNew && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-emerald-600 bg-emerald-50">
-                          New
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <h3 className="text-[15px] font-semibold text-slate-900 mb-4">Recent Listings</h3>
+            {recentListings.length > 0 ? (
+              <div className="space-y-4">
+                {recentListings.map((listing: any) => {
+                  const image = (() => {
+                    const imgs = listing?.images ?? listing?.image ?? listing?.photos;
+                    if (typeof imgs === 'string') {
+                      if (imgs.trim().startsWith('[')) {
+                        try { const p = JSON.parse(imgs); if (Array.isArray(p) && p.length) return p[0]; } catch {}
+                      }
+                      return imgs;
+                    }
+                    if (Array.isArray(imgs) && imgs.length) return imgs[0];
+                    return '/images/hero-image.png';
+                  })();
+                  const price = listing?.price
+                    ? typeof listing.price === 'number'
+                      ? `$${listing.price.toLocaleString('en-US')}`
+                      : listing.price.toString().startsWith('$') ? listing.price : `$${listing.price}`
+                    : '';
+
+                  return (
+                    <Link key={listing.id} href={`/admin/listings/${listing.id}`} className="flex gap-3 group">
+                      <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
+                        <img src={image} alt={listing.title || `Listing ${listing.id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-slate-900 truncate group-hover:text-emerald-600 transition-colors">
+                          {listing.title || listing.name || listing.address || `Listing ${listing.id}`}
+                        </h4>
+                        {price && <p className="text-xs font-bold text-emerald-500 mt-0.5">{price}</p>}
+                        <div className="flex items-center gap-2 mt-1">
+                          {listing.beds !== undefined && listing.beds !== null && (
+                            <span className="text-[10px] text-slate-400">{listing.beds} beds</span>
+                          )}
+                          {listing.baths !== undefined && listing.baths !== null && (
+                            <span className="text-[10px] text-slate-400">{listing.baths} baths</span>
+                          )}
+                          {listing.status && (
+                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                              listing.status.toLowerCase() === 'active' ? 'text-emerald-600 bg-emerald-50' :
+                              listing.status.toLowerCase() === 'sold' ? 'text-red-600 bg-red-50' :
+                              'text-slate-600 bg-slate-100'
+                            }`}>
+                              {listing.status}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-slate-400 text-sm text-center py-4">No recent listings.</p>
+            )}
             <Link
-              href="/admin/inquiries"
+              href="/admin/listings"
               className="block text-center text-sm font-medium text-emerald-600 hover:text-emerald-700 mt-5 transition-colors"
             >
-              View All Leads
+              View All Listings
             </Link>
           </div>
         </div>
