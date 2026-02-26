@@ -269,7 +269,7 @@ export default function NeighbourhoodCreatePage() {
                       // Set preview image URL
                       const previewUrl = uploadedImageObj.path.startsWith('http') 
                         ? uploadedImageObj.path 
-                        : `https://demorealestate2.webnapps.net/storage/${uploadedImageObj.path}`;
+                        : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${uploadedImageObj.path}`;
                       setImage(previewUrl);
                       
                       alert("Image uploaded successfully");

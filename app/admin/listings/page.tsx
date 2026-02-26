@@ -262,7 +262,7 @@ function ListingsContent() {
       }
 
       const response = await fetch(
-        `https://demorealestate2.webnapps.net/api/v1/admin/property/action/${listingId}/feature`,
+        `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/api/v1/admin/property/action/${listingId}/feature`,
         {
           method: "PATCH",
           headers: {

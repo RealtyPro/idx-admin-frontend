@@ -673,7 +673,7 @@ export default function ProfilePage() {
                     if (!val) return "/images/nopic.png";
                     if (val.startsWith("http://") || val.startsWith("https://")) return val;
                     // Prepend base URL for relative path
-                    return `https://demorealestate2.webnapps.net/image/local/md/${val}`;
+                    return `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/image/local/md/${val}`;
                   })()}
                   alt="Company logo preview"
                   className="h-20 w-20 border"

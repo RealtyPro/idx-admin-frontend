@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://demorealestate2.webnapps.net/api/',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_PRIMARY || `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/api/`,
 });
 
 // Request interceptor to add headers

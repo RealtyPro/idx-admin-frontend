@@ -46,13 +46,13 @@ export default function BlogDetailsPage() {
     if (typeof blog.image === 'string') {
       return blog.image.startsWith('http')
         ? blog.image
-        : `https://demorealestate2.webnapps.net/storage/${blog.image}`;
+        : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${blog.image}`;
     }
     
     if (typeof blog.image === 'object' && blog.image.path) {
       return blog.image.path.startsWith('http')
         ? blog.image.path
-        : `https://demorealestate2.webnapps.net/storage/${blog.image.path}`;
+        : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${blog.image.path}`;
     }
     
     return null;

@@ -87,7 +87,7 @@ export default function BlogCreatePage() {
         // Set preview image URL - construct from path or use existing image
         const previewUrl = uploadedImageObj.path.startsWith('http') 
           ? uploadedImageObj.path 
-          : `https://demorealestate2.webnapps.net/image/local/xs/${uploadedImageObj.path}`;
+          : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/image/local/xs/${uploadedImageObj.path}`;
         
         console.log("Setting preview URL:", previewUrl);
         setImage(previewUrl);

@@ -49,13 +49,13 @@ export default function PropertyDetailsPage() {
     if (typeof imageData === 'string') {
       return imageData.startsWith('http')
         ? imageData
-        : `https://demorealestate2.webnapps.net/storage/${imageData}`;
+        : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${imageData}`;
     }
     
     if (typeof imageData === 'object' && imageData.path) {
       return imageData.path.startsWith('http')
         ? imageData.path
-        : `https://demorealestate2.webnapps.net/storage/${imageData.path}`;
+        : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${imageData.path}`;
     }
     
     if (Array.isArray(imageData) && imageData.length > 0) {
@@ -63,12 +63,12 @@ export default function PropertyDetailsPage() {
       if (typeof firstImage === 'string') {
         return firstImage.startsWith('http')
           ? firstImage
-          : `https://demorealestate2.webnapps.net/storage/${firstImage}`;
+          : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${firstImage}`;
       }
       if (firstImage.path) {
         return firstImage.path.startsWith('http')
           ? firstImage.path
-          : `https://demorealestate2.webnapps.net/storage/${firstImage.path}`;
+          : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${firstImage.path}`;
       }
     }
     
