@@ -1,311 +1,153 @@
 ﻿"use client";
-import React from 'react';
+import React, { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { useParams, useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from "@/components/ui/badge";
-import { useSingleNeighbourhood } from '@/services/neighbourhood/NeighbourhoodQueries';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { deleteNeighbourhood } from '@/services/neighbourhood/NeighbourhoodServices';
-import { useStates, useCountiesByState, useCitiesByCounty } from '@/services/location/LocationQueries';
-import { MapPin, Calendar, Info, Building2 } from 'lucide-react';
+import { useSingleNeighbourhood } from "@/services/neighbourhood/NeighbourhoodQueries";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { deleteNeighbourhood } from "@/services/neighbourhood/NeighbourhoodServices";
+import { useStates, useCountiesByState, useCitiesByCounty } from "@/services/location/LocationQueries";
+import {
+  ArrowLeftIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  MapPinIcon,
+  CalendarDaysIcon,
+  InformationCircleIcon,
+  BuildingOffice2Icon,
+} from "@heroicons/react/24/outline";
 
 export default function NeighbourhoodDetails() {
-	const params = useParams();
-	const router = useRouter();
-	const queryClient = useQueryClient();
-	const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '';
-	
-	const { data, isLoading, isError } = useSingleNeighbourhood(id);
-	const neighbourhood = data?.data || data;
+  const params = useParams();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const id = typeof params.id === "string" ? params.id : Array.isArray(params.id) ? params.id[0] : "";
 
-	// Fetch location data to get names
-	const { data: statesData } = useStates();
-	const { data: countiesData } = useCountiesByState(neighbourhood?.state_id ? String(neighbourhood.state_id) : "");
-	const { data: citiesData } = useCitiesByCounty(neighbourhood?.county_id ? String(neighbourhood.county_id) : "");
+  const { data, isLoading, isError } = useSingleNeighbourhood(id);
+  const neighbourhood = data?.data || data;
 
-	// Extract location options
-	const states = statesData?.data || statesData || [];
-	const counties = countiesData?.data || countiesData || [];
-	const cities = citiesData?.data || citiesData || [];
+  const { data: statesData } = useStates();
+  const { data: countiesData } = useCountiesByState(neighbourhood?.state_id ? String(neighbourhood.state_id) : "");
+  const { data: citiesData } = useCitiesByCounty(neighbourhood?.county_id ? String(neighbourhood.county_id) : "");
 
-	// Find the location names by ID
-	const stateName = neighbourhood?.state_id 
-		? states.find((s: any) => String(s.value || s.key || s.id) === String(neighbourhood.state_id))?.text || 
-		  states.find((s: any) => String(s.value || s.key || s.id) === String(neighbourhood.state_id))?.name || 
-		  neighbourhood.state?.name || 
-		  'N/A'
-		: 'N/A';
+  const statesList = statesData?.data || statesData || [];
+  const countiesList = countiesData?.data || countiesData || [];
+  const citiesList = citiesData?.data || citiesData || [];
 
-	const countyName = neighbourhood?.county_id
-		? counties.find((c: any) => String(c.value || c.key || c.id) === String(neighbourhood.county_id))?.text || 
-		  counties.find((c: any) => String(c.value || c.key || c.id) === String(neighbourhood.county_id))?.name || 
-		  neighbourhood.county?.name || 
-		  'N/A'
-		: 'N/A';
+  const findName = (list: any[], id: any, fallback: string) => {
+    if (!id) return fallback;
+    const item = list.find((s: any) => String(s.value || s.key || s.id) === String(id));
+    return item?.text || item?.name || fallback;
+  };
 
-	const cityName = neighbourhood?.city_id
-		? cities.find((c: any) => String(c.value || c.key || c.id) === String(neighbourhood.city_id))?.text || 
-		  cities.find((c: any) => String(c.value || c.key || c.id) === String(neighbourhood.city_id))?.name || 
-		  neighbourhood.city?.name || 
-		  'N/A'
-		: 'N/A';
+  const stateName = findName(statesList, neighbourhood?.state_id, neighbourhood?.state?.name || "N/A");
+  const countyName = findName(countiesList, neighbourhood?.county_id, neighbourhood?.county?.name || "N/A");
+  const cityName = findName(citiesList, neighbourhood?.city_id, neighbourhood?.city?.name || "N/A");
 
-	// Handle image - API uses 'images' field, but check 'image' for backwards compatibility
-	const getImageUrl = () => {
-		if (!neighbourhood) return null;
-		
-		const imageData = neighbourhood.images || neighbourhood.image;
-		
-		if (!imageData) return null;
-		
-		// Check if it's a default placeholder image
-		if (typeof imageData === 'string') {
-			const isDefaultImage = imageData.includes('/img/default/') || imageData.includes('default');
-			if (isDefaultImage) return null; // Don't show default images
-			
-			return imageData.startsWith('http')
-				? imageData
-				: `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${imageData}`;
-		}
-		
-		// Handle image object
-		if (typeof imageData === 'object' && imageData.path) {
-			return imageData.path.startsWith('http')
-				? imageData.path
-				: `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${imageData.path}`;
-		}
-		
-		return null;
-	};
+  const getImageUrl = () => {
+    if (!neighbourhood) return null;
+    const img = neighbourhood.images || neighbourhood.image;
+    if (!img) return null;
+    if (typeof img === "string") {
+      if (img.includes("/img/default/") || img.includes("default")) return null;
+      return img.startsWith("http") ? img : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img}`;
+    }
+    if (typeof img === "object" && img.path) return img.path.startsWith("http") ? img.path : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img.path}`;
+    return null;
+  };
+  const imageUrl = getImageUrl();
 
-	const imageUrl = getImageUrl();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const deleteNeighbourhoodMutation = useMutation({
+    mutationFn: (id: string) => deleteNeighbourhood(id),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["neighbourhoods"] }); router.push("/admin/neighbourhoods"); },
+    onError: (error: any) => { alert(error?.response?.data?.message || error?.message || "Failed to delete."); },
+  });
 
-	const deleteNeighbourhoodMutation = useMutation({
-		mutationFn: (id: string) => deleteNeighbourhood(id),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['neighbourhoods'] });
-			alert("Neighbourhood deleted successfully");
-			router.push("/admin/neighbourhoods");
-		},
-		onError: (error: any) => {
-			console.error("Error deleting neighbourhood:", error);
-			const errorMessage = error?.response?.data?.message || error?.message || "Failed to delete neighbourhood. Please try again.";
-			alert(errorMessage);
-		},
-	});
+  const formatDate = (d?: string) => { if (!d) return "N/A"; const dt = new Date(d); return isNaN(dt.getTime()) ? "N/A" : dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }); };
 
-	const handleDelete = () => {
-		if (window.confirm("Are you sure you want to delete this neighbourhood?")) {
-			deleteNeighbourhoodMutation.mutate(id);
-		}
-	};
+  if (isLoading) {
+    return (<div className="px-6 lg:px-8 max-w-[1280px] mx-auto space-y-4"><div className="flex items-center gap-3 mb-6"><Skeleton className="h-9 w-9 rounded-full" /><Skeleton className="h-7 w-52" /></div><Skeleton className="h-[400px] w-full rounded-2xl" /><Skeleton className="h-[200px] w-full rounded-2xl" /></div>);
+  }
 
-	if (isLoading) {
-		return (
-			<div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
-				<div className="flex justify-between items-center mb-6">
-					<Skeleton className="h-10 w-64" />
-					<div className="flex gap-2">
-						<Skeleton className="h-10 w-20" />
-						<Skeleton className="h-10 w-20" />
-						<Skeleton className="h-10 w-20" />
-					</div>
-				</div>
-				<Skeleton className="h-96 w-full rounded-xl" />
-				<Skeleton className="h-48 w-full rounded-xl" />
-			</div>
-		);
-	}
+  if (isError || !neighbourhood) {
+    return (<div className="px-6 lg:px-8 max-w-[1280px] mx-auto"><div className="bg-white rounded-2xl border border-slate-100 p-8 text-center"><p className="text-slate-500 mb-4">Neighbourhood not found.</p><Link href="/admin/neighbourhoods" className="text-emerald-600 hover:underline text-sm">Back to Neighbourhoods</Link></div></div>);
+  }
 
-	if (isError || !neighbourhood) {
-		return (
-			<div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
-				<Card>
-					<CardHeader>
-						<CardTitle>Neighbourhood Not Found</CardTitle>
-						<CardDescription>The neighbourhood you are looking for does not exist.</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<Button asChild variant="secondary">
-							<Link href="/admin/neighbourhoods">Back to Neighbourhoods</Link>
-						</Button>
-					</CardContent>
-				</Card>
-			</div>
-		);
-	}
+  return (
+    <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Link href="/admin/neighbourhoods" className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:border-slate-300 transition"><ArrowLeftIcon className="w-4 h-4" /></Link>
+          <div>
+            <h1 className="text-[22px] font-semibold text-slate-900">{neighbourhood.name || neighbourhood.title || "Neighbourhood Details"}</h1>
+            {(neighbourhood.city_id || neighbourhood.state_id) && (
+              <p className="text-sm text-slate-500 flex items-center gap-1 mt-0.5"><MapPinIcon className="w-3.5 h-3.5" />{[cityName !== "N/A" ? cityName : null, countyName !== "N/A" ? countyName : null, stateName !== "N/A" ? stateName : null].filter(Boolean).join(", ") || "Location not specified"}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link href={`/admin/neighbourhoods/${id}/edit`} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"><PencilSquareIcon className="w-4 h-4" /> Edit</Link>
+          <button onClick={() => setShowDeleteModal(true)} className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-red-400 hover:text-red-600 hover:border-red-300 transition" title="Delete"><TrashIcon className="w-4 h-4" /></button>
+        </div>
+      </div>
 
-	return (
-		<div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
-			{/* Header Section */}
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-			<div className="flex-1">
-				<h1 className="text-3xl font-bold tracking-tight">
-					{neighbourhood.name || neighbourhood.title || "Neighbourhood Details"}
-				</h1>
-				<div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
-					{(neighbourhood.city_id || neighbourhood.county_id || neighbourhood.state_id) && (
-						<div className="flex items-center gap-1">
-							<MapPin className="w-4 h-4" />
-							<span>
-								{[cityName !== 'N/A' ? cityName : null, countyName !== 'N/A' ? countyName : null, stateName !== 'N/A' ? stateName : null]
-									.filter(Boolean)
-									.join(', ') || neighbourhood.location || 'Location not specified'}
-							</span>
-						</div>
-					)}
-					{neighbourhood.created_at && (
-						<div className="flex items-center gap-1">
-							<Calendar className="w-4 h-4" />
-							<span>{new Date(neighbourhood.created_at).toLocaleDateString()}</span>
-						</div>
-					)}
-				</div>
-			</div>
-				<div className="flex gap-2 flex-wrap">
-					<Button asChild variant="outline" size="sm">
-						<Link href={`/admin/neighbourhoods/${id}/edit`}>Edit</Link>
-					</Button>
-					<Button asChild variant="secondary" size="sm">
-						<Link href="/admin/neighbourhoods">Back</Link>
-					</Button>
-					<Button 
-						variant="destructive" 
-						size="sm" 
-						onClick={handleDelete}
-						disabled={deleteNeighbourhoodMutation.isPending}
-					>
-						{deleteNeighbourhoodMutation.isPending ? "Deleting..." : "Delete"}
-					</Button>
-				</div>
-			</div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {imageUrl && (
+          <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-100 overflow-hidden">
+            <img src={imageUrl} alt={neighbourhood.name || "Neighbourhood"} className="w-full h-[400px] object-cover" onError={e => { e.currentTarget.style.display = "none"; }} />
+          </div>
+        )}
 
-			{/* Main Content Grid */}
-			<div className="grid gap-6 md:grid-cols-12">
-				{/* Image Section - 8 columns */}
-				{imageUrl && (
-					<Card className="overflow-hidden md:col-span-8 col-span-12">
-						
-						<CardContent className="p-0">
-							<img
-								src={imageUrl}
-								alt={neighbourhood.name || neighbourhood.title || 'Neighbourhood image'}
-								className="w-full h-[400px] object-cover"
-								onError={(e) => {
-									console.error('Image failed to load:', imageUrl);
-									e.currentTarget.style.display = 'none';
-								}}
-							/>
-						</CardContent>
-					</Card>
-				)}
+        <div className={`${imageUrl ? "lg:col-span-4" : "lg:col-span-12"} bg-white rounded-2xl border border-slate-100 p-6`}>
+          <div className="flex items-center gap-2 mb-4"><BuildingOffice2Icon className="w-5 h-5 text-slate-400" /><h3 className="text-sm font-semibold text-slate-900">Details</h3></div>
+          <div className="space-y-4">
+            {[
+              { label: "Status", value: neighbourhood.status, badge: true },
+              { label: "State", value: stateName },
+              { label: "County", value: countyName },
+              { label: "City", value: cityName },
+              { label: "Created", value: formatDate(neighbourhood.created_at) },
+              { label: "Updated", value: formatDate(neighbourhood.updated_at) },
+            ].filter(r => r.value && r.value !== "N/A").map((row, i) => (
+              <div key={i}>
+                <p className="text-xs text-slate-400 mb-0.5">{row.label}</p>
+                {row.badge ? (
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${String(row.value).toLowerCase() === "active" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-amber-50 text-amber-600 border border-amber-200"}`}>{row.value && typeof row.value === "string" ? row.value.charAt(0).toUpperCase() + row.value.slice(1) : row.value}</span>
+                ) : <p className="text-sm text-slate-700">{row.value}</p>}
+              </div>
+            ))}
+            {(neighbourhood.properties_count !== undefined || neighbourhood.listings_count !== undefined) && (
+              <div className="pt-3 border-t border-slate-100">
+                <p className="text-xs text-slate-400 mb-2">Statistics</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {neighbourhood.properties_count !== undefined && <div className="text-center p-3 bg-slate-50 rounded-xl"><p className="text-lg font-bold text-slate-900">{neighbourhood.properties_count}</p><p className="text-xs text-slate-500">Properties</p></div>}
+                  {neighbourhood.listings_count !== undefined && <div className="text-center p-3 bg-slate-50 rounded-xl"><p className="text-lg font-bold text-slate-900">{neighbourhood.listings_count}</p><p className="text-xs text-slate-500">Listings</p></div>}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-				{/* Details Card - 4 columns */}
-				<Card className={imageUrl ? "md:col-span-4 col-span-12" : "md:col-span-12 col-span-12"}>
-					<CardHeader>
-						<div className="flex items-center gap-2">
-							<Building2 className="w-5 h-5" />
-							<CardTitle>Details</CardTitle>
-						</div>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						{/* Status */}
-						<div>
-							<h3 className="text-sm font-medium text-muted-foreground mb-1">Status</h3>
-							<Badge 
-								variant={neighbourhood.status === 'active' ? 'default' : 'secondary'}
-								className={neighbourhood.status === 'active' ? 'bg-green-500' : ''}
-							>
-								{neighbourhood.status || 'Unknown'}
-							</Badge>
-						</div>
+      {neighbourhood.description && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8 mt-6">
+          <div className="flex items-center gap-2 mb-3"><InformationCircleIcon className="w-5 h-5 text-slate-400" /><h3 className="text-sm font-semibold text-slate-900">Description</h3></div>
+          <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{neighbourhood.description}</p>
+        </div>
+      )}
 
-						{/* State */}
-						{neighbourhood.state_id && (
-							<div>
-								<h3 className="text-sm font-medium text-muted-foreground mb-1">State</h3>
-								<p className="text-sm">{stateName}</p>
-							</div>
-						)}
-
-						{/* County */}
-						{neighbourhood.county_id && (
-							<div>
-								<h3 className="text-sm font-medium text-muted-foreground mb-1">County</h3>
-								<p className="text-sm">{countyName}</p>
-							</div>
-						)}
-
-						{/* City */}
-						{neighbourhood.city_id && (
-							<div>
-								<h3 className="text-sm font-medium text-muted-foreground mb-1">City</h3>
-								<p className="text-sm">{cityName}</p>
-							</div>
-						)}
-
-						{/* Created At */}
-						{neighbourhood.created_at && (
-							<div>
-								<h3 className="text-sm font-medium text-muted-foreground mb-1">Created At</h3>
-								<p className="text-sm">
-									{new Date(neighbourhood.created_at).toLocaleString()}
-								</p>
-							</div>
-						)}
-
-						
-					</CardContent>
-				</Card>
-			</div>
-
-			{/* Description Section - Full Width */}
-			<Card>
-				<CardHeader>
-					<div className="flex items-center gap-2">
-						<Info className="w-5 h-5" />
-						<CardTitle>Description</CardTitle>
-					</div>
-				</CardHeader>
-				<CardContent>
-					{neighbourhood.description ? (
-						<p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-							{neighbourhood.description}
-						</p>
-					) : (
-						<p className="text-muted-foreground italic">No description available</p>
-					)}
-				</CardContent>
-			</Card>
-
-			{/* Additional Information */}
-			{(neighbourhood.properties_count || neighbourhood.listings_count) && (
-				<Card>
-					<CardHeader>
-						<CardTitle>Statistics</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-							{neighbourhood.properties_count !== undefined && (
-								<div className="text-center p-4 border rounded-lg">
-									<p className="text-2xl font-bold">{neighbourhood.properties_count}</p>
-									<p className="text-sm text-muted-foreground">Properties</p>
-								</div>
-							)}
-							{neighbourhood.listings_count !== undefined && (
-								<div className="text-center p-4 border rounded-lg">
-									<p className="text-2xl font-bold">{neighbourhood.listings_count}</p>
-									<p className="text-sm text-muted-foreground">Listings</p>
-								</div>
-							)}
-						</div>
-					</CardContent>
-				</Card>
-			)}
-		</div>
-	);
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent><DialogHeader><DialogTitle>Delete Neighbourhood</DialogTitle></DialogHeader>
+          <p className="text-sm text-slate-500">Are you sure you want to delete this neighbourhood? This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={deleteNeighbourhoodMutation.isPending}>Cancel</Button>
+            <Button variant="destructive" onClick={() => deleteNeighbourhoodMutation.mutate(id)} disabled={deleteNeighbourhoodMutation.isPending}>{deleteNeighbourhoodMutation.isPending ? "Deleting..." : "Delete"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
-

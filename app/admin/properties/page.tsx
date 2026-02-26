@@ -43,9 +43,9 @@ export default function PropertiesListPage() {
   const getImageUrl = (prop: any) => {
     const img = prop.images || prop.image;
     if (!img) return null;
-    if (typeof img === "string") return img.startsWith("http") ? img : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${img}`;
-    if (typeof img === "object" && img.path) return img.path.startsWith("http") ? img.path : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${img.path}`;
-    if (Array.isArray(img) && img.length > 0) { const f = img[0]; return typeof f === "string" ? (f.startsWith("http") ? f : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${f}`) : f.path ? (f.path.startsWith("http") ? f.path : `${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/storage/${f.path}`) : null; }
+    if (typeof img === "string") return img.startsWith("http") ? img : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img}`;
+    if (typeof img === "object" && img.path) return img.path.startsWith("http") ? img.path : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img.path}`;
+    if (Array.isArray(img) && img.length > 0) { const f = img[0]; return typeof f === "string" ? (f.startsWith("http") ? f : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${f}`) : f.path ? (f.path.startsWith("http") ? f.path : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${f.path}`) : null; }
     return null;
   };
   const avatarColors = ["bg-emerald-100 text-emerald-700", "bg-blue-100 text-blue-700", "bg-purple-100 text-purple-700", "bg-amber-100 text-amber-700", "bg-rose-100 text-rose-700"];
