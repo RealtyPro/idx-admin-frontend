@@ -1,392 +1,220 @@
-
-"use client";
-import React, { useState, useEffect, Suspense } from 'react';
-import { useNewsletterSubscribers, useDeleteNewsletterSubscriber } from '@/services/newsletter/NewsletterQueries';
-import { useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { NewsletterSearchParams } from '@/services/newsletter/NewsletterServices';
-import SearchFilters from '@/components/SearchFilters';
-import { Clock } from 'lucide-react';
+﻿"use client";
+import React, { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useNewsletterSubscribers, useDeleteNewsletterSubscriber } from "@/services/newsletter/NewsletterQueries";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
+import { NewsletterSearchParams } from "@/services/newsletter/NewsletterServices";
+import {
+  MagnifyingGlassIcon,
+  AdjustmentsHorizontalIcon,
+  EyeIcon,
+  TrashIcon,
+  CalendarDaysIcon,
+  EnvelopeIcon,
+  NewspaperIcon,
+} from "@heroicons/react/24/outline";
 
 function NewsletterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  
+
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  
-  // Initialize state from URL params
-  const pageFromUrl = parseInt(searchParams.get('page') || '1', 10);
-  const [currentPage, setCurrentPage] = useState(pageFromUrl);
-  
-  // Search filter states (for form inputs - updates on every keystroke)
-  const [filters, setFilters] = useState<NewsletterSearchParams>({
-    page: pageFromUrl,
-    q: searchParams.get('q') || '',
-  });
-  
-  // Active search filters (only updates when search is triggered - prevents API calls on every keystroke)
-  const [activeFilters, setActiveFilters] = useState<NewsletterSearchParams>({
-    page: pageFromUrl,
-    q: searchParams.get('q') || '',
-  });
-
-  const { data, isLoading, isError, error } = useNewsletterSubscribers(activeFilters);
-  const subscribers = data?.data || data || [];
-  
-  // Sync filters with URL parameters
-  useEffect(() => {
-    const newFilters: NewsletterSearchParams = {
-      page: parseInt(searchParams.get('page') || '1', 10),
-      q: searchParams.get('q') || '',
-    };
-    setFilters(newFilters);
-    setActiveFilters(newFilters); // Also update active filters to trigger API call
-    setCurrentPage(newFilters.page || 1);
-  }, [searchParams]);
-  
-  const buildQueryString = (newFilters: NewsletterSearchParams) => {
-    const params = new URLSearchParams();
-    
-    if (newFilters.page) params.append('page', newFilters.page.toString());
-    // Only include keyword if it's empty or has at least 3 characters
-    if (newFilters.q && newFilters.q.length >= 3) params.append('q', newFilters.q);
-    
-    return params.toString();
-  };
-  
-  const handleSearch = () => {
-    // Validate keyword length
-    if (filters.q && filters.q.trim().length > 0 && filters.q.trim().length < 3) {
-      setSearchError('Search keyword must be at least 3 characters long');
-      setTimeout(() => setSearchError(null), 3000);
-      return;
-    }
-    
-    const newFilters = { ...filters, page: 1 }; // Reset to page 1 on new search
-    setActiveFilters(newFilters); // Update active filters to trigger API call
-    const queryString = buildQueryString(newFilters);
-    router.push(`/admin/newsletter?${queryString}`);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-  
-  const handleClearFilters = () => {
-    const newFilters: NewsletterSearchParams = { page: 1 };
-    setFilters(newFilters);
-    setActiveFilters(newFilters);
-    router.push('/admin/newsletter?page=1');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleKeywordClear = () => {
-    const nextFilters = { ...filters, q: "" };
-    setFilters(nextFilters);
-
-    if (activeFilters.q && activeFilters.q.length >= 3) {
-      const newFilters = { ...nextFilters, page: 1 };
-      setActiveFilters(newFilters);
-      const queryString = buildQueryString(newFilters);
-      router.push(`/admin/newsletter?${queryString}`);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-  
-  const hasActiveFilters = !!(filters.q && filters.q.length >= 3);
-  const isKeywordValid = !filters.q || filters.q.length === 0 || filters.q.length >= 3;
 
   const getEmailAcronym = (subscriber: any): string => {
-    const email: string = subscriber.email || subscriber.name || 'N';
+    const email: string = subscriber.email || subscriber.name || "N";
     return email.slice(0, 2).toUpperCase();
   };
 
-  const formatDate = (dateStr: string): string => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d
-      .toLocaleString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      })
-      .replace(',', '');
+  const avatarColors = [
+    "bg-emerald-100 text-emerald-700",
+    "bg-blue-100 text-blue-700",
+    "bg-purple-100 text-purple-700",
+    "bg-amber-100 text-amber-700",
+    "bg-rose-100 text-rose-700",
+    "bg-cyan-100 text-cyan-700",
+  ];
+
+  const getAvatarColor = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    return avatarColors[Math.abs(hash) % avatarColors.length];
   };
 
-  // Extract pagination metadata from API response
+  const formatDate = (value?: string) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  const pageFromUrl = parseInt(searchParams.get("page") || "1", 10);
+  const [currentPage, setCurrentPage] = useState(pageFromUrl);
+  const [filters, setFilters] = useState<NewsletterSearchParams>({ page: pageFromUrl, q: searchParams.get("q") || "" });
+  const [activeFilters, setActiveFilters] = useState<NewsletterSearchParams>({ page: pageFromUrl, q: searchParams.get("q") || "" });
+
+  const { data, isLoading, isError, error } = useNewsletterSubscribers(activeFilters);
+  const deleteMutation = useDeleteNewsletterSubscriber();
+  const subscribers = data?.data || data || [];
   const pagination = data?.meta || data?.pagination || null;
   const totalPages = pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1;
   const currentPageNum = pagination?.current_page || pagination?.currentPage || currentPage;
   const totalItems = pagination?.total || pagination?.totalItems || subscribers.length;
 
-  const deleteMutation = useDeleteNewsletterSubscriber();
+  useEffect(() => {
+    const f: NewsletterSearchParams = { page: parseInt(searchParams.get("page") || "1", 10), q: searchParams.get("q") || "" };
+    setFilters(f); setActiveFilters(f); setCurrentPage(f.page || 1);
+  }, [searchParams]);
+
+  const buildQueryString = (f: NewsletterSearchParams) => {
+    const params = new URLSearchParams();
+    if (f.page) params.append("page", f.page.toString());
+    if (f.q && f.q.length >= 3) params.append("q", f.q);
+    return params.toString();
+  };
+
+  const handleSearch = () => {
+    if (filters.q && filters.q.trim().length > 0 && filters.q.trim().length < 3) {
+      setSearchError("Search keyword must be at least 3 characters long");
+      setTimeout(() => setSearchError(null), 3000);
+      return;
+    }
+    const f = { ...filters, page: 1 };
+    setActiveFilters(f);
+    router.push(`/admin/newsletter?${buildQueryString(f)}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleClearFilters = () => {
+    const f: NewsletterSearchParams = { page: 1 };
+    setFilters(f); setActiveFilters(f);
+    router.push("/admin/newsletter?page=1");
+  };
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
-      const newFilters = { ...filters, page };
-      const queryString = buildQueryString(newFilters);
-      router.push(`/admin/newsletter?${queryString}`, { scroll: false });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const f = { ...filters, page };
+      router.push(`/admin/newsletter?${buildQueryString(f)}`, { scroll: false });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const renderPagination = () => {
-    // Show pagination if we have pagination data or if there are multiple pages worth of data
-    if (totalPages <= 1 && (!pagination || subscribers.length < 10)) return null;
-
-    const pages = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPageNum - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage < maxVisiblePages - 1) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-
+    if (totalPages <= 1 && !pagination) return null;
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPageNum - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+    for (let i = startPage; i <= endPage; i++) pages.push(i);
     return (
-      <div className="flex flex-col items-center justify-center gap-4 mt-6">
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPageNum - 1)}
-            disabled={currentPageNum === 1 || isLoading}
-          >
-            Previous
-          </Button>
-
-          {startPage > 1 && (
-            <>
-              <Button
-                variant={1 === currentPageNum ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handlePageChange(1)}
-                disabled={isLoading}
-              >
-                1
-              </Button>
-              {startPage > 2 && <span className="px-2 text-muted-foreground">...</span>}
-            </>
-          )}
-
-          {pages.map((page) => (
-            <Button
-              key={page}
-              variant={page === currentPageNum ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handlePageChange(page)}
-              disabled={isLoading}
-            >
-              {page}
-            </Button>
-          ))}
-
-          {endPage < totalPages && (
-            <>
-              {endPage < totalPages - 1 && <span className="px-2 text-muted-foreground">...</span>}
-              <Button
-                variant={totalPages === currentPageNum ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handlePageChange(totalPages)}
-                disabled={isLoading}
-              >
-                {totalPages}
-              </Button>
-            </>
-          )}
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPageNum + 1)}
-            disabled={currentPageNum === totalPages || isLoading}
-          >
-            Next
-          </Button>
+      <div className="flex flex-col items-center gap-3 mt-8">
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => handlePageChange(currentPageNum - 1)} disabled={currentPageNum === 1 || isLoading} className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition">Previous</button>
+          {startPage > 1 && (<><button onClick={() => handlePageChange(1)} className={`w-8 h-8 text-sm rounded-lg border transition ${1 === currentPageNum ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:bg-white"}`}>1</button>{startPage > 2 && <span className="px-1 text-slate-400">...</span>}</>)}
+          {pages.map((p) => (<button key={p} onClick={() => handlePageChange(p)} disabled={isLoading} className={`w-8 h-8 text-sm rounded-lg border transition ${p === currentPageNum ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:bg-white"}`}>{p}</button>))}
+          {endPage < totalPages && (<>{endPage < totalPages - 1 && <span className="px-1 text-slate-400">...</span>}<button onClick={() => handlePageChange(totalPages)} className={`w-8 h-8 text-sm rounded-lg border transition ${totalPages === currentPageNum ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:bg-white"}`}>{totalPages}</button></>)}
+          <button onClick={() => handlePageChange(currentPageNum + 1)} disabled={currentPageNum === totalPages || isLoading} className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition">Next</button>
         </div>
-        {pagination && (
-          <div className="text-sm text-muted-foreground">
-            Page {currentPageNum} of {totalPages} {totalItems && `(${totalItems} total items)`}
-          </div>
-        )}
+        {pagination && <p className="text-xs text-slate-400">Page {currentPageNum} of {totalPages}{totalItems ? ` (${totalItems} total items)` : ""}</p>}
       </div>
     );
   };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-8 w-40 mb-4" />
-          <Skeleton className="h-10 w-24 rounded" />
-        </div>
-        <div className="grid gap-4">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
-          ))}
-        </div>
+      <div className="px-6 lg:px-8 max-w-[1280px] mx-auto space-y-4">
+        <div className="flex justify-between items-center mb-2"><Skeleton className="h-7 w-36" /><div className="flex gap-3"><Skeleton className="h-10 w-[300px] rounded-full" /></div></div>
+        {[...Array(5)].map((_, i) => (<Skeleton key={i} className="h-[90px] w-full rounded-2xl" />))}
       </div>
     );
   }
 
   if (isError) {
-    return (
-      <div className="container mx-auto py-6 px-2 sm:px-4">
-        <p className="text-red-500">
-          Error loading newsletter subscribers:{' '}
-          {error instanceof Error ? error.message : 'Unknown error'}
-        </p>
-      </div>
-    );
+    return (<div className="px-6 lg:px-8 max-w-[1280px] mx-auto"><p className="text-red-500">Error loading subscribers: {error instanceof Error ? error.message : "Unknown error"}</p></div>);
   }
 
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Newsletter</h1>
-        <SearchFilters
-          className="max-w-lg"
-          keyword={filters.q || ""}
-          isKeywordValid={isKeywordValid}
-          hasActiveFilters={hasActiveFilters}
-          isLoading={isLoading}
-          onKeywordChange={(value) => setFilters({ ...filters, q: value })}
-          onKeywordClear={handleKeywordClear}
-          onSearch={handleSearch}
-          onClear={handleClearFilters}
-          renderFields={() => null}
-        />
-      </div>
-      
-      {/* Error Message */}
-      {searchError && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded relative" role="alert">
-          <span className="block sm:inline">{searchError}</span>
+    <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-[22px] font-semibold text-slate-900">Newsletter Subscribers</h1>
+        <div className="flex items-center gap-3">
+          <div className="relative hidden md:flex items-center">
+            <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 text-slate-400" />
+            <input type="text" placeholder="Search subscribers... (min 3 chars)" value={filters.q || ""}
+              onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+              className="w-[300px] pl-9 pr-10 py-2 text-sm rounded-full border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition" />
+            <button onClick={handleSearch} className="absolute right-3 text-slate-400 hover:text-slate-600 transition"><AdjustmentsHorizontalIcon className="w-4 h-4" /></button>
+          </div>
         </div>
-      )}
-      
-      <div className="grid gap-4">
-        {Array.isArray(subscribers) && subscribers.length > 0 ? (
-          subscribers.map((subscriber: any) => (
-            <Card
-              key={subscriber.id}
-              className="cursor-pointer"
-              onClick={() => router.push(`/admin/newsletter/${subscriber.id}`)}
-            >
-              <CardHeader className="flex flex-row justify-between items-center p-4 gap-4">
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  {/* Email Acronym Avatar */}
-                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-base font-bold text-muted-foreground border">
-                    {getEmailAcronym(subscriber)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg">
-                      <Link href={`/admin/newsletter/${subscriber.id}`}>
-                        {subscriber.name || subscriber.email || 'No Name'}
-                      </Link>
-                    </CardTitle>
-                    {subscriber.created_at && (
-                      <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span className="font-medium">Created at:</span>
-                        {formatDate(subscriber.created_at)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div
-                  className="flex gap-2"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => {
-                      setDeleteId(subscriber.id);
-                      setShowDeleteModal(true);
-                    }}
-                  >
-                    {deleteMutation.isPending && deleteId === subscriber.id
-                      ? 'Deleting...'
-                      : 'Delete'}
-                  </Button>
-                  {/* Delete Confirmation Modal */}
-                  <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Delete Subscriber</DialogTitle>
-                      </DialogHeader>
-                      <div>Are you sure you want to delete this subscriber?</div>
-                      <DialogFooter>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowDeleteModal(false)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          onClick={() =>
-                            deleteId &&
-                            deleteMutation.mutate(deleteId, {
-                              onSuccess: () => {
-                                setShowDeleteModal(false);
-                                setDeleteId(null);
-                                queryClient.invalidateQueries({
-                                  queryKey: ['newsletter-subscribers', activeFilters],
-                                });
-                              },
-                            })
-                          }
-                          disabled={deleteMutation.isPending}
-                        >
-                          {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardHeader>
-            </Card>
-          ))
+      </div>
+
+      {searchError && (<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 text-sm">{searchError}</div>)}
+
+      <div className="space-y-3">
+        {Array.isArray(subscribers) && subscribers.length === 0 ? (
+          <div className="text-center py-16 text-slate-400"><NewspaperIcon className="w-12 h-12 mx-auto mb-3 text-slate-300" /><p className="text-lg">No subscribers found.</p></div>
         ) : (
-          <p className="text-center text-muted-foreground">No subscribers found.</p>
+          subscribers.map((s: any) => (
+            <div key={s.id} className="bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow flex overflow-hidden cursor-pointer"
+              onClick={() => router.push(`/admin/newsletter/${s.id}`)}>
+              <div className="w-[100px] min-h-[90px] flex-shrink-0 flex items-center justify-center hidden sm:flex">
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold ${getAvatarColor(s.email || s.name || "")}`}>{getEmailAcronym(s)}</div>
+              </div>
+              <div className="flex-1 min-w-0 px-5 py-4 flex flex-col justify-center">
+                <span className="text-[15px] font-semibold text-slate-900 truncate">{s.name || s.email || "No Name"}</span>
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-slate-500 mt-1">
+                  {s.email && <span className="flex items-center gap-1.5"><EnvelopeIcon className="w-3.5 h-3.5 text-slate-400" />{s.email}</span>}
+                  {s.created_at && <span className="flex items-center gap-1.5"><CalendarDaysIcon className="w-3.5 h-3.5 text-slate-400" />{formatDate(s.created_at)}</span>}
+                </div>
+                {s.status && (
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium mt-2 w-fit ${String(s.status).toLowerCase() === "active" ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-amber-50 text-amber-600 border border-amber-200"}`}>
+                    {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 pr-5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                <Link href={`/admin/newsletter/${s.id}`} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors">
+                  <EyeIcon className="w-4 h-4" /> View
+                </Link>
+                <button onClick={() => { setDeleteId(s.id); setShowDeleteModal(true); }} disabled={deleteMutation.isPending && deleteId === s.id}
+                  className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-red-400 hover:text-red-600 hover:border-red-300 transition disabled:opacity-50" title="Delete">
+                  <TrashIcon className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))
         )}
       </div>
+
       {renderPagination()}
+
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Delete Subscriber</DialogTitle></DialogHeader>
+          <p className="text-sm text-slate-500">Are you sure you want to delete this subscriber? This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={deleteMutation.isPending}>Cancel</Button>
+            <Button variant="destructive" onClick={() => { if (deleteId) deleteMutation.mutate(deleteId, { onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["newsletter-subscribers", activeFilters] }); setShowDeleteModal(false); setDeleteId(null); } }); }} disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 export default function NewsletterPage() {
   return (
-    <Suspense fallback={
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
-        <div className="flex justify-between items-center mb-6">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full rounded-xl" />
-        ))}
-      </div>
-    }>
+    <Suspense fallback={<div className="px-6 lg:px-8 max-w-[1280px] mx-auto space-y-4"><div className="flex justify-between items-center mb-6"><Skeleton className="h-7 w-36" /><Skeleton className="h-10 w-[300px] rounded-full" /></div>{[...Array(5)].map((_, i) => (<Skeleton key={i} className="h-[90px] w-full rounded-2xl" />))}</div>}>
       <NewsletterContent />
     </Suspense>
   );

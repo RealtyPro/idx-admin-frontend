@@ -1,159 +1,183 @@
-"use client";
-import React from 'react';
+﻿"use client";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useParams, useRouter } from "next/navigation";
+import { useSingleTestimonial, useUpdateTestimonial, useDeleteTestimonial } from "@/services/testimonial/TestimonialQueries";
+import {
+  ArrowLeftIcon,
+  TrashIcon,
+  ChatBubbleLeftIcon,
+} from "@heroicons/react/24/outline";
 
-import { useParams } from 'next/navigation';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useSingleTestimonial, useUpdateTestimonial } from '@/services/testimonial/TestimonialQueries';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 export default function TestimonialEditPage() {
   const params = useParams();
-  const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '';
-  const { data, isLoading, isError } = useSingleTestimonial(id);
-
-  const testimonial = data?.data || data;
-  const [name, setName] = useState('');
-  const [position, setPosition] = useState('');
-  const [rating, setRating] = useState('');
-  const [details, setDetails] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const id = typeof params.id === "string" ? params.id : Array.isArray(params.id) ? params.id[0] : "";
+  const { data, isLoading, isError } = useSingleTestimonial(id);
+  const testimonial = data?.data || data;
   const updateTestimonialMutation = useUpdateTestimonial();
+  const deleteTestimonialMutation = useDeleteTestimonial();
 
-  // Update form fields when testimonial data loads
+  const [name, setName] = useState("");
+  const [position, setPosition] = useState("");
+  const [rating, setRating] = useState("");
+  const [details, setDetails] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
   useEffect(() => {
     if (testimonial) {
-      setName(testimonial.name || '');
-      setPosition(testimonial.position || '');
-      setRating(testimonial.rating ? String(testimonial.rating) : '');
-      setDetails(testimonial.details || testimonial.content || '');
+      setName(testimonial.name || "");
+      setPosition(testimonial.position || "");
+      setRating(testimonial.rating ? String(testimonial.rating) : "");
+      setDetails(testimonial.details || testimonial.content || "");
     }
   }, [testimonial]);
 
-  // Simple toast utility (replace with your own or a library if available)
-  function showToast(message: string) {
-    const toast = document.createElement('div');
-    toast.textContent = message;
-    toast.style.position = 'fixed';
-    toast.style.top = '32px';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%)';
-    toast.style.background = '#323232';
-    toast.style.color = '#fff';
-    toast.style.padding = '12px 24px';
-    toast.style.borderRadius = '8px';
-    toast.style.zIndex = '9999';
-    toast.style.fontSize = '1rem';
-    toast.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      toast.style.transition = 'opacity 0.5s';
-      toast.style.opacity = '0';
-      setTimeout(() => document.body.removeChild(toast), 500);
-    }, 2000);
-  }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const payload = {
+      name,
+      position: position || "",
+      rating: rating || "",
+      details,
+      status: testimonial?.status || "active",
+      upload_folder: testimonial?.upload_folder || "testimonial/testimonial",
+    };
+    updateTestimonialMutation.mutate(
+      { id: testimonial.id, data: payload },
+      {
+        onSuccess: () => {
+          setSuccess(true);
+          setTimeout(() => {
+            router.push("/admin/testimonials");
+          }, 1200);
+        },
+        onError: (err: any) => {
+          const errorMessage =
+            err?.response?.data?.message || err?.message || "Failed to update testimonial. Please try again.";
+          setError(errorMessage);
+          console.error("Error updating testimonial:", err);
+        },
+      }
+    );
+  };
 
+  /* ---------- loading ---------- */
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
-        <Skeleton className="h-10 w-64 mb-4" />
-        <Skeleton className="h-8 w-32 mb-2" />
-        <Skeleton className="h-40 w-full rounded-xl" />
-        <Skeleton className="h-32 w-full rounded-xl mt-4" />
+      <div className="px-6 lg:px-8 max-w-[1280px] mx-auto space-y-5">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-9 w-20 rounded-full" />
+        </div>
+        <Skeleton className="h-[400px] w-full rounded-2xl" />
       </div>
     );
   }
 
+  /* ---------- error ---------- */
   if (isError || !testimonial) {
     return (
-      <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-xl">
-        <Card>
-          <CardHeader>
-            <CardTitle>Testimonial Not Found</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-muted-foreground">The testimonial you are looking for does not exist.</div>
-            <Button asChild variant="secondary" className="mt-4">
-              <Link href="/admin/testimonials">Back to Testimonials</Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+        <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
+          <ChatBubbleLeftIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <h2 className="text-lg font-semibold text-slate-900 mb-1">Testimonial Not Found</h2>
+          <p className="text-sm text-slate-400 mb-4">The testimonial you are looking for does not exist.</p>
+          <Link
+            href="/admin/testimonials"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-white transition"
+          >
+            <ArrowLeftIcon className="w-4 h-4" />
+            Back to Testimonials
+          </Link>
+        </div>
       </div>
     );
   }
 
+  /* ---------- render ---------- */
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row justify-between items-center">
-          <CardTitle>Edit Testimonial</CardTitle>
-          <div className="flex gap-2">
-            <Button asChild variant="secondary" size="sm">
-              <Link href={`/admin/testimonials/${testimonial.id}`}>Back</Link>
-            </Button>
-            <Button variant="destructive" size="sm" onClick={() => alert('Deleted!')}>Delete</Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <form className="space-y-4" onSubmit={async (e) => {
-            e.preventDefault();
-            setError(null);
-            // Create payload without user_id - explicitly exclude it
-            // Destructure testimonial to exclude user_id if it exists
-            const { user_id, ...testimonialWithoutUserId } = testimonial as any;
-            const payload: {
-              name: string;
-              position: string;
-              rating: string;
-              details: string;
-              status: string;
-              upload_folder: string;
-            } = {
-              name,
-              position: position || "",
-              rating: rating || "",
-              details,
-              status: testimonial.status || "active",
-              upload_folder: testimonial.upload_folder || "testimonial/testimonial"
-            };
-            updateTestimonialMutation.mutate(
-              { id: testimonial.id, data: payload },
-              {
-                onSuccess: () => {
-                  showToast("Testimonial updated successfully");
-                  setTimeout(() => {
-                    // Redirect to testimonials list page after successful update
-                    router.push("/admin/testimonials");
-                  }, 1200);
-                },
-                onError: (err: any) => {
-                  const errorMessage = err?.response?.data?.message || err?.message || "Failed to update testimonial. Please try again.";
-                  setError(errorMessage);
-                  console.error("Error updating testimonial:", err);
-                }
-              }
-            );
-          }}>
+    <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+      {/* ---- Header ---- */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-[22px] font-semibold text-slate-900">Edit Testimonial</h1>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            disabled={deleteTestimonialMutation.isPending}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full border border-red-200 text-red-500 hover:bg-red-50 transition disabled:opacity-50"
+          >
+            <TrashIcon className="w-4 h-4" />
+            Delete
+          </button>
+          <Link
+            href={`/admin/testimonials/${testimonial.id}`}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-white transition"
+          >
+            <ArrowLeftIcon className="w-4 h-4" />
+            Back
+          </Link>
+        </div>
+      </div>
+
+      {/* ---- Success banner ---- */}
+      {success && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl mb-5 text-sm">
+          Testimonial updated successfully! Redirecting...
+        </div>
+      )}
+
+      {/* ---- Form Card ---- */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8">
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          {/* Two-column grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Name */}
             <div>
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
+              <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Name
+              </label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="rounded-xl border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                placeholder="Enter full name"
+              />
             </div>
+
+            {/* Position */}
             <div>
-              <Label htmlFor="position">Position</Label>
-              <Input id="position" value={position} onChange={e => setPosition(e.target.value)} placeholder="e.g., CEO, TechCorp Solutions" />
+              <label htmlFor="position" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Position
+              </label>
+              <Input
+                id="position"
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+                className="rounded-xl border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                placeholder="e.g., CEO, TechCorp Solutions"
+              />
             </div>
+
+            {/* Rating */}
             <div>
-              <Label htmlFor="rating">Rating</Label>
+              <label htmlFor="rating" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Rating
+              </label>
               <select
                 id="rating"
                 value={rating}
-                onChange={e => setRating(e.target.value)}
-                className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm"
+                onChange={(e) => setRating(e.target.value)}
+                className="w-full px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition"
               >
                 <option value="">Select rating</option>
                 <option value="1">1 Star</option>
@@ -163,15 +187,78 @@ export default function TestimonialEditPage() {
                 <option value="5">5 Stars</option>
               </select>
             </div>
-            <div>
-              <Label htmlFor="details">Details</Label>
-              <textarea id="details" className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm" value={details} onChange={e => setDetails(e.target.value)} required />
+          </div>
+
+          {/* Details */}
+          <div>
+            <label htmlFor="details" className="block text-sm font-medium text-slate-700 mb-1.5">
+              Testimonial Details
+            </label>
+            <textarea
+              id="details"
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              required
+              rows={5}
+              className="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition resize-none"
+              placeholder="Enter the testimonial content..."
+            />
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+              {error}
             </div>
-            {error && <div className="text-red-500 text-sm">{error}</div>}
-            <Button type="submit" disabled={updateTestimonialMutation.isPending}>{updateTestimonialMutation.isPending ? "Updating..." : "Update"}</Button>
-          </form>
-        </CardContent>
-      </Card>
+          )}
+
+          {/* Submit */}
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={updateTestimonialMutation.isPending}
+              className="px-8 py-2.5 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {updateTestimonialMutation.isPending ? "Updating..." : "Update Testimonial"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* ---- Delete modal ---- */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Testimonial</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-500">
+            Are you sure you want to delete this testimonial? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={deleteTestimonialMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                deleteTestimonialMutation.mutate(testimonial.id, {
+                  onSuccess: () => {
+                    setShowDeleteModal(false);
+                    router.push("/admin/testimonials");
+                  },
+                  onError: (err: any) => {
+                    console.error("Error deleting testimonial:", err);
+                    alert(err?.response?.data?.message || err?.message || "Failed to delete testimonial");
+                  },
+                });
+              }}
+              disabled={deleteTestimonialMutation.isPending}
+            >
+              {deleteTestimonialMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-} 
+}
