@@ -1,36 +1,13 @@
-"use client";
-
-import React, { useState } from "react"; 
-import { useRouter } from "next/navigation";
-import { createTestimonial } from '@/services/testimonial/TestimonialServices';
+﻿"use client";
+import React, { useState } from "react";
 import Link from "next/link";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-// Simple toast utility (replace with your own or a library if available)
-function showToast(message: string) {
-  const toast = document.createElement('div');
-  toast.textContent = message;
-  toast.style.position = 'fixed';
-  toast.style.top = '32px';
-  toast.style.left = '50%';
-  toast.style.transform = 'translateX(-50%)';
-  toast.style.background = '#323232';
-  toast.style.color = '#fff';
-  toast.style.padding = '12px 24px';
-  toast.style.borderRadius = '8px';
-  toast.style.zIndex = '9999';
-  toast.style.fontSize = '1rem';
-  toast.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.style.transition = 'opacity 0.5s';
-    toast.style.opacity = '0';
-    setTimeout(() => document.body.removeChild(toast), 500);
-  }, 2000);
-}
-
+import { useRouter } from "next/navigation";
+import { createTestimonial } from "@/services/testimonial/TestimonialServices";
+import {
+  ArrowLeftIcon,
+  StarIcon,
+} from "@heroicons/react/24/outline";
 
 export default function TestimonialCreatePage() {
   const [name, setName] = useState("");
@@ -39,67 +16,99 @@ export default function TestimonialCreatePage() {
   const [details, setDetails] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    // Create payload without user_id - explicitly exclude it
-    const payload: {
-      name: string;
-      position: string;
-      rating: string;
-      details: string;
-      status: string;
-      upload_folder: string;
-    } = {
+    const payload = {
       name,
       position: position || "",
       rating: rating || "",
       details,
       status: "active",
-      upload_folder: "testimonial/testimonial"
+      upload_folder: "testimonial/testimonial",
     };
     try {
       await createTestimonial(payload);
       setLoading(false);
-      showToast("Testimonial added successfully");
+      setSuccess(true);
       setTimeout(() => {
         router.push("/admin/testimonials");
       }, 1200);
     } catch (err: any) {
       setLoading(false);
-      setError(err?.message || "Failed to add testimonial");
+      setError(err?.response?.data?.message || err?.message || "Failed to add testimonial");
     }
   };
 
   return (
-    <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row justify-between items-center">
-          <CardTitle>Add Testimonial</CardTitle>
-          <Button asChild variant="secondary" size="sm">
-            <Link href="/admin/testimonials">Back</Link>
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <form className="space-y-4" onSubmit={handleSubmit}>
+    <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+      {/* ---- Header ---- */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-[22px] font-semibold text-slate-900">Add Testimonial</h1>
+        <Link
+          href="/admin/testimonials"
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-white transition"
+        >
+          <ArrowLeftIcon className="w-4 h-4" />
+          Back
+        </Link>
+      </div>
+
+      {/* ---- Success banner ---- */}
+      {success && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl mb-5 text-sm">
+          Testimonial added successfully! Redirecting...
+        </div>
+      )}
+
+      {/* ---- Form Card ---- */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8">
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          {/* Two-column grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Name */}
             <div>
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
+              <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Name
+              </label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="rounded-xl border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                placeholder="Enter full name"
+              />
             </div>
+
+            {/* Position */}
             <div>
-              <Label htmlFor="position">Position</Label>
-              <Input id="position" value={position} onChange={e => setPosition(e.target.value)} placeholder="e.g., CEO, TechCorp Solutions" />
+              <label htmlFor="position" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Position
+              </label>
+              <Input
+                id="position"
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+                className="rounded-xl border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                placeholder="e.g., CEO, TechCorp Solutions"
+              />
             </div>
+
+            {/* Rating */}
             <div>
-              <Label htmlFor="rating">Rating</Label>
+              <label htmlFor="rating" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Rating
+              </label>
               <select
                 id="rating"
                 value={rating}
-                onChange={e => setRating(e.target.value)}
-                className="block w-full px-4 py-2 rounded-lg border border-input bg-background text-sm"
+                onChange={(e) => setRating(e.target.value)}
+                className="w-full px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition"
               >
                 <option value="">Select rating</option>
                 <option value="1">1 Star</option>
@@ -109,15 +118,43 @@ export default function TestimonialCreatePage() {
                 <option value="5">5 Stars</option>
               </select>
             </div>
-            <div>
-              <Label htmlFor="details">Details</Label>
-              <textarea id="details" className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm" value={details} onChange={e => setDetails(e.target.value)} required />
+          </div>
+
+          {/* Details */}
+          <div>
+            <label htmlFor="details" className="block text-sm font-medium text-slate-700 mb-1.5">
+              Testimonial Details
+            </label>
+            <textarea
+              id="details"
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              required
+              rows={5}
+              className="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition resize-none"
+              placeholder="Enter the testimonial content..."
+            />
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+              {error}
             </div>
-            {error && <div className="text-red-500 text-sm">{error}</div>}
-            <Button type="submit" disabled={loading}>{loading ? "Adding..." : "Add Testimonial"}</Button>
-          </form>
-        </CardContent>
-      </Card>
+          )}
+
+          {/* Submit */}
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-8 py-2.5 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? "Adding..." : "Add Testimonial"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
