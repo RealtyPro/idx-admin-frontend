@@ -51,6 +51,7 @@ export default function ProfilePage() {
   const [companyPhone, setCompanyPhone] = useState("");
   const [companyWebsite, setCompanyWebsite] = useState("");
   const [companyLogoPreview, setCompanyLogoPreview] = useState<string>("");
+  const companyLogoResultRef = useRef<any>(null); // holds the full ImageObject after upload
   const [companyLogoUploading, setCompanyLogoUploading] = useState(false);
   const [companyLogoError, setCompanyLogoError] = useState<string | null>(null);
   const companyLogoInputRef = useRef<HTMLInputElement>(null);
@@ -126,10 +127,17 @@ export default function ProfilePage() {
         setCompanyPhone(profile.company.phone || "");
         setCompanyWebsite(profile.company.website || "");
         if (profile.company.logo) {
-          if (typeof profile.company.logo === "string") setCompanyLogoPreview(profile.company.logo);
-          else if (typeof profile.company.logo === "object") {
-            if (profile.company.logo.path) setCompanyLogoPreview(profile.company.logo.path);
-            else if (profile.company.logo.url) setCompanyLogoPreview(profile.company.logo.url);
+          if (typeof profile.company.logo === "string") {
+            setCompanyLogoPreview(profile.company.logo);
+            companyLogoResultRef.current = profile.company.logo; // string path
+          } else if (typeof profile.company.logo === "object") {
+            if (profile.company.logo.path) {
+              setCompanyLogoPreview(profile.company.logo.path);
+              companyLogoResultRef.current = profile.company.logo; // full ImageObject
+            } else if (profile.company.logo.url) {
+              setCompanyLogoPreview(profile.company.logo.url);
+              companyLogoResultRef.current = profile.company.logo;
+            }
           }
         }
       }
@@ -150,7 +158,7 @@ export default function ProfilePage() {
       const result = await uploadProfilePhoto(file);
       if (result?.path) {
         setProfilePhoto(result.path);
-        const payload = { name, company_logo: companyLogoPreview, company: companyName, company_email: companyEmail, company_phone: companyPhone, short_description: aboutShort, long_description: aboutLong, photo: result };
+        const payload = { name, company_logo: companyLogoResultRef.current || companyLogoPreview, company: companyName, company_email: companyEmail, company_phone: companyPhone, short_description: aboutShort, long_description: aboutLong, photo: result };
         updateProfileMutation.mutate(payload, {
           onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["profile"] }); toast.success("Profile updated successfully"); },
           onError: (error: any) => { setProfilePhotoError(error?.response?.data?.message || error?.message || "Failed to update profile with photo."); },
@@ -167,16 +175,36 @@ export default function ProfilePage() {
     setCompanyLogoError(null);
     try {
       const result = await uploadCompanyLogo(file);
-      if (result && result.path) {
-        setCompanyLogoPreview(result.path);
-        const payload = { name, company_logo: result, company: companyName, company_email: companyEmail, company_phone: companyPhone, short_description: aboutShort, long_description: aboutLong };
-        updateProfileMutation.mutate(payload, {
-          onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["profile"] }); },
-          onError: (error: any) => { setCompanyLogoError(error?.response?.data?.message || error?.message || "Failed to update profile with company logo."); },
-        });
-      }
-    } catch (err: any) { setCompanyLogoError(err?.message || "Failed to upload logo"); }
-    finally { setCompanyLogoUploading(false); }
+      if (!result?.path) throw new Error("Upload failed: no path returned from server");
+      companyLogoResultRef.current = result;
+      setCompanyLogoPreview(result.path);
+      const payload = {
+        name,
+        company_logo: result,
+        company: companyName,
+        company_email: companyEmail,
+        company_phone: companyPhone,
+        short_description: aboutShort,
+        long_description: aboutLong,
+      };
+      updateProfileMutation.mutate(payload, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["profile"] });
+          toast.success("Company logo updated successfully");
+        },
+        onError: (error: any) => {
+          const msg = error?.response?.data?.message || error?.message || "Failed to update profile with company logo.";
+          setCompanyLogoError(msg);
+          toast.error(msg);
+        },
+      });
+    } catch (err: any) {
+      const msg = err?.message || "Failed to upload logo";
+      setCompanyLogoError(msg);
+      toast.error(msg);
+    } finally {
+      setCompanyLogoUploading(false);
+    }
   }, [name, companyName, companyEmail, companyPhone, aboutShort, aboutLong, updateProfileMutation, queryClient]);
 
   useEffect(() => { return () => { if (companyLogoPreview && companyLogoPreview.startsWith("blob:")) URL.revokeObjectURL(companyLogoPreview); }; }, [companyLogoPreview]);
@@ -185,7 +213,8 @@ export default function ProfilePage() {
     e.preventDefault();
     setError(null);
     const payload: any = { name, company: companyName, company_email: companyEmail, company_phone: companyPhone, short_description: aboutShort, long_description: aboutLong };
-    if (typeof companyLogoPreview === "object" && companyLogoPreview !== null && "path" in (companyLogoPreview as any)) payload.company_logo = companyLogoPreview;
+    // Always include the company logo if one has been set/uploaded
+    if (companyLogoResultRef.current) payload.company_logo = companyLogoResultRef.current;
     updateProfileMutation.mutate(payload, {
       onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["profile"] }); toast.success("Profile updated successfully"); },
       onError: (error: any) => { setError(error?.response?.data?.message || error?.message || "Failed to update profile."); },
@@ -243,7 +272,7 @@ export default function ProfilePage() {
         <div className="flex items-center gap-2 mb-5"><PhotoIcon className="w-5 h-5 text-slate-400" /><h3 className="text-sm font-semibold text-slate-900">Profile Photo</h3></div>
         <div className="flex items-center gap-5">
           <div className="relative">
-            <img src={profilePhoto || "/images/nopic.png"} alt="Profile" className="w-20 h-20 rounded-full object-cover border-2 border-slate-100" onError={e => { (e.target as HTMLImageElement).src = "/images/nopic.png"; }} />
+            <img src={profilePhoto || "/images/nopic.jpg"} alt="Profile" className="w-20 h-20 rounded-full object-cover border-2 border-slate-100" onError={e => { const img = e.target as HTMLImageElement; if (!img.src.endsWith("/images/nopic.jpg")) img.src = "/images/nopic.jpg"; }} />
           </div>
           <div>
             <input type="file" accept="image/*" ref={profilePhotoInputRef} className="hidden" onChange={handleProfilePhotoChange} />
@@ -322,13 +351,13 @@ export default function ProfilePage() {
               <img
                 src={(() => {
                   const val = typeof profile?.company_logo === "string" ? profile.company_logo : companyLogoPreview;
-                  if (!val) return "/images/nopic.png";
+                  if (!val) return "/images/nopic.jpg";
                   if (val.startsWith("http://") || val.startsWith("https://")) return val;
                   return `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/md/${val}`;
                 })()}
                 alt="Company logo"
                 className="w-16 h-16 rounded-xl object-cover border border-slate-100"
-                onError={e => { (e.target as HTMLImageElement).src = "/images/nopic.png"; }}
+                onError={e => { const img = e.target as HTMLImageElement; if (!img.src.endsWith("/images/nopic.jpg")) img.src = "/images/nopic.jpg"; }}
               />
               <div>
                 <input type="file" accept="image/*" ref={companyLogoInputRef} className="hidden" onChange={handleCompanyLogoChange} />
