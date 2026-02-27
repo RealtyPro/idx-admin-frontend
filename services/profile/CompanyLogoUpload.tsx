@@ -1,5 +1,37 @@
 import axiosInstance from '@/services/Api';
 
+/**
+ * Convert any image File to a JPEG File using the Canvas API.
+ * Returns the original file unchanged if it is already JPEG.
+ */
+const toJpeg = (file: File, quality = 0.92): Promise<File> => {
+  if (file.type === 'image/jpeg') return Promise.resolve(file);
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('Canvas not supported'));
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob(
+        blob => {
+          if (!blob) return reject(new Error('Conversion failed'));
+          const jpegName = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+          resolve(new File([blob], jpegName, { type: 'image/jpeg' }));
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+    img.src = url;
+  });
+};
+
 export interface ImageObject {
   folder: string;
   file: string;
@@ -18,6 +50,7 @@ export interface ImageObject {
  * @returns The uploaded image object
  */
 export const uploadCompanyLogo = async (file: File): Promise<ImageObject> => {
+  // file = await toJpeg(file);
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');

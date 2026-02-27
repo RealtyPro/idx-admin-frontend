@@ -64,7 +64,7 @@ export default function SettingsPage() {
             <p className="text-xs text-slate-500 mb-6">Update your profile information and how others see you</p>
             <div className="flex items-center gap-5 mb-6 pb-6 border-b border-slate-100">
               <div className="relative w-20 h-20">
-                <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover border-2 border-slate-100" onError={e => { (e.target as HTMLImageElement).src = "/images/nopic.png"; }} />
+                <img src={profileImage} alt="Profile" className="w-full h-full rounded-full object-cover border-2 border-slate-100" onError={e => { const img = e.target as HTMLImageElement; if (!img.src.endsWith("/images/nopic.jpg")) img.src = "/images/nopic.jpg"; }} />
                 <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-white"><PhotoIcon className="w-3.5 h-3.5" /></button>
               </div>
               <div>
