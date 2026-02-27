@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef, useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,8 @@ function BlogListContent() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const prevBlogsRef = useRef<Blog[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ---------- helpers ---------- */
   const capitalizeFirst = (value?: string) => {
@@ -99,7 +101,7 @@ function BlogListContent() {
     q: searchParams.get("q") || "",
   });
 
-  const { data: blogListDatas, isLoading, error } = useBlogList(activeFilters);
+  const { data: blogListDatas, isLoading, isFetching, error } = useBlogList(activeFilters);
   const [blogs, setBlogs] = useState<Blog[]>([]);
 
   const pagination = blogListDatas?.meta || blogListDatas?.pagination || null;
@@ -118,7 +120,9 @@ function BlogListContent() {
 
   useEffect(() => {
     if (blogListDatas && !isLoading && !error) {
-      setBlogs(blogListDatas.data || blogListDatas);
+      const data = blogListDatas.data || blogListDatas;
+      if (Array.isArray(data) && data.length > 0) prevBlogsRef.current = data;
+      setBlogs(data);
     }
   }, [blogListDatas, isLoading, error]);
 
@@ -136,11 +140,25 @@ function BlogListContent() {
       setTimeout(() => setSearchError(null), 3000);
       return;
     }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     const f = { ...filters, page: 1 };
     setActiveFilters(f);
     router.push(`/admin/blog?${buildQueryString(f)}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  /* debounced search — 500ms */
+  const handleQueryChange = useCallback((value: string) => {
+    setFilters(prev => ({ ...prev, q: value }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.trim() === "" || value.trim().length >= 2) {
+      debounceRef.current = setTimeout(() => {
+        const f = { ...filters, q: value, page: 1 };
+        setActiveFilters(f);
+        router.push(`/admin/blog?${buildQueryString(f)}`, { scroll: false });
+      }, 500);
+    }
+  }, [filters, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClearFilters = () => {
     const f: BlogSearchParams = { page: 1 };
@@ -212,7 +230,7 @@ function BlogListContent() {
   };
 
   /* ---------- loading / error ---------- */
-  if (isLoading) {
+  if (isLoading && prevBlogsRef.current.length === 0) {
     return (
       <div className="px-6 lg:px-8 max-w-[1280px] mx-auto space-y-4">
         <div className="flex justify-between items-center mb-2">
@@ -237,9 +255,23 @@ function BlogListContent() {
     );
   }
 
+  // Only fall back to old data while a fetch is in-flight; an empty completed response should show the empty state
+  const displayBlogs = (blogs.length === 0 && isFetching) ? prevBlogsRef.current : blogs;
+
   /* ---------- render ---------- */
   return (
     <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+      {/* ---- Top progress bar ---- */}
+      <div className={`fixed top-0 left-0 right-0 z-50 h-[3px] overflow-hidden transition-opacity duration-300 ${isFetching ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+        <div className="h-full bg-emerald-500 animate-[progressBar_1.2s_ease-in-out_infinite]" />
+      </div>
+      <style>{`
+        @keyframes progressBar { 0% { transform: translateX(-100%); } 50% { transform: translateX(0%); width: 70%; } 100% { transform: translateX(100%); } }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: translateX(0); } }
+        .blog-card-enter { animation: fadeSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
+
       {/* ---- Header ---- */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[22px] font-semibold text-slate-900">Blog Posts</h1>
@@ -250,9 +282,9 @@ function BlogListContent() {
             <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 text-slate-400" />
             <input
               type="text"
-              placeholder="Search blog posts... (min 3 chars)"
+              placeholder="Search blog posts…"
               value={filters.q || ""}
-              onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+              onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
               className="w-[300px] pl-9 pr-10 py-2 text-sm rounded-full border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition"
             />
@@ -285,14 +317,24 @@ function BlogListContent() {
       )}
 
       {/* ---- Blog Cards ---- */}
-      <div className="space-y-3">
-        {blogs.length === 0 ? (
+      <div className="relative">
+        {isFetching && displayBlogs.length > 0 && (
+          <div className="absolute inset-0 z-20 rounded-2xl flex items-center justify-center" style={{ animation: "overlayFadeIn 0.18s ease forwards" }}>
+            <div className="absolute inset-0 rounded-2xl bg-white/60 backdrop-blur-[2px]" />
+            <div className="relative flex flex-col items-center gap-3">
+              <div className="w-10 h-10 rounded-full border-2 border-emerald-200 border-t-emerald-500 animate-spin" />
+              <span className="text-xs text-slate-500 font-medium">Loading results…</span>
+            </div>
+          </div>
+        )}
+        <div className="space-y-3">
+        {displayBlogs.length === 0 ? (
           <div className="text-center py-16 text-slate-400">
             <p className="text-lg">No blog posts found.</p>
             <p className="text-sm mt-1">Try adjusting your search or create a new post.</p>
           </div>
         ) : (
-          blogs.map((blog) => {
+          displayBlogs.map((blog, idx) => {
             const imgUrl = getBlogImageUrl(blog);
             const isFeatured = blog.is_featured === "1" || blog.is_featured === 1 || blog.is_featured === true || blog.isFeatured;
             const date = formatDate(blog.publishDate || blog.created_at);
@@ -300,7 +342,8 @@ function BlogListContent() {
             return (
               <div
                 key={blog.id}
-                className="bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow flex overflow-hidden cursor-pointer"
+                className="blog-card-enter bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow flex overflow-hidden cursor-pointer"
+                style={{ animationDelay: `${idx * 60}ms` }}
                 onClick={() => router.push(`/admin/blog/${blog.id}`)}
               >
                 {/* Thumbnail */}
@@ -406,8 +449,7 @@ function BlogListContent() {
               </div>
             );
           })
-        )}
-      </div>
+        )}        </div>      </div>
 
       {renderPagination()}
 

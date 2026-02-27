@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNeighbourhoods, useDeleteNeighbourhood } from "@/services/neighbourhood/NeighbourhoodQueries";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteNeighbourhood, NeighbourhoodSearchParams } from "@/services/neighbourhood/NeighbourhoodServices";
@@ -28,6 +28,8 @@ export default function NeighbourhoodsListPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const prevNeighbourhoodsRef = useRef<any[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [searchParams, setSearchParams] = useState<NeighbourhoodSearchParams>({ region_id: "", county_id: "", city_id: "", keyword: "" });
   const [activeFilters, setActiveFilters] = useState<NeighbourhoodSearchParams>({ region_id: "", county_id: "", city_id: "", keyword: "" });
@@ -43,8 +45,11 @@ export default function NeighbourhoodsListPage() {
   useEffect(() => { if (searchParams.region_id) setSearchParams(p => ({ ...p, county_id: "", city_id: "" })); }, [searchParams.region_id]);
   useEffect(() => { if (searchParams.county_id) setSearchParams(p => ({ ...p, city_id: "" })); }, [searchParams.county_id]);
 
-  const { data, isLoading, isError, error } = useNeighbourhoods({ ...activeFilters, page: currentPage });
-  const neighbourhoods = data?.data || data || [];
+  const { data, isLoading, isFetching, isError, error } = useNeighbourhoods({ ...activeFilters, page: currentPage });
+  const freshNeighbourhoods: any[] = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+  if (freshNeighbourhoods.length > 0) prevNeighbourhoodsRef.current = freshNeighbourhoods;
+  // Only fall back to old data while a fetch is in-flight; an empty completed response should show the empty state
+  const neighbourhoods = (freshNeighbourhoods.length === 0 && isFetching) ? prevNeighbourhoodsRef.current : freshNeighbourhoods;
   const pagination = data?.meta || data?.pagination || null;
   const totalPages = pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1;
   const currentPageNum = pagination?.current_page || pagination?.currentPage || currentPage;
@@ -59,6 +64,19 @@ export default function NeighbourhoodsListPage() {
   const hasActiveFilters = !!(activeFilters.region_id || activeFilters.county_id || activeFilters.city_id || activeFilters.keyword);
 
   const handleSearch = () => { setActiveFilters({ ...searchParams }); setCurrentPage(1); };
+
+  /* debounced keyword search — 500ms */
+  const handleKeywordChange = useCallback((value: string) => {
+    setSearchParams(p => ({ ...p, keyword: value }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.trim() === "" || value.trim().length >= 2) {
+      debounceRef.current = setTimeout(() => {
+        setActiveFilters(prev => ({ ...prev, keyword: value }));
+        setCurrentPage(1);
+      }, 500);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleClearSearch = () => {
     const cleared: NeighbourhoodSearchParams = { region_id: "", county_id: "", city_id: "", keyword: "" };
     setSearchParams(cleared); setActiveFilters(cleared); setCurrentPage(1);
@@ -109,7 +127,7 @@ export default function NeighbourhoodsListPage() {
     );
   };
 
-  if (isLoading) {
+  if (isLoading && prevNeighbourhoodsRef.current.length === 0) {
     return (<div className="px-6 lg:px-8 max-w-[1280px] mx-auto space-y-4"><div className="flex justify-between items-center mb-2"><Skeleton className="h-7 w-44" /><div className="flex gap-3"><Skeleton className="h-10 w-[300px] rounded-full" /><Skeleton className="h-10 w-32 rounded-full" /></div></div>{[...Array(4)].map((_, i) => (<Skeleton key={i} className="h-[100px] w-full rounded-2xl" />))}</div>);
   }
 
@@ -119,13 +137,24 @@ export default function NeighbourhoodsListPage() {
 
   return (
     <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+      {/* ---- Top progress bar ---- */}
+      <div className={`fixed top-0 left-0 right-0 z-50 h-[3px] overflow-hidden transition-opacity duration-300 ${isFetching ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+        <div className="h-full bg-emerald-500 animate-[progressBar_1.2s_ease-in-out_infinite]" />
+      </div>
+      <style>{`
+        @keyframes progressBar { 0% { transform: translateX(-100%); } 50% { transform: translateX(0%); width: 70%; } 100% { transform: translateX(100%); } }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: translateX(0); } }
+        .nb-card-enter { animation: fadeSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
+
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[22px] font-semibold text-slate-900">Neighbourhoods</h1>
         <div className="flex items-center gap-3">
           <div className="relative hidden md:flex items-center">
             <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 text-slate-400" />
             <input type="text" placeholder="Search neighbourhoods..." value={searchParams.keyword || ""}
-              onChange={e => setSearchParams(p => ({ ...p, keyword: e.target.value }))}
+              onChange={e => handleKeywordChange(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
               className="w-[260px] pl-9 pr-4 py-2 text-sm rounded-full border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition" />
           </div>
@@ -171,13 +200,24 @@ export default function NeighbourhoodsListPage() {
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="relative">
+        {isFetching && neighbourhoods.length > 0 && (
+          <div className="absolute inset-0 z-20 rounded-2xl flex items-center justify-center" style={{ animation: "overlayFadeIn 0.18s ease forwards" }}>
+            <div className="absolute inset-0 rounded-2xl bg-white/60 backdrop-blur-[2px]" />
+            <div className="relative flex flex-col items-center gap-3">
+              <div className="w-10 h-10 rounded-full border-2 border-emerald-200 border-t-emerald-500 animate-spin" />
+              <span className="text-xs text-slate-500 font-medium">Loading results…</span>
+            </div>
+          </div>
+        )}
+        <div className="space-y-3">
         {Array.isArray(neighbourhoods) && neighbourhoods.length > 0 ? (
-          neighbourhoods.map((n: any) => {
+          neighbourhoods.map((n: any, idx: number) => {
             const imgUrl = getNeighbourhoodImageUrl(n);
             const name = n.name || n.city?.name || n.city || "Neighbourhood";
             return (
-              <div key={n.id} className="bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow flex overflow-hidden cursor-pointer" onClick={() => router.push(`/admin/neighbourhoods/${n.id}`)}>
+              <div key={n.id} className="nb-card-enter bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow flex overflow-hidden cursor-pointer"
+                style={{ animationDelay: `${idx * 60}ms` }} onClick={() => router.push(`/admin/neighbourhoods/${n.id}`)}>
                 <div className="w-[100px] min-h-[100px] flex-shrink-0 hidden sm:block relative">
                   {imgUrl ? (
                     <img src={imgUrl} alt={name} className="w-full h-full object-cover" onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; const sib = e.currentTarget.nextElementSibling as HTMLElement; if (sib) sib.style.display = "flex"; }} />
@@ -200,9 +240,10 @@ export default function NeighbourhoodsListPage() {
               </div>
             );
           })
-        ) : (
+        ) : !isFetching ? (
           <div className="text-center py-16 text-slate-400"><MapPinIcon className="w-12 h-12 mx-auto mb-3 text-slate-300" /><p className="text-lg">No neighbourhoods found.</p></div>
-        )}
+        ) : null}
+        </div>
       </div>
 
       {renderPagination()}
