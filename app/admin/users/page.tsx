@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import axiosInstance from "@/services/Api";
@@ -67,6 +67,8 @@ export default function UsersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const lastFetchKeyRef = useRef<string | null>(null);
+  const prevUsersRef = useRef<User[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [searchFilters, setSearchFilters] = useState<SearchFiltersState>({
     email: "",
@@ -129,6 +131,7 @@ export default function UsersPage() {
         created_at: u.created_at || "",
         avatar: u.avatar || u.photo || u.profile_image || u.image || u.profile_photo || "",
       }));
+      if (mapped.length > 0) prevUsersRef.current = mapped;
       setUsers(mapped);
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || "Failed to fetch users");
@@ -140,6 +143,21 @@ export default function UsersPage() {
   useEffect(() => { fetchUsers(); }, [currentPage]);
 
   const handleSearch = () => { setCurrentPage(1); fetchUsers(undefined, true); };
+
+  /* debounced keyword search — fires 500ms after last keystroke */
+  const handleKeywordChange = useCallback(
+    (value: string) => {
+      setSearchFilters((prev) => ({ ...prev, name: value }));
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (value.trim() === "" || value.trim().length >= 2) {
+        debounceRef.current = setTimeout(() => {
+          setCurrentPage(1);
+          fetchUsers({ ...searchFilters, name: value }, true);
+        }, 500);
+      }
+    },
+    [searchFilters], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const handleClearSearch = () => {
     const empty: SearchFiltersState = { email: "", name: "", crm_status: "", keyword: "" };
     setSearchFilters(empty);
@@ -204,7 +222,7 @@ export default function UsersPage() {
   };
 
   /* ---------- loading / error ---------- */
-  if (loading) {
+  if (loading && prevUsersRef.current.length === 0) {
     return (
       <div className="px-6 lg:px-8 max-w-[1280px] mx-auto space-y-4">
         <div className="flex justify-between items-center mb-2">
@@ -226,9 +244,38 @@ export default function UsersPage() {
     );
   }
 
+  /* display: previously loaded users while refetching */
+  // Only fall back to old data while a fetch is in-flight; an empty completed response should show the empty state
+  const displayUsers = (users.length === 0 && loading) ? prevUsersRef.current : users;
+
   /* ---------- render ---------- */
   return (
     <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+      {/* ---- Top progress bar ---- */}
+      <div
+        className={`fixed top-0 left-0 right-0 z-50 h-[3px] overflow-hidden transition-opacity duration-300 ${loading ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+      >
+        <div className="h-full bg-emerald-500 animate-[progressBar_1.2s_ease-in-out_infinite]" />
+      </div>
+      <style>{`
+        @keyframes progressBar {
+          0%   { transform: translateX(-100%); }
+          50%  { transform: translateX(0%); width: 70%; }
+          100% { transform: translateX(100%); }
+        }
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateX(-60px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        .user-card-enter {
+          animation: fadeSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes overlayFadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+      `}</style>
+
       {/* ---- Header ---- */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[22px] font-semibold text-slate-900">Users</h1>
@@ -239,9 +286,9 @@ export default function UsersPage() {
             <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by keyword... (minimum 3 characters)"
+              placeholder="Search users…"
               value={searchFilters.name}
-              onChange={(e) => setSearchFilters({ ...searchFilters, name: e.target.value })}
+              onChange={(e) => handleKeywordChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
               className="w-[340px] pl-9 pr-10 py-2 text-sm rounded-full border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition"
             />
@@ -295,15 +342,33 @@ export default function UsersPage() {
       )}
 
       {/* ---- User Rows ---- */}
-      <div className="space-y-3">
-        {Array.isArray(users) && users.length > 0 ? (
-          users.map((user) => {
+      <div className="relative">
+        <style>{``}</style>
+
+        {/* Frosted overlay while loading (previous data stays visible) */}
+        {loading && displayUsers.length > 0 && (
+          <div
+            className="absolute inset-0 z-20 rounded-2xl flex items-center justify-center"
+            style={{ animation: "overlayFadeIn 0.18s ease forwards" }}
+          >
+            <div className="absolute inset-0 rounded-2xl bg-white/60 backdrop-blur-[2px]" />
+            <div className="relative flex flex-col items-center gap-3">
+              <div className="w-10 h-10 rounded-full border-2 border-emerald-200 border-t-emerald-500 animate-spin" />
+              <span className="text-xs text-slate-500 font-medium">Loading results…</span>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-3">
+        {Array.isArray(displayUsers) && displayUsers.length > 0 ? (
+          displayUsers.map((user, idx) => {
             const initials = getInitials(user.name, user.email);
             const colorClass = pickColor(user.name || user.email || "U");
             return (
               <div
                 key={user.id}
-                className="bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow px-6 py-4 flex items-center gap-5 cursor-pointer"
+                className="user-card-enter bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow px-6 py-4 flex items-center gap-5 cursor-pointer"
+                style={{ animationDelay: `${idx * 60}ms` }}
                 onClick={() => router.push(`/admin/users/${user.id}`)}
               >
                 {/* Avatar */}
@@ -385,12 +450,13 @@ export default function UsersPage() {
               </div>
             );
           })
-        ) : (
+        ) : !loading ? (
           <div className="text-center py-16 text-slate-400">
             <p className="text-lg">No users found.</p>
             <p className="text-sm mt-1">Try adjusting your search or filters.</p>
           </div>
-        )}
+        ) : null}
+        </div>
       </div>
 
       {renderPagination()}

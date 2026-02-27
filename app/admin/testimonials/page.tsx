@@ -1,5 +1,5 @@
 ﻿"use client";
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -32,6 +32,8 @@ function TestimonialsListContent() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const prevTestimonialsRef = useRef<any[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ---------- helpers ---------- */
   const getAcronym = (t: any): string => {
@@ -94,7 +96,7 @@ function TestimonialsListContent() {
     q: searchParams.get("q") || "",
   });
 
-  const { data, isLoading, isError, error } = useTestimonials(activeFilters);
+  const { data, isLoading, isFetching, isError, error } = useTestimonials(activeFilters);
   const deleteTestimonialMutation = useDeleteTestimonial();
 
   useEffect(() => {
@@ -123,9 +125,23 @@ function TestimonialsListContent() {
     }
     const f = { ...filters, page: 1 };
     setActiveFilters(f);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     router.push(`/admin/testimonials?${buildQueryString(f)}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  /* debounced search — 500ms */
+  const handleQueryChange = useCallback((value: string) => {
+    setFilters(prev => ({ ...prev, q: value }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.trim() === "" || value.trim().length >= 2) {
+      debounceRef.current = setTimeout(() => {
+        const f = { ...filters, q: value, page: 1 };
+        setActiveFilters(f);
+        router.push(`/admin/testimonials?${buildQueryString(f)}`, { scroll: false });
+      }, 500);
+    }
+  }, [filters, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClearFilters = () => {
     const f: TestimonialSearchParams = { page: 1 };
@@ -144,7 +160,11 @@ function TestimonialsListContent() {
   };
 
   /* ---------- pagination data ---------- */
-  const testimonials = data?.data || data || [];
+  const rawTestimonials = Array.isArray(data?.data || data) ? (data?.data || data || []) : [];
+  if (rawTestimonials.length > 0) prevTestimonialsRef.current = rawTestimonials;
+  // Only fall back to old data while a fetch is in-flight; an empty completed response should show the empty state
+  const displayTestimonials = (rawTestimonials.length === 0 && isFetching) ? prevTestimonialsRef.current : rawTestimonials;
+  const testimonials = displayTestimonials;
   const pagination = data?.meta || data?.pagination || null;
   const totalPages = pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1;
   const currentPageNum = pagination?.current_page || pagination?.currentPage || currentPage;
@@ -221,7 +241,7 @@ function TestimonialsListContent() {
   };
 
   /* ---------- loading ---------- */
-  if (isLoading) {
+  if (isLoading && prevTestimonialsRef.current.length === 0) {
     return (
       <div className="px-6 lg:px-8 max-w-[1280px] mx-auto space-y-4">
         <div className="flex justify-between items-center mb-2">
@@ -251,6 +271,17 @@ function TestimonialsListContent() {
   /* ---------- render ---------- */
   return (
     <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+      {/* ---- Top progress bar ---- */}
+      <div className={`fixed top-0 left-0 right-0 z-50 h-[3px] overflow-hidden transition-opacity duration-300 ${isFetching ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+        <div className="h-full bg-emerald-500 animate-[progressBar_1.2s_ease-in-out_infinite]" />
+      </div>
+      <style>{`
+        @keyframes progressBar { 0% { transform: translateX(-100%); } 50% { transform: translateX(0%); width: 70%; } 100% { transform: translateX(100%); } }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: translateX(0); } }
+        .testimonial-card-enter { animation: fadeSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
+
       {/* ---- Header ---- */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[22px] font-semibold text-slate-900">Testimonials</h1>
@@ -261,9 +292,9 @@ function TestimonialsListContent() {
             <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 text-slate-400" />
             <input
               type="text"
-              placeholder="Search testimonials... (min 3 chars)"
+              placeholder="Search testimonials…"
               value={filters.q || ""}
-              onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+              onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSearch();
               }}
@@ -293,22 +324,33 @@ function TestimonialsListContent() {
       )}
 
       {/* ---- Testimonial Cards ---- */}
-      <div className="space-y-3">
-        {Array.isArray(testimonials) && testimonials.length === 0 ? (
+      <div className="relative">
+        {isFetching && displayTestimonials.length > 0 && (
+          <div className="absolute inset-0 z-20 rounded-2xl flex items-center justify-center" style={{ animation: "overlayFadeIn 0.18s ease forwards" }}>
+            <div className="absolute inset-0 rounded-2xl bg-white/60 backdrop-blur-[2px]" />
+            <div className="relative flex flex-col items-center gap-3">
+              <div className="w-10 h-10 rounded-full border-2 border-emerald-200 border-t-emerald-500 animate-spin" />
+              <span className="text-xs text-slate-500 font-medium">Loading results…</span>
+            </div>
+          </div>
+        )}
+        <div className="space-y-3">
+        {Array.isArray(displayTestimonials) && displayTestimonials.length === 0 && !isFetching ? (
           <div className="text-center py-16 text-slate-400">
             <ChatBubbleLeftIcon className="w-12 h-12 mx-auto mb-3 text-slate-300" />
             <p className="text-lg">No testimonials found.</p>
             <p className="text-sm mt-1">Try adjusting your search or add a new testimonial.</p>
           </div>
         ) : (
-          testimonials.map((t: any) => {
+          displayTestimonials.map((t: any, idx: number) => {
             const date = formatDate(t.date || t.created_at);
             const ratingNum = t.rating ? parseInt(t.rating) : 0;
 
             return (
               <div
                 key={t.id}
-                className="bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow flex overflow-hidden cursor-pointer"
+                className="testimonial-card-enter bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow flex overflow-hidden cursor-pointer"
+                style={{ animationDelay: `${idx * 60}ms` }}
                 onClick={() => router.push(`/admin/testimonials/${t.id}`)}
               >
                 {/* Avatar */}
@@ -396,8 +438,7 @@ function TestimonialsListContent() {
               </div>
             );
           })
-        )}
-      </div>
+        )}        </div>      </div>
 
       {renderPagination()}
 

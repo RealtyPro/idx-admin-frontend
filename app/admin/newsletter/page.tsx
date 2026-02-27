@@ -1,5 +1,5 @@
 ﻿"use client";
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -26,6 +26,8 @@ function NewsletterContent() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const prevSubscribersRef = useRef<any[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const getEmailAcronym = (subscriber: any): string => {
     const email: string = subscriber.email || subscriber.name || "N";
@@ -59,9 +61,12 @@ function NewsletterContent() {
   const [filters, setFilters] = useState<NewsletterSearchParams>({ page: pageFromUrl, q: searchParams.get("q") || "" });
   const [activeFilters, setActiveFilters] = useState<NewsletterSearchParams>({ page: pageFromUrl, q: searchParams.get("q") || "" });
 
-  const { data, isLoading, isError, error } = useNewsletterSubscribers(activeFilters);
+  const { data, isLoading, isFetching, isError, error } = useNewsletterSubscribers(activeFilters);
   const deleteMutation = useDeleteNewsletterSubscriber();
-  const subscribers = data?.data || data || [];
+  const rawSubscribers = Array.isArray(data?.data || data) ? (data?.data || data || []) : [];
+  if (rawSubscribers.length > 0) prevSubscribersRef.current = rawSubscribers;
+  // Only fall back to old data while a fetch is in-flight; an empty completed response should show the empty state
+  const subscribers = (rawSubscribers.length === 0 && isFetching) ? prevSubscribersRef.current : rawSubscribers;
   const pagination = data?.meta || data?.pagination || null;
   const totalPages = pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1;
   const currentPageNum = pagination?.current_page || pagination?.currentPage || currentPage;
@@ -87,9 +92,23 @@ function NewsletterContent() {
     }
     const f = { ...filters, page: 1 };
     setActiveFilters(f);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     router.push(`/admin/newsletter?${buildQueryString(f)}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  /* debounced search — 500ms */
+  const handleQueryChange = useCallback((value: string) => {
+    setFilters(prev => ({ ...prev, q: value }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.trim() === "" || value.trim().length >= 2) {
+      debounceRef.current = setTimeout(() => {
+        const f = { ...filters, q: value, page: 1 };
+        setActiveFilters(f);
+        router.push(`/admin/newsletter?${buildQueryString(f)}`, { scroll: false });
+      }, 500);
+    }
+  }, [filters, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClearFilters = () => {
     const f: NewsletterSearchParams = { page: 1 };
@@ -127,7 +146,7 @@ function NewsletterContent() {
     );
   };
 
-  if (isLoading) {
+  if (isLoading && prevSubscribersRef.current.length === 0) {
     return (
       <div className="px-6 lg:px-8 max-w-[1280px] mx-auto space-y-4">
         <div className="flex justify-between items-center mb-2"><Skeleton className="h-7 w-36" /><div className="flex gap-3"><Skeleton className="h-10 w-[300px] rounded-full" /></div></div>
@@ -142,13 +161,23 @@ function NewsletterContent() {
 
   return (
     <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
+      {/* ---- Top progress bar ---- */}
+      <div className={`fixed top-0 left-0 right-0 z-50 h-[3px] overflow-hidden transition-opacity duration-300 ${isFetching ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+        <div className="h-full bg-emerald-500 animate-[progressBar_1.2s_ease-in-out_infinite]" />
+      </div>
+      <style>{`
+        @keyframes progressBar { 0% { transform: translateX(-100%); } 50% { transform: translateX(0%); width: 70%; } 100% { transform: translateX(100%); } }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: translateX(0); } }
+        .newsletter-card-enter { animation: fadeSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[22px] font-semibold text-slate-900">Newsletter Subscribers</h1>
         <div className="flex items-center gap-3">
           <div className="relative hidden md:flex items-center">
             <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 text-slate-400" />
             <input type="text" placeholder="Search subscribers... (min 3 chars)" value={filters.q || ""}
-              onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+              onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
               className="w-[300px] pl-9 pr-10 py-2 text-sm rounded-full border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition" />
             <button onClick={handleSearch} className="absolute right-3 text-slate-400 hover:text-slate-600 transition"><AdjustmentsHorizontalIcon className="w-4 h-4" /></button>
@@ -158,12 +187,23 @@ function NewsletterContent() {
 
       {searchError && (<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 text-sm">{searchError}</div>)}
 
-      <div className="space-y-3">
-        {Array.isArray(subscribers) && subscribers.length === 0 ? (
+      <div className="relative">
+        {isFetching && subscribers.length > 0 && (
+          <div className="absolute inset-0 z-20 rounded-2xl flex items-center justify-center" style={{ animation: "overlayFadeIn 0.18s ease forwards" }}>
+            <div className="absolute inset-0 rounded-2xl bg-white/60 backdrop-blur-[2px]" />
+            <div className="relative flex flex-col items-center gap-3">
+              <div className="w-10 h-10 rounded-full border-2 border-emerald-200 border-t-emerald-500 animate-spin" />
+              <span className="text-xs text-slate-500 font-medium">Loading results…</span>
+            </div>
+          </div>
+        )}
+        <div className="space-y-3">
+        {Array.isArray(subscribers) && subscribers.length === 0 && !isFetching ? (
           <div className="text-center py-16 text-slate-400"><NewspaperIcon className="w-12 h-12 mx-auto mb-3 text-slate-300" /><p className="text-lg">No subscribers found.</p></div>
         ) : (
-          subscribers.map((s: any) => (
-            <div key={s.id} className="bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow flex overflow-hidden cursor-pointer"
+          subscribers.map((s: any, idx: number) => (
+            <div key={s.id} className="newsletter-card-enter bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow flex overflow-hidden cursor-pointer"
+              style={{ animationDelay: `${idx * 60}ms` }}
               onClick={() => router.push(`/admin/newsletter/${s.id}`)}>
               <div className="w-[100px] min-h-[90px] flex-shrink-0 flex items-center justify-center hidden sm:flex">
                 <div className={`w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold ${getAvatarColor(s.email || s.name || "")}`}>{getEmailAcronym(s)}</div>
@@ -192,6 +232,7 @@ function NewsletterContent() {
             </div>
           ))
         )}
+        </div>
       </div>
 
       {renderPagination()}
