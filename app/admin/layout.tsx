@@ -90,17 +90,14 @@ export default function adminLayout({
       {/* Sidebar – dark navy */}
       <div className="fixed inset-y-0 left-0 w-[220px] bg-[#1B2537] z-30 flex flex-col">
         {/* Logo */}
-        <div className="flex items-center gap-2.5 px-5 py-6">
+        <div className="flex items-center px-5 py-6">
           <Image
-            src="/images/ailogo.png"
+            src="/images/realtipro-logo.png"
             alt="RealtiPro"
-            width={32}
-            height={32}
-            className="w-8 h-8"
+            width={160}
+            height={40}
+            className="h-8 w-auto"
           />
-          <span className="text-white font-semibold text-lg tracking-tight">
-            realt<span className="text-emerald-400">pro</span>
-          </span>
         </div>
 
         {/* Navigation */}
