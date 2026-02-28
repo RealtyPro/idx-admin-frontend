@@ -127,7 +127,7 @@ export default function ProfilePage() {
       setState(profile.state || "");
       setZip(profile.zip || "");
       setCountry(profile.country || "");
-      setCounty(profile.county || "");
+      setCounty(profile.country || ""); // API uses 'country' field to store county ID
       if (profile.social_urls) {
         setFacebook(profile.social_urls.facebook || "");
         setLinkedIn(profile.social_urls.linked_in || "");
