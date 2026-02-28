@@ -69,7 +69,7 @@ export default function BlogEditPage() {
           setOriginalImageObject(blog.image as ImageObject);
           const imageUrl = blog.image.path?.startsWith("http")
             ? blog.image.path
-            : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${blog.image.path}`;
+            : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${blog.image.path}`;
           setImage(imageUrl);
           setOriginalImage(imageUrl);
         }
@@ -106,7 +106,7 @@ export default function BlogEditPage() {
         setImageObject(uploadedImageObj);
         const previewUrl = uploadedImageObj.path.startsWith("http")
           ? uploadedImageObj.path
-          : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${uploadedImageObj.path}`;
+          : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${uploadedImageObj.path}`;
         setImage(previewUrl);
       } catch (error: any) {
         console.error("Error uploading image:", error);

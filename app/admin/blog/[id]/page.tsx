@@ -46,12 +46,12 @@ export default function BlogDetailsPage() {
     if (typeof blog.image === "string") {
       return blog.image.startsWith("http")
         ? blog.image
-        : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${blog.image}`;
+        : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${blog.image}`;
     }
     if (typeof blog.image === "object" && blog.image.path) {
       return blog.image.path.startsWith("http")
         ? blog.image.path
-        : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${blog.image.path}`;
+        : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${blog.image.path}`;
     }
     return null;
   };
