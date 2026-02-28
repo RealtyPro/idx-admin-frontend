@@ -16,6 +16,8 @@ import {
   Squares2X2Icon,
   ListBulletIcon,
   MapPinIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import { Skeleton } from '@/components/ui/skeleton';
 import api from '@/services/Api';
@@ -39,9 +41,11 @@ type Stat = {
 export default function AdminDashboard() {
   const [statsData, setStatsData] = useState<Stat[]>([]);
   const [featuredListings, setFeaturedListings] = useState<any[]>([]);
-  const [recentListings, setRecentListings] = useState<any[]>([]);
+  const [recentEnquiries, setRecentEnquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [gridView, setGridView] = useState(true);
+  const [featuredPage, setFeaturedPage] = useState(1);
+  const FEATURED_PER_PAGE = 4;
 
   useEffect(() => {
     const extractCount = (res: any): number => {
@@ -90,22 +94,22 @@ export default function AdminDashboard() {
         setFeaturedListings([]);
       }
 
-      // Fetch recent listings from the API
+      // Fetch recent enquiries from the API
       try {
-        const recentRes = await api.get('v1/admin/property?page=1');
+        const recentRes = await api.get('v1/admin/enquiry?page=1');
         const recentData = recentRes?.data?.data || recentRes?.data || [];
-        setRecentListings(Array.isArray(recentData) ? recentData.slice(0, 5) : []);
+        setRecentEnquiries(Array.isArray(recentData) ? recentData.slice(0, 5) : []);
       } catch (err) {
-        console.error('Failed to fetch recent listings:', err);
-        setRecentListings([]);
+        console.error('Failed to fetch recent enquiries:', err);
+        setRecentEnquiries([]);
       }
 
       setStatsData([
         {
           name: 'Total Listings',
           value: String(listingsCount),
-          change: '+12%',
-          changeType: 'positive',
+          change: '',
+          changeType: 'neutral',
           icon: HomeIcon,
           iconBg: 'bg-blue-50',
           iconColor: 'text-blue-500',
@@ -113,8 +117,8 @@ export default function AdminDashboard() {
         {
           name: 'Total Enquiries',
           value: String(enquiriesCount),
-          change: '+5%',
-          changeType: 'positive',
+          change: '',
+          changeType: 'neutral',
           icon: EnvelopeIcon,
           iconBg: 'bg-emerald-50',
           iconColor: 'text-emerald-500',
@@ -122,7 +126,7 @@ export default function AdminDashboard() {
         {
           name: 'Total Blogs',
           value: String(blogsCount),
-          change: '— 0%',
+          change: '',
           changeType: 'neutral',
           icon: DocumentTextIcon,
           iconBg: 'bg-purple-50',
@@ -131,8 +135,8 @@ export default function AdminDashboard() {
         {
           name: 'Testimonials',
           value: String(testimonialsCount),
-          change: '-2%',
-          changeType: 'negative',
+          change: '',
+          changeType: 'neutral',
           icon: HandThumbUpIcon,
           iconBg: 'bg-amber-50',
           iconColor: 'text-amber-500',
@@ -208,23 +212,6 @@ export default function AdminDashboard() {
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.iconBg}`}>
                       <Icon className={`w-5 h-5 ${stat.iconColor}`} />
                     </div>
-                    <span
-                      className={`text-xs font-medium flex items-center gap-0.5 ${
-                        stat.changeType === 'positive'
-                          ? 'text-emerald-600'
-                          : stat.changeType === 'negative'
-                          ? 'text-red-500'
-                          : 'text-slate-400'
-                      }`}
-                    >
-                      {stat.changeType === 'positive' && (
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 12 12"><path d="M6 9V3m0 0L3 6m3-3l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      )}
-                      {stat.changeType === 'negative' && (
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 12 12"><path d="M6 3v6m0 0l3-3m-3 3L3 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      )}
-                      {stat.change}
-                    </span>
                   </div>
                   <p className="text-xs text-slate-500 mb-0.5">{stat.name}</p>
                   <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
@@ -255,7 +242,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* ---- Featured Listings + Recent Listings ---- */}
+        {/* ---- Featured Listings + Recent Enquiries ---- */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
           {/* Featured Listings */}
           <div>
@@ -278,8 +265,9 @@ export default function AdminDashboard() {
             </div>
 
             {featuredListings.length > 0 ? (
+              <>
               <div className={`grid gap-5 ${gridView ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
-                {featuredListings.map((listing: any) => {
+                {featuredListings.slice((featuredPage - 1) * FEATURED_PER_PAGE, featuredPage * FEATURED_PER_PAGE).map((listing: any) => {
                   const image = (() => {
                     const imgs = listing?.images ?? listing?.image ?? listing?.photos;
                     if (typeof imgs === 'string') {
@@ -353,7 +341,30 @@ export default function AdminDashboard() {
                   );
                 })}
               </div>
-            ) : (
+
+              {/* Pagination */}
+              {featuredListings.length > FEATURED_PER_PAGE && (
+                <div className="flex items-center justify-center gap-2 mt-5">
+                  <button
+                    onClick={() => setFeaturedPage((p) => Math.max(1, p - 1))}
+                    disabled={featuredPage === 1}
+                    className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronLeftIcon className="w-4 h-4 text-slate-600" />
+                  </button>
+                  <span className="text-sm text-slate-600">
+                    Page {featuredPage} of {Math.ceil(featuredListings.length / FEATURED_PER_PAGE)}
+                  </span>
+                  <button
+                    onClick={() => setFeaturedPage((p) => Math.min(Math.ceil(featuredListings.length / FEATURED_PER_PAGE), p + 1))}
+                    disabled={featuredPage >= Math.ceil(featuredListings.length / FEATURED_PER_PAGE)}
+                    className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronRightIcon className="w-4 h-4 text-slate-600" />
+                  </button>
+                </div>
+              )}
+            </> ) : (
               <div className="bg-white rounded-2xl border border-slate-100 p-10 text-center">
                 <p className="text-slate-400 text-sm">No featured listings found.</p>
                 <Link href="/admin/listings" className="text-emerald-600 text-sm font-medium hover:text-emerald-700 mt-2 inline-block">
@@ -363,69 +374,55 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          {/* Recent Listings */}
+          {/* Recent Enquiries */}
           <div className="bg-white rounded-2xl border border-slate-100 p-5 h-fit">
-            <h3 className="text-[15px] font-semibold text-slate-900 mb-4">Recent Listings</h3>
-            {recentListings.length > 0 ? (
+            <h3 className="text-[15px] font-semibold text-slate-900 mb-4">Recent Enquiries</h3>
+            {recentEnquiries.length > 0 ? (
               <div className="space-y-4">
-                {recentListings.map((listing: any) => {
-                  const image = (() => {
-                    const imgs = listing?.images ?? listing?.image ?? listing?.photos;
-                    if (typeof imgs === 'string') {
-                      if (imgs.trim().startsWith('[')) {
-                        try { const p = JSON.parse(imgs); if (Array.isArray(p) && p.length) return p[0]; } catch {}
-                      }
-                      return imgs;
-                    }
-                    if (Array.isArray(imgs) && imgs.length) return imgs[0];
-                    return '/images/hero-image.png';
-                  })();
-                  const price = listing?.price
-                    ? typeof listing.price === 'number'
-                      ? `$${listing.price.toLocaleString('en-US')}`
-                      : listing.price.toString().startsWith('$') ? listing.price : `$${listing.price}`
+                {recentEnquiries.map((enquiry: any) => {
+                  const name = enquiry?.name || enquiry?.full_name
+                    || (enquiry?.first_name ? `${enquiry.first_name} ${enquiry.last_name || ''}`.trim() : '')
+                    || enquiry?.email || 'Unknown';
+                  const initials = name
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .map((w: string) => w[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase() || 'U';
+                  const date = enquiry?.created_at
+                    ? new Date(enquiry.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
                     : '';
 
                   return (
-                    <Link key={listing.id} href={`/admin/listings/${listing.id}`} className="flex gap-3 group">
-                      <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
-                        <img src={image} alt={listing.title || `Listing ${listing.id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <Link key={enquiry.id} href={`/admin/inquiries/${enquiry.id}`} className="flex gap-3 group">
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-semibold text-emerald-600">{initials}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-semibold text-slate-900 truncate group-hover:text-emerald-600 transition-colors">
-                          {listing.title || listing.name || listing.address || `Listing ${listing.id}`}
+                          {name}
                         </h4>
-                        {price && <p className="text-xs font-bold text-emerald-500 mt-0.5">{price}</p>}
-                        <div className="flex items-center gap-2 mt-1">
-                          {listing.beds !== undefined && listing.beds !== null && (
-                            <span className="text-[10px] text-slate-400">{listing.beds} beds</span>
-                          )}
-                          {listing.baths !== undefined && listing.baths !== null && (
-                            <span className="text-[10px] text-slate-400">{listing.baths} baths</span>
-                          )}
-                          {listing.status && (
-                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                              listing.status.toLowerCase() === 'active' ? 'text-emerald-600 bg-emerald-50' :
-                              listing.status.toLowerCase() === 'sold' ? 'text-red-600 bg-red-50' :
-                              'text-slate-600 bg-slate-100'
-                            }`}>
-                              {listing.status}
-                            </span>
-                          )}
-                        </div>
+                        {enquiry?.email && enquiry.email !== name && (
+                          <p className="text-xs text-slate-400 truncate">{enquiry.email}</p>
+                        )}
+                        {enquiry?.message && (
+                          <p className="text-xs text-slate-400 truncate mt-0.5">{enquiry.message}</p>
+                        )}
+                        {date && <p className="text-[10px] text-slate-400 mt-0.5">{date}</p>}
                       </div>
                     </Link>
                   );
                 })}
               </div>
             ) : (
-              <p className="text-slate-400 text-sm text-center py-4">No recent listings.</p>
+              <p className="text-slate-400 text-sm text-center py-4">No recent enquiries.</p>
             )}
             <Link
-              href="/admin/listings"
+              href="/admin/inquiries"
               className="block text-center text-sm font-medium text-emerald-600 hover:text-emerald-700 mt-5 transition-colors"
             >
-              View All Listings
+              View All Enquiries
             </Link>
           </div>
         </div>
