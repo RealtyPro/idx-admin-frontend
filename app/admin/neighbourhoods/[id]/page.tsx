@@ -52,9 +52,9 @@ export default function NeighbourhoodDetails() {
     if (!img) return null;
     if (typeof img === "string") {
       if (img.includes("/img/default/") || img.includes("default")) return null;
-      return img.startsWith("http") ? img : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img}`;
+      return img.startsWith("http") ? img : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${img}`;
     }
-    if (typeof img === "object" && img.path) return img.path.startsWith("http") ? img.path : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img.path}`;
+    if (typeof img === "object" && img.path) return img.path.startsWith("http") ? img.path : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${img.path}`;
     return null;
   };
   const imageUrl = getImageUrl();

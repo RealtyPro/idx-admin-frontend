@@ -138,7 +138,7 @@ export default function NeighbourhoodCreatePage() {
                   try {
                     const obj = await uploadNeighbourhoodImage(file);
                     setImageObject(obj);
-                    const url = obj.path.startsWith("http") ? obj.path : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${obj.path}`;
+                    const url = obj.path.startsWith("http") ? obj.path : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${obj.path}`;
                     setImage(url);
                   } catch (err: any) {
                     alert(err?.response?.data?.message || err?.message || "Failed to upload image.");

@@ -77,13 +77,13 @@ function BlogListContent() {
       if (imageData.includes("/img/default/") || imageData.includes("default")) return null;
       return imageData.startsWith("http")
         ? imageData
-        : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${imageData}`;
+        : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${imageData}`;
     }
     if (typeof imageData === "object" && (imageData.path || imageData.url)) {
       const src = imageData.path || imageData.url;
       return src.startsWith("http")
         ? src
-        : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${src}`;
+        : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${src}`;
     }
     return null;
   };
