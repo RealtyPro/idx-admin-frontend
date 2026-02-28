@@ -37,7 +37,9 @@ export default function ProfilePage() {
   const [profilePhoto, setProfilePhoto] = useState<string>("");
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
   const [profilePhotoUploading, setProfilePhotoUploading] = useState(false);
-  const [profilePhotoError, setProfilePhotoError] = useState<string | null>(null);
+  const [profilePhotoError, setProfilePhotoError] = useState<string | null>(
+    null,
+  );
   const profilePhotoInputRef = useRef<HTMLInputElement>(null);
   const [county, setCounty] = useState("");
   const [city, setCity] = useState("");
@@ -67,172 +69,312 @@ export default function ProfilePage() {
   const profile = data?.data || data;
 
   const { data: statesData, isLoading: statesLoading } = useStates();
-  const { data: countiesData, isLoading: countiesLoading } = useCountiesByState(state);
-  const { data: citiesData, isLoading: citiesLoading } = useCitiesByCounty(county);
-  const { data: companyCountiesData, isLoading: companyCountiesLoading } = useCountiesByState(companyState);
-  const { data: companyCitiesData, isLoading: companyCitiesLoading } = useCitiesByCounty(companyCounty);
+  const { data: countiesData, isLoading: countiesLoading } =
+    useCountiesByState(state);
+  const { data: citiesData, isLoading: citiesLoading } =
+    useCitiesByCounty(county);
+  const { data: companyCountiesData, isLoading: companyCountiesLoading } =
+    useCountiesByState(companyState);
+  const { data: companyCitiesData, isLoading: companyCitiesLoading } =
+    useCitiesByCounty(companyCounty);
 
   const states = statesData?.data || statesData || [];
   const counties = countiesData?.data || countiesData || [];
   const cities = citiesData?.data || citiesData || [];
-  const companyCounties = companyCountiesData?.data || companyCountiesData || [];
+  const companyCounties =
+    companyCountiesData?.data || companyCountiesData || [];
   const companyCities = companyCitiesData?.data || companyCitiesData || [];
 
   const formatPhone = (phoneData: any): string => {
     if (!phoneData) return "";
     if (typeof phoneData === "string") {
       if (phoneData.startsWith("{") && phoneData.includes('"code"')) {
-        try { const p = JSON.parse(phoneData); if (p.code && p.number) return `${p.code} ${p.number}`; } catch (e) { return phoneData; }
+        try {
+          const p = JSON.parse(phoneData);
+          if (p.code && p.number) return `${p.code} ${p.number}`;
+        } catch (e) {
+          return phoneData;
+        }
       }
       return phoneData;
     }
-    if (typeof phoneData === "object" && phoneData.code && phoneData.number) return `${phoneData.code} ${phoneData.number}`;
+    if (typeof phoneData === "object" && phoneData.code && phoneData.number)
+      return `${phoneData.code} ${phoneData.number}`;
     return "";
   };
 
-  useEffect(() => { if (statesData) {} }, [statesData]);
-  useEffect(() => { if (countiesData) {} }, [countiesData]);
-  useEffect(() => { if (citiesData) {} }, [citiesData]);
+  useEffect(() => {
+    if (statesData) {
+    }
+  }, [statesData]);
+  useEffect(() => {
+    if (countiesData) {
+    }
+  }, [countiesData]);
+  useEffect(() => {
+    if (citiesData) {
+    }
+  }, [citiesData]);
 
   useEffect(() => {
     if (profile) {
       if (profile.photo) setProfilePhoto(profile.photo);
       setName(profile.name || "");
       setEmail(profile.email || "");
-      setPhone(formatPhone(profile.phone));
+      setPhone(formatPhone(profile.phone || profile.mobile));
       setAddress(profile.address || "");
       setCity(profile.city || "");
       setState(profile.state || "");
       setZip(profile.zip || "");
       setCountry(profile.country || "");
-      setCounty(profile.country || "");
+      setCounty(profile.county || "");
       if (profile.social_urls) {
         setFacebook(profile.social_urls.facebook || "");
         setLinkedIn(profile.social_urls.linked_in || "");
         setInstagram(profile.social_urls.instagram || "");
       }
-      if (profile.company) {
-        setCompanyName(profile.company.name || "");
-        setCompanyAddress(profile.company.address || "");
-        if (profile.company.location) {
-          if (typeof profile.company.location === "object") {
-            setCompanyState(profile.company.location.state || "");
-            setCompanyCounty(profile.company.location.county || "");
-            setCompanyCity(profile.company.location.city || "");
-          } else if (typeof profile.company.location === "string") {
-            setCompanyCity(profile.company.location);
-          }
-        }
-        setCompanyEmail(profile.company.email || "");
-        setCompanyPhone(profile.company.phone || "");
-        setCompanyWebsite(profile.company.website || "");
-        if (profile.company.logo) {
-          if (typeof profile.company.logo === "string") {
-            setCompanyLogoPreview(profile.company.logo);
-            companyLogoResultRef.current = profile.company.logo; // string path
-          } else if (typeof profile.company.logo === "object") {
-            if (profile.company.logo.path) {
-              setCompanyLogoPreview(profile.company.logo.path);
-              companyLogoResultRef.current = profile.company.logo; // full ImageObject
-            } else if (profile.company.logo.url) {
-              setCompanyLogoPreview(profile.company.logo.url);
-              companyLogoResultRef.current = profile.company.logo;
-            }
-          }
+
+      // Company fields — API returns them flat at root level
+      // Also support legacy nested profile.company object
+      const comp = profile.company;
+      setCompanyName(profile.company_name || comp?.name || "");
+      setCompanyAddress(profile.company_address || comp?.address || "");
+      setCompanyEmail(profile.company_email || comp?.email || "");
+      setCompanyPhone(profile.company_phone || comp?.phone || "");
+      setCompanyWebsite(
+        profile.company_website || profile.web || comp?.website || "",
+      );
+      if (comp?.location) {
+        if (typeof comp.location === "object") {
+          setCompanyState(comp.location.state || "");
+          setCompanyCounty(comp.location.county || "");
+          setCompanyCity(comp.location.city || "");
+        } else if (typeof comp.location === "string") {
+          setCompanyCity(comp.location);
         }
       }
-      if (profile.about) {
-        setAboutShort(profile.about.short_description || "");
-        setAboutLong(profile.about.long_description || "");
+      const logo = profile.company_logo || comp?.logo;
+      if (logo) {
+        if (typeof logo === "string") {
+          setCompanyLogoPreview(logo);
+          companyLogoResultRef.current = logo;
+        } else if (typeof logo === "object") {
+          const logoPath = logo.path || logo.url || "";
+          setCompanyLogoPreview(logoPath);
+          companyLogoResultRef.current = logo;
+        }
       }
+
+      // About fields — flat at root level
+      setAboutShort(
+        profile.short_description || profile.about?.short_description || "",
+      );
+      setAboutLong(
+        profile.long_description ||
+          profile.description ||
+          profile.about?.long_description ||
+          "",
+      );
     }
   }, [profile]);
 
-  const handleProfilePhotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setProfilePhotoFile(file);
-    setProfilePhotoError(null);
-    setProfilePhotoUploading(true);
-    try {
-      const result = await uploadProfilePhoto(file);
-      if (result?.path) {
-        setProfilePhoto(result.path);
-        const payload = { name, company_logo: companyLogoResultRef.current || companyLogoPreview, company: companyName, company_email: companyEmail, company_phone: companyPhone, short_description: aboutShort, long_description: aboutLong, photo: result };
-        updateProfileMutation.mutate(payload, {
-          onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["profile"] }); toast.success("Profile updated successfully"); },
-          onError: (error: any) => { setProfilePhotoError(error?.response?.data?.message || error?.message || "Failed to update profile with photo."); },
-        });
+  const handleProfilePhotoChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setProfilePhotoFile(file);
+      setProfilePhotoError(null);
+      setProfilePhotoUploading(true);
+      try {
+        const result = await uploadProfilePhoto(file);
+        if (result?.path) {
+          setProfilePhoto(result.path);
+          const payload = { ...buildPayload(), photo: result };
+          updateProfileMutation.mutate(payload, {
+            onSuccess: () => {
+              queryClient.invalidateQueries({ queryKey: ["profile"] });
+              toast.success("Profile updated successfully");
+            },
+            onError: (error: any) => {
+              setProfilePhotoError(
+                error?.response?.data?.message ||
+                  error?.message ||
+                  "Failed to update profile with photo.",
+              );
+            },
+          });
+        }
+      } catch (err: any) {
+        setProfilePhotoError(err?.message || "Failed to upload photo");
+      } finally {
+        setProfilePhotoUploading(false);
       }
-    } catch (err: any) { setProfilePhotoError(err?.message || "Failed to upload photo"); }
-    finally { setProfilePhotoUploading(false); }
-  }, [name, companyLogoPreview, companyName, companyEmail, companyPhone, aboutShort, aboutLong, updateProfileMutation, queryClient]);
+    },
+    [
+      name,
+      phone,
+      address,
+      state,
+      city,
+      county,
+      zip,
+      country,
+      facebook,
+      linkedIn,
+      instagram,
+      companyLogoPreview,
+      companyName,
+      companyAddress,
+      companyState,
+      companyCounty,
+      companyCity,
+      companyEmail,
+      companyPhone,
+      companyWebsite,
+      aboutShort,
+      aboutLong,
+      updateProfileMutation,
+      queryClient,
+    ],
+  );
 
-  const handleCompanyLogoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCompanyLogoUploading(true);
-    setCompanyLogoError(null);
-    try {
-      const result = await uploadCompanyLogo(file);
-      if (!result?.path) throw new Error("Upload failed: no path returned from server");
-      companyLogoResultRef.current = result;
-      setCompanyLogoPreview(result.path);
-      const payload = {
-        name,
-        company_logo: result,
-        company: companyName,
-        company_email: companyEmail,
-        company_phone: companyPhone,
-        short_description: aboutShort,
-        long_description: aboutLong,
-      };
-      updateProfileMutation.mutate(payload, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["profile"] });
-          toast.success("Company logo updated successfully");
-        },
-        onError: (error: any) => {
-          const msg = error?.response?.data?.message || error?.message || "Failed to update profile with company logo.";
-          setCompanyLogoError(msg);
-          toast.error(msg);
-        },
-      });
-    } catch (err: any) {
-      const msg = err?.message || "Failed to upload logo";
-      setCompanyLogoError(msg);
-      toast.error(msg);
-    } finally {
-      setCompanyLogoUploading(false);
-    }
-  }, [name, companyName, companyEmail, companyPhone, aboutShort, aboutLong, updateProfileMutation, queryClient]);
+  const handleCompanyLogoChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setCompanyLogoUploading(true);
+      setCompanyLogoError(null);
+      try {
+        const result = await uploadCompanyLogo(file);
+        if (!result?.path)
+          throw new Error("Upload failed: no path returned from server");
+        companyLogoResultRef.current = result;
+        setCompanyLogoPreview(result.path);
+        const payload = { ...buildPayload(), company_logo: result };
+        updateProfileMutation.mutate(payload, {
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["profile"] });
+            toast.success("Company logo updated successfully");
+          },
+          onError: (error: any) => {
+            const msg =
+              error?.response?.data?.message ||
+              error?.message ||
+              "Failed to update profile with company logo.";
+            setCompanyLogoError(msg);
+            toast.error(msg);
+          },
+        });
+      } catch (err: any) {
+        const msg = err?.message || "Failed to upload logo";
+        setCompanyLogoError(msg);
+        toast.error(msg);
+      } finally {
+        setCompanyLogoUploading(false);
+      }
+    },
+    [
+      name,
+      phone,
+      address,
+      state,
+      city,
+      county,
+      zip,
+      country,
+      facebook,
+      linkedIn,
+      instagram,
+      companyName,
+      companyAddress,
+      companyState,
+      companyCounty,
+      companyCity,
+      companyEmail,
+      companyPhone,
+      companyWebsite,
+      aboutShort,
+      aboutLong,
+      updateProfileMutation,
+      queryClient,
+    ],
+  );
 
-  useEffect(() => { return () => { if (companyLogoPreview && companyLogoPreview.startsWith("blob:")) URL.revokeObjectURL(companyLogoPreview); }; }, [companyLogoPreview]);
+  useEffect(() => {
+    return () => {
+      if (companyLogoPreview && companyLogoPreview.startsWith("blob:"))
+        URL.revokeObjectURL(companyLogoPreview);
+    };
+  }, [companyLogoPreview]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const payload: any = { name, company: companyName, company_email: companyEmail, company_phone: companyPhone, short_description: aboutShort, long_description: aboutLong };
-    // Always include the company logo if one has been set/uploaded
-    if (companyLogoResultRef.current) payload.company_logo = companyLogoResultRef.current;
+    const payload = buildPayload();
     updateProfileMutation.mutate(payload, {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["profile"] }); toast.success("Profile updated successfully"); },
-      onError: (error: any) => { setError(error?.response?.data?.message || error?.message || "Failed to update profile."); },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
+        toast.success("Profile updated successfully");
+      },
+      onError: (error: any) => {
+        setError(
+          error?.response?.data?.message ||
+            error?.message ||
+            "Failed to update profile.",
+        );
+      },
     });
   };
 
-  const handleUpdateClick = () => handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+  const buildPayload = () => {
+    const payload: any = {
+      name,
+      phone,
+      address,
+      state,
+      city,
+      county,
+      zip,
+      country,
+      social_urls: {
+        facebook,
+        linked_in: linkedIn,
+        instagram,
+      },
+      company: companyName,
+      company_address: companyAddress,
+      company_state: companyState,
+      company_county: companyCounty,
+      company_city: companyCity,
+      company_email: companyEmail,
+      company_phone: companyPhone,
+      company_website: companyWebsite,
+      short_description: aboutShort,
+      long_description: aboutLong,
+    };
+    if (companyLogoResultRef.current)
+      payload.company_logo = companyLogoResultRef.current;
+    return payload;
+  };
+
+  const handleUpdateClick = () =>
+    handleSubmit({ preventDefault: () => {} } as React.FormEvent);
 
   const labelCls = "block text-xs font-medium text-slate-700 mb-1.5";
-  const inputCls = "w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition placeholder:text-slate-400";
-  const selectCls = "w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition disabled:opacity-50";
+  const inputCls =
+    "w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition placeholder:text-slate-400";
+  const selectCls =
+    "w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition disabled:opacity-50";
   const renderSelect = (opts: any[], loading: boolean, placeholder: string) => {
     return (
       <>
         <option value="">{loading ? `Loading...` : placeholder}</option>
-        {Array.isArray(opts) && opts.map((o: any, i: number) => (
-          <option key={o.id || i} value={o.id || o.value || o}>{o.name || o.title || o.label || o}</option>
-        ))}
+        {Array.isArray(opts) &&
+          opts.map((o: any, i: number) => (
+            <option key={o.id || i} value={o.id || o.value || o}>
+              {o.name || o.title || o.label || o}
+            </option>
+          ))}
       </>
     );
   };
@@ -251,8 +393,15 @@ export default function ProfilePage() {
     return (
       <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
         <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
-          <p className="text-slate-500 mb-4">Failed to load profile data. Please try again later.</p>
-          <Link href="/admin" className="text-emerald-600 hover:underline text-sm">Back to Dashboard</Link>
+          <p className="text-slate-500 mb-4">
+            Failed to load profile data. Please try again later.
+          </p>
+          <Link
+            href="/admin"
+            className="text-emerald-600 hover:underline text-sm"
+          >
+            Back to Dashboard
+          </Link>
         </div>
       </div>
     );
@@ -260,58 +409,161 @@ export default function ProfilePage() {
 
   return (
     <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
 
       <div className="mb-6">
         <h1 className="text-[22px] font-semibold text-slate-900">Profile</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Manage your personal and company information</p>
+        <p className="text-sm text-slate-500 mt-0.5">
+          Manage your personal and company information
+        </p>
       </div>
 
       {/* Profile Photo Section */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8 mb-6">
-        <div className="flex items-center gap-2 mb-5"><PhotoIcon className="w-5 h-5 text-slate-400" /><h3 className="text-sm font-semibold text-slate-900">Profile Photo</h3></div>
+        <div className="flex items-center gap-2 mb-5">
+          <PhotoIcon className="w-5 h-5 text-slate-400" />
+          <h3 className="text-sm font-semibold text-slate-900">
+            Profile Photo
+          </h3>
+        </div>
         <div className="flex items-center gap-5">
           <div className="relative">
-            <img src={profilePhoto || "/images/nopic.jpg"} alt="Profile" className="w-20 h-20 rounded-full object-cover border-2 border-slate-100" onError={e => { const img = e.target as HTMLImageElement; if (!img.src.endsWith("/images/nopic.jpg")) img.src = "/images/nopic.jpg"; }} />
+            <img
+              src={profilePhoto || "/images/nopic.jpg"}
+              alt="Profile"
+              className="w-20 h-20 rounded-full object-cover border-2 border-slate-100"
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                if (!img.src.endsWith("/images/nopic.jpg"))
+                  img.src = "/images/nopic.jpg";
+              }}
+            />
           </div>
           <div>
-            <input type="file" accept="image/*" ref={profilePhotoInputRef} className="hidden" onChange={handleProfilePhotoChange} />
-            <button type="button" onClick={() => profilePhotoInputRef.current?.click()} disabled={profilePhotoUploading} className="px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50">
+            <input
+              type="file"
+              accept="image/*"
+              ref={profilePhotoInputRef}
+              className="hidden"
+              onChange={handleProfilePhotoChange}
+            />
+            <button
+              type="button"
+              onClick={() => profilePhotoInputRef.current?.click()}
+              disabled={profilePhotoUploading}
+              className="px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
+            >
               {profilePhotoUploading ? "Uploading..." : "Upload Photo"}
             </button>
-            {profilePhotoError && <p className="text-red-500 text-xs mt-2">{profilePhotoError}</p>}
+            {profilePhotoError && (
+              <p className="text-red-500 text-xs mt-2">{profilePhotoError}</p>
+            )}
           </div>
         </div>
       </div>
 
       {/* Profile Settings Section */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8 mb-6">
-        <div className="flex items-center gap-2 mb-5"><UserCircleIcon className="w-5 h-5 text-slate-400" /><h3 className="text-sm font-semibold text-slate-900">Profile Settings</h3></div>
+        <div className="flex items-center gap-2 mb-5">
+          <UserCircleIcon className="w-5 h-5 text-slate-400" />
+          <h3 className="text-sm font-semibold text-slate-900">
+            Profile Settings
+          </h3>
+        </div>
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-            <div><label className={labelCls}>Name</label><input className={inputCls} value={name} onChange={e => setName(e.target.value)} required /></div>
-            <div><label className={labelCls}>Email</label><input className={`${inputCls} bg-slate-50`} type="email" value={email} readOnly /></div>
+            <div>
+              <label className={labelCls}>Name</label>
+              <input
+                className={inputCls}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Email</label>
+              <input
+                className={`${inputCls} bg-slate-50`}
+                type="email"
+                value={email}
+                readOnly
+              />
+            </div>
           </div>
-          <div><label className={labelCls}>Phone</label><input className={inputCls} type="tel" value={formatPhone(phone)} onChange={e => setPhone(e.target.value)} placeholder="+971 1234567890" /></div>
-          <div><label className={labelCls}>Address</label><input className={inputCls} value={address} onChange={e => setAddress(e.target.value)} /></div>
+          <div>
+            <label className={labelCls}>Phone</label>
+            <input
+              className={inputCls}
+              type="tel"
+              value={formatPhone(phone)}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+971 1234567890"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Address</label>
+            <input
+              className={inputCls}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
             <div>
               <label className={labelCls}>State</label>
-              <select className={selectCls} value={state} onChange={e => { setState(e.target.value); setCounty(""); setCity(""); }} disabled={statesLoading}>
+              <select
+                className={selectCls}
+                value={state}
+                onChange={(e) => {
+                  setState(e.target.value);
+                  setCounty("");
+                  setCity("");
+                }}
+                disabled={statesLoading}
+              >
                 {renderSelect(states, statesLoading, "Select state")}
               </select>
-              {!statesLoading && (!states || states.length === 0) && <p className="text-xs text-red-500 mt-1">No states available.</p>}
+              {!statesLoading && (!states || states.length === 0) && (
+                <p className="text-xs text-red-500 mt-1">
+                  No states available.
+                </p>
+              )}
             </div>
             <div>
               <label className={labelCls}>County</label>
-              <select className={selectCls} value={county} onChange={e => { setCounty(e.target.value); setCountry(e.target.value); setCity(""); }} disabled={!state || countiesLoading}>
+              <select
+                className={selectCls}
+                value={county}
+                onChange={(e) => {
+                  setCounty(e.target.value);
+                  setCountry(e.target.value);
+                  setCity("");
+                }}
+                disabled={!state || countiesLoading}
+              >
                 {renderSelect(counties, countiesLoading, "Select county")}
               </select>
             </div>
             <div>
               <label className={labelCls}>City</label>
-              <select className={selectCls} value={city} onChange={e => setCity(e.target.value)} disabled={!county || citiesLoading}>
+              <select
+                className={selectCls}
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                disabled={!county || citiesLoading}
+              >
                 {renderSelect(cities, citiesLoading, "Select city")}
               </select>
             </div>
@@ -319,22 +571,73 @@ export default function ProfilePage() {
 
           {/* Social Media */}
           <div className="pt-5 border-t border-slate-100">
-            <h4 className="text-xs font-semibold text-slate-900 mb-4">Social Media Links</h4>
+            <h4 className="text-xs font-semibold text-slate-900 mb-4">
+              Social Media Links
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
-              <div><label className={labelCls}>Facebook URL</label><input className={inputCls} type="url" value={facebook} onChange={e => setFacebook(e.target.value)} placeholder="https://facebook.com/yourpage" /></div>
-              <div><label className={labelCls}>LinkedIn URL</label><input className={inputCls} type="url" value={linkedIn} onChange={e => setLinkedIn(e.target.value)} placeholder="https://linkedin.com/in/profile" /></div>
-              <div><label className={labelCls}>Instagram URL</label><input className={inputCls} type="url" value={instagram} onChange={e => setInstagram(e.target.value)} placeholder="https://instagram.com/profile" /></div>
+              <div>
+                <label className={labelCls}>Facebook URL</label>
+                <input
+                  className={inputCls}
+                  type="url"
+                  value={facebook}
+                  onChange={(e) => setFacebook(e.target.value)}
+                  placeholder="https://facebook.com/yourpage"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>LinkedIn URL</label>
+                <input
+                  className={inputCls}
+                  type="url"
+                  value={linkedIn}
+                  onChange={(e) => setLinkedIn(e.target.value)}
+                  placeholder="https://linkedin.com/in/profile"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Instagram URL</label>
+                <input
+                  className={inputCls}
+                  type="url"
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value)}
+                  placeholder="https://instagram.com/profile"
+                />
+              </div>
             </div>
           </div>
 
-          {error && <div className="text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded-lg">{error}</div>}
+          {error && (
+            <div className="text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded-lg">
+              {error}
+            </div>
+          )}
 
           <div className="flex items-center gap-3 pt-2">
-            <button type="submit" disabled={updateProfileMutation.isPending} className="px-5 py-2.5 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50">
-              {updateProfileMutation.isPending ? "Updating..." : "Update Profile"}
+            <button
+              type="submit"
+              disabled={updateProfileMutation.isPending}
+              className="px-5 py-2.5 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
+            >
+              {updateProfileMutation.isPending
+                ? "Updating..."
+                : "Update Profile"}
             </button>
-            <Link href="/admin" className="px-5 py-2.5 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition">Cancel</Link>
-            <Link href={email ? `/admin/reset-password?email=${encodeURIComponent(email)}` : "/admin/reset-password"} className="ml-auto flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition">
+            <Link
+              href="/admin"
+              className="px-5 py-2.5 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+            >
+              Cancel
+            </Link>
+            <Link
+              href={
+                email
+                  ? `/admin/reset-password?email=${encodeURIComponent(email)}`
+                  : "/admin/reset-password"
+              }
+              className="ml-auto flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+            >
               <KeyIcon className="w-4 h-4" /> Reset Password
             </Link>
           </div>
@@ -343,85 +646,227 @@ export default function ProfilePage() {
 
       {/* Company Section */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8 mb-6">
-        <div className="flex items-center gap-2 mb-5"><BuildingOffice2Icon className="w-5 h-5 text-slate-400" /><h3 className="text-sm font-semibold text-slate-900">Company</h3></div>
+        <div className="flex items-center gap-2 mb-5">
+          <BuildingOffice2Icon className="w-5 h-5 text-slate-400" />
+          <h3 className="text-sm font-semibold text-slate-900">Company</h3>
+        </div>
         <div className="space-y-5">
           <div>
             <label className={labelCls}>Company Logo</label>
             <div className="flex items-center gap-4">
               <img
                 src={(() => {
-                  const val = typeof profile?.company_logo === "string" ? profile.company_logo : companyLogoPreview;
+                  const val =
+                    typeof profile?.company_photo === "string"
+                      ? profile.company_photo
+                      : companyLogoPreview;
                   if (!val) return "/images/nopic.jpg";
-                  if (val.startsWith("http://") || val.startsWith("https://")) return val;
+                  if (val.startsWith("http://") || val.startsWith("https://"))
+                    return val;
                   return `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/md/${val}`;
                 })()}
                 alt="Company logo"
                 className="w-16 h-16 rounded-xl object-cover border border-slate-100"
-                onError={e => { const img = e.target as HTMLImageElement; if (!img.src.endsWith("/images/nopic.jpg")) img.src = "/images/nopic.jpg"; }}
+                onError={(e) => {
+                  const img = e.target as HTMLImageElement;
+                  if (!img.src.endsWith("/images/nopic.jpg"))
+                    img.src = "/images/nopic.jpg";
+                }}
               />
               <div>
-                <input type="file" accept="image/*" ref={companyLogoInputRef} className="hidden" onChange={handleCompanyLogoChange} />
-                <button type="button" onClick={() => companyLogoInputRef.current?.click()} disabled={companyLogoUploading} className="px-4 py-2 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50">
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={companyLogoInputRef}
+                  className="hidden"
+                  onChange={handleCompanyLogoChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => companyLogoInputRef.current?.click()}
+                  disabled={companyLogoUploading}
+                  className="px-4 py-2 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+                >
                   {companyLogoUploading ? "Uploading..." : "Upload Logo"}
                 </button>
-                {companyLogoError && <p className="text-red-500 text-xs mt-2">{companyLogoError}</p>}
+                {companyLogoError && (
+                  <p className="text-red-500 text-xs mt-2">
+                    {companyLogoError}
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-            <div><label className={labelCls}>Company Name</label><input className={inputCls} value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Company name" /></div>
-            <div><label className={labelCls}>Address</label><input className={inputCls} value={companyAddress} onChange={e => setCompanyAddress(e.target.value)} placeholder="Company address" /></div>
+            <div>
+              <label className={labelCls}>Company Name</label>
+              <input
+                className={inputCls}
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Company name"
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Address</label>
+              <input
+                className={inputCls}
+                value={companyAddress}
+                onChange={(e) => setCompanyAddress(e.target.value)}
+                placeholder="Company address"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
             <div>
               <label className={labelCls}>State</label>
-              <select className={selectCls} value={companyState} onChange={e => { setCompanyState(e.target.value); setCompanyCounty(""); setCompanyCity(""); }} disabled={statesLoading}>
+              <select
+                className={selectCls}
+                value={companyState}
+                onChange={(e) => {
+                  setCompanyState(e.target.value);
+                  setCompanyCounty("");
+                  setCompanyCity("");
+                }}
+                disabled={statesLoading}
+              >
                 {renderSelect(states, statesLoading, "Select state")}
               </select>
-              {!statesLoading && (!states || states.length === 0) && <p className="text-xs text-red-500 mt-1">No states available.</p>}
+              {!statesLoading && (!states || states.length === 0) && (
+                <p className="text-xs text-red-500 mt-1">
+                  No states available.
+                </p>
+              )}
             </div>
             <div>
               <label className={labelCls}>County</label>
-              <select className={selectCls} value={companyCounty} onChange={e => { setCompanyCounty(e.target.value); setCompanyCity(""); }} disabled={!companyState || companyCountiesLoading}>
-                {renderSelect(companyCounties, companyCountiesLoading, "Select county")}
+              <select
+                className={selectCls}
+                value={companyCounty}
+                onChange={(e) => {
+                  setCompanyCounty(e.target.value);
+                  setCompanyCity("");
+                }}
+                disabled={!companyState || companyCountiesLoading}
+              >
+                {renderSelect(
+                  companyCounties,
+                  companyCountiesLoading,
+                  "Select county",
+                )}
               </select>
             </div>
             <div>
               <label className={labelCls}>City</label>
-              <select className={selectCls} value={companyCity} onChange={e => setCompanyCity(e.target.value)} disabled={!companyCounty || companyCitiesLoading}>
-                {renderSelect(companyCities, companyCitiesLoading, "Select city")}
+              <select
+                className={selectCls}
+                value={companyCity}
+                onChange={(e) => setCompanyCity(e.target.value)}
+                disabled={!companyCounty || companyCitiesLoading}
+              >
+                {renderSelect(
+                  companyCities,
+                  companyCitiesLoading,
+                  "Select city",
+                )}
               </select>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
-            <div><label className={labelCls}>Company Email</label><input className={inputCls} type="email" value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} placeholder="company@email.com" /></div>
-            <div><label className={labelCls}>Company Phone</label><input className={inputCls} type="tel" value={companyPhone} onChange={e => setCompanyPhone(e.target.value)} placeholder="+971 1234567890" /></div>
-            <div><label className={labelCls}>Website</label><input className={inputCls} type="url" value={companyWebsite} onChange={e => setCompanyWebsite(e.target.value)} placeholder="https://company.com" /></div>
+            <div>
+              <label className={labelCls}>Company Email</label>
+              <input
+                className={inputCls}
+                type="email"
+                value={companyEmail}
+                onChange={(e) => setCompanyEmail(e.target.value)}
+                placeholder="company@email.com"
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Company Phone</label>
+              <input
+                className={inputCls}
+                type="tel"
+                value={companyPhone}
+                onChange={(e) => setCompanyPhone(e.target.value)}
+                placeholder="+971 1234567890"
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Website</label>
+              <input
+                className={inputCls}
+                type="url"
+                value={companyWebsite}
+                onChange={(e) => setCompanyWebsite(e.target.value)}
+                placeholder="https://company.com"
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-3 pt-2">
-            <button type="button" onClick={handleUpdateClick} disabled={updateProfileMutation.isPending} className="px-5 py-2.5 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50">
+            <button
+              type="button"
+              onClick={handleUpdateClick}
+              disabled={updateProfileMutation.isPending}
+              className="px-5 py-2.5 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
+            >
               {updateProfileMutation.isPending ? "Updating..." : "Update"}
             </button>
-            <Link href="/admin" className="px-5 py-2.5 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition">Cancel</Link>
+            <Link
+              href="/admin"
+              className="px-5 py-2.5 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+            >
+              Cancel
+            </Link>
           </div>
         </div>
       </div>
 
       {/* About Section */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8">
-        <div className="flex items-center gap-2 mb-5"><InformationCircleIcon className="w-5 h-5 text-slate-400" /><h3 className="text-sm font-semibold text-slate-900">About</h3></div>
+        <div className="flex items-center gap-2 mb-5">
+          <InformationCircleIcon className="w-5 h-5 text-slate-400" />
+          <h3 className="text-sm font-semibold text-slate-900">About</h3>
+        </div>
         <div className="space-y-5">
-          <div><label className={labelCls}>Short Description</label><textarea className={`${inputCls} min-h-[80px]`} value={aboutShort} onChange={e => setAboutShort(e.target.value)} placeholder="Short summary" /></div>
-          <div><label className={labelCls}>Long Description</label><textarea className={`${inputCls} min-h-[140px]`} value={aboutLong} onChange={e => setAboutLong(e.target.value)} placeholder="Detailed description" /></div>
+          <div>
+            <label className={labelCls}>Short Description</label>
+            <textarea
+              className={`${inputCls} min-h-[80px]`}
+              value={aboutShort}
+              onChange={(e) => setAboutShort(e.target.value)}
+              placeholder="Short summary"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Long Description</label>
+            <textarea
+              className={`${inputCls} min-h-[140px]`}
+              value={aboutLong}
+              onChange={(e) => setAboutLong(e.target.value)}
+              placeholder="Detailed description"
+            />
+          </div>
           <div className="flex items-center gap-3 pt-2">
-            <button type="button" onClick={handleUpdateClick} disabled={updateProfileMutation.isPending} className="px-5 py-2.5 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50">
+            <button
+              type="button"
+              onClick={handleUpdateClick}
+              disabled={updateProfileMutation.isPending}
+              className="px-5 py-2.5 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
+            >
               {updateProfileMutation.isPending ? "Updating..." : "Update"}
             </button>
-            <Link href="/admin" className="px-5 py-2.5 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition">Cancel</Link>
+            <Link
+              href="/admin"
+              className="px-5 py-2.5 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+            >
+              Cancel
+            </Link>
           </div>
         </div>
       </div>
