@@ -30,8 +30,9 @@ function NewsletterContent() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const getEmailAcronym = (subscriber: any): string => {
-    const email: string = subscriber.email || subscriber.name || "N";
-    return email.slice(0, 2).toUpperCase();
+    const raw: string = subscriber.email || subscriber.name || "N";
+    const local = raw.includes("@") ? raw.split("@")[0] : raw;
+    return local.slice(0, 2).toUpperCase();
   };
 
   const avatarColors = [
