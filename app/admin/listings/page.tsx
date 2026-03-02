@@ -402,13 +402,6 @@ function ListingsContent() {
       >
         <div className="h-full bg-emerald-500 animate-[progressBar_1.2s_ease-in-out_infinite]" />
       </div>
-      <style>{`
-        @keyframes progressBar {
-          0%   { transform: translateX(-100%); }
-          50%  { transform: translateX(0%); width: 70%; }
-          100% { transform: translateX(100%); }
-        }
-      `}</style>
 
       {/* ---- Header ---- */}
       <div className="flex items-center justify-between mb-6">
