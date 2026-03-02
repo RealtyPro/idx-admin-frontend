@@ -165,12 +165,7 @@ function NewsletterContent() {
       <div className={`fixed top-0 left-0 right-0 z-50 h-[3px] overflow-hidden transition-opacity duration-300 ${isFetching ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
         <div className="h-full bg-emerald-500 animate-[progressBar_1.2s_ease-in-out_infinite]" />
       </div>
-      <style>{`
-        @keyframes progressBar { 0% { transform: translateX(-100%); } 50% { transform: translateX(0%); width: 70%; } 100% { transform: translateX(100%); } }
-        @keyframes fadeSlideIn { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: translateX(0); } }
-        .newsletter-card-enter { animation: fadeSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-        @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
-      `}</style>
+
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[22px] font-semibold text-slate-900">Newsletter Subscribers</h1>
         <div className="flex items-center gap-3">

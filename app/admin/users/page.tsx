@@ -13,6 +13,7 @@ import {
   EnvelopeIcon,
   CalendarDaysIcon,
   UserCircleIcon,
+  CloudArrowUpIcon,
 } from "@heroicons/react/24/outline";
 
 /* ------------------------------------------------------------------ */
@@ -257,24 +258,6 @@ export default function UsersPage() {
       >
         <div className="h-full bg-emerald-500 animate-[progressBar_1.2s_ease-in-out_infinite]" />
       </div>
-      <style>{`
-        @keyframes progressBar {
-          0%   { transform: translateX(-100%); }
-          50%  { transform: translateX(0%); width: 70%; }
-          100% { transform: translateX(100%); }
-        }
-        @keyframes fadeSlideIn {
-          from { opacity: 0; transform: translateX(-60px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        .user-card-enter {
-          animation: fadeSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
-        @keyframes overlayFadeIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-      `}</style>
 
       {/* ---- Header ---- */}
       <div className="flex items-center justify-between mb-6">
@@ -415,17 +398,18 @@ export default function UsersPage() {
                 </div>
 
                 {/* CRM status */}
-                <div className="hidden md:block min-w-[80px]">
+                <div className="hidden md:block min-w-[100px]">
                   {user.crm_status === "0" ? (
                     <button
                       onClick={(e) => { e.stopPropagation(); handlePushToCRM(user); }}
-                      className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-colors"
                     >
+                      <CloudArrowUpIcon className="w-3.5 h-3.5" />
                       Push to CRM
                     </button>
                   ) : (
-                    <span className="flex items-center gap-1.5 text-sm text-slate-400">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-500 border border-slate-200">
+                      <span className="w-1.5 h-1.5 rounded-lg bg-emerald-400" />
                       In CRM
                     </span>
                   )}
