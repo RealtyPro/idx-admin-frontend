@@ -20,6 +20,7 @@ import {
   TrashIcon,
   ChatBubbleLeftEllipsisIcon,
   DocumentTextIcon,
+  CloudArrowUpIcon,
 } from "@heroicons/react/24/outline";
 
 /* ------------------------------------------------------------------ */
@@ -154,6 +155,20 @@ function InquiriesContent() {
     }
   };
 
+  /* ---------- push to CRM ---------- */
+  const handlePushToCRM = async (inquiry: any) => {
+    try {
+      const token = sessionStorage.getItem("access_token");
+      if (!token) { alert("Please login to sync enquiry to CRM"); return; }
+      const response = await axiosInstance.get(`/enquiry/sync-to-crm`, { params: { enquiry_id: inquiry.id } });
+      alert(response.data.message || "Enquiry successfully synced to CRM");
+      queryClient.invalidateQueries({ queryKey: ["enquiries", activeFilters] });
+    } catch (err: any) {
+      if (err.response?.status === 401) alert("Authentication failed. Please login again.");
+      else alert(err.response?.data?.message ? `Failed to sync: ${err.response.data.message}` : "Failed to sync enquiry to CRM. Please try again.");
+    }
+  };
+
   /* ---------- delete ---------- */
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => { await axiosInstance.delete(`v1/admin/enquiry/${id}`); },
@@ -232,12 +247,6 @@ function InquiriesContent() {
       <div className={`fixed top-0 left-0 right-0 z-50 h-[3px] overflow-hidden transition-opacity duration-300 ${isFetching ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
         <div className="h-full bg-emerald-500 animate-[progressBar_1.2s_ease-in-out_infinite]" />
       </div>
-      <style>{`
-        @keyframes progressBar { 0% { transform: translateX(-100%); } 50% { transform: translateX(0%); width: 70%; } 100% { transform: translateX(100%); } }
-        @keyframes fadeSlideIn { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: translateX(0); } }
-        .inq-card-enter { animation: fadeSlideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-        @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
-      `}</style>
 
       {/* ---- Header ---- */}
       <div className="flex items-center justify-between mb-6">
@@ -297,12 +306,12 @@ function InquiriesContent() {
             return (
               <div
                 key={inquiry.id}
-                className="inq-card-enter bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow px-6 py-5 flex items-start gap-4 cursor-pointer"
+                className="inq-card-enter bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow px-6 py-5 flex items-center gap-4 cursor-pointer"
                 style={{ animationDelay: `${idx * 60}ms` }}
                 onClick={() => router.push(`/admin/inquiries/${inquiry.id}`)}
               >
                 {/* Avatar */}
-                <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5 ${colorClass}`}>
+                <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${colorClass}`}>
                   {inquiry.photo || inquiry.avatar || inquiry.image ? (
                     <img src={inquiry.photo || inquiry.avatar || inquiry.image} alt={name} className="w-full h-full rounded-full object-cover" />
                   ) : (
@@ -348,8 +357,22 @@ function InquiriesContent() {
                   )}
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2 flex-shrink-0 mt-1" onClick={(e) => e.stopPropagation()}>
+                {/* Actions + CRM */}
+                <div className="hidden md:flex items-center gap-2 flex-shrink-0 self-center" onClick={(e) => e.stopPropagation()}>
+                  {!inquiry.crm_status || inquiry.crm_status === "0" ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handlePushToCRM(inquiry); }}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-colors"
+                    >
+                      <CloudArrowUpIcon className="w-3.5 h-3.5" />
+                      Push to CRM
+                    </button>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-slate-100 text-slate-500 border border-slate-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      In CRM
+                    </span>
+                  )}
                   <Link
                     href={`/admin/inquiries/${inquiry.id}`}
                     className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors"
