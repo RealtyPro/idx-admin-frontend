@@ -1,8 +1,20 @@
 "use client";
 import Link from "next/link";
-import React, { useState, useEffect, Suspense, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  Suspense,
+  useRef,
+  useCallback,
+} from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 import { useEnquiries } from "@/services/enquiry/EnquiryQueris";
@@ -10,6 +22,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/services/Api";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EnquirySearchParams } from "@/services/enquiry/EnquiryServices";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   MagnifyingGlassIcon,
   MoonIcon,
@@ -37,7 +51,8 @@ const avatarColors = [
 ];
 const pickColor = (name: string) => {
   let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < name.length; i++)
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return avatarColors[Math.abs(hash) % avatarColors.length];
 };
 
@@ -68,7 +83,11 @@ function InquiriesContent() {
     if (!value) return "";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
-    return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   /* ---------- state ---------- */
@@ -84,7 +103,8 @@ function InquiriesContent() {
     q: searchParams.get("q") || "",
   });
 
-  const { data, isLoading, isFetching, isError, error } = useEnquiries(activeFilters);
+  const { data, isLoading, isFetching, isError, error } =
+    useEnquiries(activeFilters);
 
   useEffect(() => {
     const f: EnquirySearchParams = {
@@ -96,14 +116,27 @@ function InquiriesContent() {
     setCurrentPage(f.page || 1);
   }, [searchParams]);
 
-  const freshInquiries: any[] = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+  const freshInquiries: any[] = Array.isArray(data?.data)
+    ? data.data
+    : Array.isArray(data)
+      ? data
+      : [];
   if (freshInquiries.length > 0) prevInquiriesRef.current = freshInquiries;
   // Only fall back to old data while a fetch is in-flight; an empty completed response should show the empty state
-  const inquiries = (freshInquiries.length === 0 && isFetching) ? prevInquiriesRef.current : freshInquiries;
+  const inquiries =
+    freshInquiries.length === 0 && isFetching
+      ? prevInquiriesRef.current
+      : freshInquiries;
   const pagination = data?.meta || data?.pagination || null;
-  const totalPages = pagination?.last_page || pagination?.total_pages || pagination?.totalPages || 1;
-  const currentPageNum = pagination?.current_page || pagination?.currentPage || currentPage;
-  const totalItems = pagination?.total || pagination?.totalItems || inquiries.length;
+  const totalPages =
+    pagination?.last_page ||
+    pagination?.total_pages ||
+    pagination?.totalPages ||
+    1;
+  const currentPageNum =
+    pagination?.current_page || pagination?.currentPage || currentPage;
+  const totalItems =
+    pagination?.total || pagination?.totalItems || inquiries.length;
 
   /* ---------- actions ---------- */
   const buildQueryString = (f: EnquirySearchParams) => {
@@ -114,7 +147,11 @@ function InquiriesContent() {
   };
 
   const handleSearch = () => {
-    if (filters.q && filters.q.trim().length > 0 && filters.q.trim().length < 3) {
+    if (
+      filters.q &&
+      filters.q.trim().length > 0 &&
+      filters.q.trim().length < 3
+    ) {
       setSearchError("Search keyword must be at least 3 characters long");
       setTimeout(() => setSearchError(null), 3000);
       return;
@@ -127,17 +164,22 @@ function InquiriesContent() {
   };
 
   /* debounced search — 500ms */
-  const handleQueryChange = useCallback((value: string) => {
-    setFilters(prev => ({ ...prev, q: value }));
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (value.trim() === "" || value.trim().length >= 2) {
-      debounceRef.current = setTimeout(() => {
-        const f = { ...filters, q: value, page: 1 };
-        setActiveFilters(f);
-        router.push(`/admin/inquiries?${buildQueryString(f)}`, { scroll: false });
-      }, 500);
-    }
-  }, [filters, router]); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleQueryChange = useCallback(
+    (value: string) => {
+      setFilters((prev) => ({ ...prev, q: value }));
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (value.trim() === "" || value.trim().length >= 2) {
+        debounceRef.current = setTimeout(() => {
+          const f = { ...filters, q: value, page: 1 };
+          setActiveFilters(f);
+          router.push(`/admin/inquiries?${buildQueryString(f)}`, {
+            scroll: false,
+          });
+        }, 500);
+      }
+    },
+    [filters, router],
+  ); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClearFilters = () => {
     const f: EnquirySearchParams = { page: 1 };
@@ -159,19 +201,33 @@ function InquiriesContent() {
   const handlePushToCRM = async (inquiry: any) => {
     try {
       const token = sessionStorage.getItem("access_token");
-      if (!token) { alert("Please login to sync enquiry to CRM"); return; }
-      const response = await axiosInstance.get(`/enquiry/sync-to-crm`, { params: { enquiry_id: inquiry.id } });
-      alert(response.data.message || "Enquiry successfully synced to CRM");
+      if (!token) {
+        toast.error("Please login to sync enquiry to CRM");
+        return;
+      }
+      const response = await axiosInstance.post(
+        `v1/admin/enquiry/sync-enquiry-to-crm/${inquiry.id}`,
+        { params: { enquiry_id: inquiry.id } },
+      );
+      toast.success(response.data.message || "Enquiry successfully synced to CRM");
       queryClient.invalidateQueries({ queryKey: ["enquiries", activeFilters] });
     } catch (err: any) {
-      if (err.response?.status === 401) alert("Authentication failed. Please login again.");
-      else alert(err.response?.data?.message ? `Failed to sync: ${err.response.data.message}` : "Failed to sync enquiry to CRM. Please try again.");
+      if (err.response?.status === 401)
+        toast.error("Authentication failed. Please login again.");
+      else
+        toast.error(
+          err.response?.data?.message
+            ? `Failed to sync: ${err.response.data.message}`
+            : "Failed to sync enquiry to CRM. Please try again.",
+        );
     }
   };
 
   /* ---------- delete ---------- */
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => { await axiosInstance.delete(`v1/admin/enquiry/${id}`); },
+    mutationFn: async (id: string) => {
+      await axiosInstance.delete(`v1/admin/enquiry/${id}`);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["enquiries", activeFilters] });
       setShowDeleteModal(false);
@@ -186,32 +242,69 @@ function InquiriesContent() {
     const maxVisible = 5;
     let startPage = Math.max(1, currentPageNum - Math.floor(maxVisible / 2));
     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+    if (endPage - startPage < maxVisible - 1)
+      startPage = Math.max(1, endPage - maxVisible + 1);
     for (let i = startPage; i <= endPage; i++) pages.push(i);
 
     return (
       <div className="flex flex-col items-center gap-3 mt-8">
         <div className="flex items-center gap-1.5">
-          <button onClick={() => handlePageChange(currentPageNum - 1)} disabled={currentPageNum === 1 || isLoading} className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition">Previous</button>
+          <button
+            onClick={() => handlePageChange(currentPageNum - 1)}
+            disabled={currentPageNum === 1 || isLoading}
+            className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            Previous
+          </button>
           {startPage > 1 && (
             <>
-              <button onClick={() => handlePageChange(1)} className={`w-8 h-8 text-sm rounded-lg border transition ${1 === currentPageNum ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:bg-white"}`}>1</button>
-              {startPage > 2 && <span className="px-1 text-slate-400">...</span>}
+              <button
+                onClick={() => handlePageChange(1)}
+                className={`w-8 h-8 text-sm rounded-lg border transition ${1 === currentPageNum ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:bg-white"}`}
+              >
+                1
+              </button>
+              {startPage > 2 && (
+                <span className="px-1 text-slate-400">...</span>
+              )}
             </>
           )}
           {pages.map((p) => (
-            <button key={p} onClick={() => handlePageChange(p)} disabled={isLoading} className={`w-8 h-8 text-sm rounded-lg border transition ${p === currentPageNum ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:bg-white"}`}>{p}</button>
+            <button
+              key={p}
+              onClick={() => handlePageChange(p)}
+              disabled={isLoading}
+              className={`w-8 h-8 text-sm rounded-lg border transition ${p === currentPageNum ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:bg-white"}`}
+            >
+              {p}
+            </button>
           ))}
           {endPage < totalPages && (
             <>
-              {endPage < totalPages - 1 && <span className="px-1 text-slate-400">...</span>}
-              <button onClick={() => handlePageChange(totalPages)} className={`w-8 h-8 text-sm rounded-lg border transition ${totalPages === currentPageNum ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:bg-white"}`}>{totalPages}</button>
+              {endPage < totalPages - 1 && (
+                <span className="px-1 text-slate-400">...</span>
+              )}
+              <button
+                onClick={() => handlePageChange(totalPages)}
+                className={`w-8 h-8 text-sm rounded-lg border transition ${totalPages === currentPageNum ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:bg-white"}`}
+              >
+                {totalPages}
+              </button>
             </>
           )}
-          <button onClick={() => handlePageChange(currentPageNum + 1)} disabled={currentPageNum === totalPages || isLoading} className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition">Next</button>
+          <button
+            onClick={() => handlePageChange(currentPageNum + 1)}
+            disabled={currentPageNum === totalPages || isLoading}
+            className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            Next
+          </button>
         </div>
         {pagination && (
-          <p className="text-xs text-slate-400">Page {currentPageNum} of {totalPages}{totalItems ? ` (${totalItems} total items)` : ""}</p>
+          <p className="text-xs text-slate-400">
+            Page {currentPageNum} of {totalPages}
+            {totalItems ? ` (${totalItems} total items)` : ""}
+          </p>
         )}
       </div>
     );
@@ -235,7 +328,10 @@ function InquiriesContent() {
   if (isError) {
     return (
       <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
-        <p className="text-red-500">Error loading enquiries: {error instanceof Error ? error.message : "Unknown error"}</p>
+        <p className="text-red-500">
+          Error loading enquiries:{" "}
+          {error instanceof Error ? error.message : "Unknown error"}
+        </p>
       </div>
     );
   }
@@ -244,7 +340,9 @@ function InquiriesContent() {
   return (
     <div className="px-6 lg:px-8 max-w-[1280px] mx-auto">
       {/* ---- Top progress bar ---- */}
-      <div className={`fixed top-0 left-0 right-0 z-50 h-[3px] overflow-hidden transition-opacity duration-300 ${isFetching ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+      <div
+        className={`fixed top-0 left-0 right-0 z-50 h-[3px] overflow-hidden transition-opacity duration-300 ${isFetching ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+      >
         <div className="h-full bg-emerald-500 animate-[progressBar_1.2s_ease-in-out_infinite]" />
       </div>
 
@@ -261,10 +359,15 @@ function InquiriesContent() {
               placeholder="Search enquiries…"
               value={filters.q || ""}
               onChange={(e) => handleQueryChange(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSearch();
+              }}
               className="w-[340px] pl-9 pr-10 py-2 text-sm rounded-full border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition"
             />
-            <button onClick={handleSearch} className="absolute right-3 text-slate-400 hover:text-slate-600 transition">
+            <button
+              onClick={handleSearch}
+              className="absolute right-3 text-slate-400 hover:text-slate-600 transition"
+            >
               <AdjustmentsHorizontalIcon className="w-4 h-4" />
             </button>
           </div>
@@ -278,7 +381,10 @@ function InquiriesContent() {
 
       {/* ---- Error alert ---- */}
       {searchError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 text-sm" role="alert">
+        <div
+          className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 text-sm"
+          role="alert"
+        >
           {searchError}
         </div>
       )}
@@ -286,118 +392,143 @@ function InquiriesContent() {
       {/* ---- Enquiry Cards ---- */}
       <div className="relative">
         {isFetching && inquiries.length > 0 && (
-          <div className="absolute inset-0 z-20 rounded-2xl flex items-center justify-center" style={{ animation: "overlayFadeIn 0.18s ease forwards" }}>
+          <div
+            className="absolute inset-0 z-20 rounded-2xl flex items-center justify-center"
+            style={{ animation: "overlayFadeIn 0.18s ease forwards" }}
+          >
             <div className="absolute inset-0 rounded-2xl bg-white/60 backdrop-blur-[2px]" />
             <div className="relative flex flex-col items-center gap-3">
               <div className="w-10 h-10 rounded-full border-2 border-emerald-200 border-t-emerald-500 animate-spin" />
-              <span className="text-xs text-slate-500 font-medium">Loading results…</span>
+              <span className="text-xs text-slate-500 font-medium">
+                Loading results…
+              </span>
             </div>
           </div>
         )}
         <div className="space-y-3">
-        {Array.isArray(inquiries) && inquiries.length > 0 ? (
-          inquiries.map((inquiry: any, idx: number) => {
-            const name = inquiry.name || inquiry.full_name || "No Name";
-            const initials = getInitials(name, inquiry.email);
-            const colorClass = pickColor(name);
-            const date = formatDate(inquiry.date || inquiry.created_at);
-            const listingId = inquiry.listingId || inquiry.listing_id;
+          {Array.isArray(inquiries) && inquiries.length > 0 ? (
+            inquiries.map((inquiry: any, idx: number) => {
+              const name = inquiry.name || inquiry.full_name || "No Name";
+              const initials = getInitials(name, inquiry.email);
+              const colorClass = pickColor(name);
+              const date = formatDate(inquiry.date || inquiry.created_at);
+              const listingId = inquiry.listingId || inquiry.listing_id;
 
-            return (
-              <div
-                key={inquiry.id}
-                className="inq-card-enter bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow px-6 py-5 flex items-center gap-4 cursor-pointer"
-                style={{ animationDelay: `${idx * 60}ms` }}
-                onClick={() => router.push(`/admin/inquiries/${inquiry.id}`)}
-              >
-                {/* Avatar */}
-                <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${colorClass}`}>
-                  {inquiry.photo || inquiry.avatar || inquiry.image ? (
-                    <img src={inquiry.photo || inquiry.avatar || inquiry.image} alt={name} className="w-full h-full rounded-full object-cover" />
-                  ) : (
-                    initials
-                  )}
-                </div>
-
-                {/* Details */}
-                <div className="flex-1 min-w-0">
-                  {/* Name row */}
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[15px] font-semibold text-slate-900">{name}</span>
-                  </div>
-
-                  {/* Meta row */}
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-slate-500 mb-2">
-                    {inquiry.email && (
-                      <span className="flex items-center gap-1.5">
-                        <EnvelopeIcon className="w-3.5 h-3.5 text-slate-400" />
-                        {inquiry.email}
-                      </span>
-                    )}
-                    {date && (
-                      <span className="flex items-center gap-1.5">
-                        <CalendarDaysIcon className="w-3.5 h-3.5 text-slate-400" />
-                        {date}
-                      </span>
-                    )}
-                    {listingId && (
-                      <span className="flex items-center gap-1.5">
-                        <DocumentTextIcon className="w-3.5 h-3.5 text-slate-400" />
-                        Listing #{listingId}
-                      </span>
+              return (
+                <div
+                  key={inquiry.id}
+                  className="inq-card-enter bg-white rounded-2xl border border-slate-100 hover:shadow-md transition-shadow px-6 py-5 flex items-center gap-4 cursor-pointer"
+                  style={{ animationDelay: `${idx * 60}ms` }}
+                  onClick={() => router.push(`/admin/inquiries/${inquiry.id}`)}
+                >
+                  {/* Avatar */}
+                  <div
+                    className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${colorClass}`}
+                  >
+                    {inquiry.photo || inquiry.avatar || inquiry.image ? (
+                      <img
+                        src={inquiry.photo || inquiry.avatar || inquiry.image}
+                        alt={name}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      initials
                     )}
                   </div>
 
-                  {/* Message preview */}
-                  {inquiry.message && (
-                    <p className="text-sm text-slate-400 line-clamp-2 leading-relaxed">
-                      <ChatBubbleLeftEllipsisIcon className="w-3.5 h-3.5 inline mr-1 -mt-0.5 text-slate-300" />
-                      {inquiry.message}
-                    </p>
-                  )}
-                </div>
+                  {/* Details */}
+                  <div className="flex-1 min-w-0">
+                    {/* Name row */}
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[15px] font-semibold text-slate-900">
+                        {name}
+                      </span>
+                    </div>
 
-                {/* Actions + CRM */}
-                <div className="hidden md:flex items-center gap-2 flex-shrink-0 self-center" onClick={(e) => e.stopPropagation()}>
-                  {!inquiry.crm_status || inquiry.crm_status === "0" ? (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handlePushToCRM(inquiry); }}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-colors"
+                    {/* Meta row */}
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-slate-500 mb-2">
+                      {inquiry.email && (
+                        <span className="flex items-center gap-1.5">
+                          <EnvelopeIcon className="w-3.5 h-3.5 text-slate-400" />
+                          {inquiry.email}
+                        </span>
+                      )}
+                      {date && (
+                        <span className="flex items-center gap-1.5">
+                          <CalendarDaysIcon className="w-3.5 h-3.5 text-slate-400" />
+                          {date}
+                        </span>
+                      )}
+                      {listingId && (
+                        <span className="flex items-center gap-1.5">
+                          <DocumentTextIcon className="w-3.5 h-3.5 text-slate-400" />
+                          Listing #{listingId}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Message preview */}
+                    {inquiry.message && (
+                      <p className="text-sm text-slate-400 line-clamp-2 leading-relaxed">
+                        <ChatBubbleLeftEllipsisIcon className="w-3.5 h-3.5 inline mr-1 -mt-0.5 text-slate-300" />
+                        {inquiry.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Actions + CRM */}
+                  <div
+                    className="hidden md:flex items-center gap-2 flex-shrink-0 self-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {!inquiry.crm_sync_status ||
+                    inquiry.crm_sync_status === "0" ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePushToCRM(inquiry);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-colors"
+                      >
+                        <CloudArrowUpIcon className="w-3.5 h-3.5" />
+                        Push to CRM
+                      </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-slate-100 text-slate-500 border border-slate-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        In CRM
+                      </span>
+                    )}
+                    <Link
+                      href={`/admin/inquiries/${inquiry.id}`}
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors"
                     >
-                      <CloudArrowUpIcon className="w-3.5 h-3.5" />
-                      Push to CRM
+                      <EyeIcon className="w-4 h-4" />
+                      View
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setDeleteId(inquiry.id);
+                        setShowDeleteModal(true);
+                      }}
+                      disabled={
+                        deleteMutation.isPending && deleteId === inquiry.id
+                      }
+                      className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-red-400 hover:text-red-600 hover:border-red-300 transition disabled:opacity-50"
+                      title="Delete"
+                    >
+                      <TrashIcon className="w-4 h-4" />
                     </button>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-slate-100 text-slate-500 border border-slate-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      In CRM
-                    </span>
-                  )}
-                  <Link
-                    href={`/admin/inquiries/${inquiry.id}`}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors"
-                  >
-                    <EyeIcon className="w-4 h-4" />
-                    View
-                  </Link>
-                  <button
-                    onClick={() => { setDeleteId(inquiry.id); setShowDeleteModal(true); }}
-                    disabled={deleteMutation.isPending && deleteId === inquiry.id}
-                    className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-red-400 hover:text-red-600 hover:border-red-300 transition disabled:opacity-50"
-                    title="Delete"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })
-        ) : !isFetching ? (
-          <div className="text-center py-16 text-slate-400">
-            <p className="text-lg">No enquiries found.</p>
-            <p className="text-sm mt-1">Try adjusting your search filters.</p>
-          </div>
-        ) : null}
+              );
+            })
+          ) : !isFetching ? (
+            <div className="text-center py-16 text-slate-400">
+              <p className="text-lg">No enquiries found.</p>
+              <p className="text-sm mt-1">Try adjusting your search filters.</p>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -409,9 +540,16 @@ function InquiriesContent() {
           <DialogHeader>
             <DialogTitle>Delete Enquiry</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-slate-500">Are you sure you want to delete this enquiry? This action cannot be undone.</p>
+          <p className="text-sm text-slate-500">
+            Are you sure you want to delete this enquiry? This action cannot be
+            undone.
+          </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={deleteMutation.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={deleteMutation.isPending}
+            >
               Cancel
             </Button>
             <Button
@@ -424,6 +562,7 @@ function InquiriesContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover />
     </div>
   );
 }
@@ -449,4 +588,4 @@ export default function InquiriesPage() {
       <InquiriesContent />
     </Suspense>
   );
-} 
+}
