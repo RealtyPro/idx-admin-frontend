@@ -34,6 +34,8 @@ export default function ProfilePage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [address1, setAddress1] = useState("");
+  const [address2, setAddress2] = useState("");
   const [profilePhoto, setProfilePhoto] = useState<string>("");
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
   const [profilePhotoUploading, setProfilePhotoUploading] = useState(false);
@@ -61,6 +63,9 @@ export default function ProfilePage() {
   const [aboutLong, setAboutLong] = useState("");
   const [zip, setZip] = useState("");
   const [country, setCountry] = useState("");
+  const [stateName, setStateName] = useState("");
+  const [countyName, setCountyName] = useState("");
+  const [cityName, setCityName] = useState("");
   const [facebook, setFacebook] = useState("");
   const [linkedIn, setLinkedIn] = useState("");
   const [instagram, setInstagram] = useState("");
@@ -84,6 +89,13 @@ export default function ProfilePage() {
   const companyCounties =
     companyCountiesData?.data || companyCountiesData || [];
   const companyCities = companyCitiesData?.data || companyCitiesData || [];
+
+  const getOptionLabel = (opts: any[], val: any) => {
+    if (!Array.isArray(opts)) return val;
+    const found = opts.find((o: any) => (o.id || o.value || o) == val);
+    if (!found) return val;
+    return found.name || found.title || found.label || found;
+  };
 
   const formatPhone = (phoneData: any): string => {
     if (!phoneData) return "";
@@ -122,12 +134,47 @@ export default function ProfilePage() {
       setName(profile.name || "");
       setEmail(profile.email || "");
       setPhone(formatPhone(profile.phone || profile.mobile));
-      setAddress(profile.address || "");
       setCity(profile.city || "");
       setState(profile.state || "");
       setZip(profile.zip || "");
       setCountry(profile.country || "");
-      setCounty(profile.country || ""); // API uses 'country' field to store county ID
+      setCounty(profile.country || "");
+
+      // Address may be an object or a string
+      if (profile.address && typeof profile.address === "object") {
+        const addr = profile.address;
+        const a1 = addr.address_1 || "";
+        const a2 = addr.address_2 || "";
+        setAddress1(a1);
+        setAddress2(a2);
+        setAddress(a2 ? `${a1}\n${a2}` : a1);
+
+        setStateName(addr.state || profile.state || "");
+        setCountyName(addr.county || profile.county || "");
+        setCityName(addr.city || profile.city || "");
+      } else {
+        // legacy string address
+        const addrStr = profile.address || "";
+        setAddress(addrStr);
+        const parts = addrStr
+          .split(/\r?\n/)
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+        if (parts.length === 0) {
+          setAddress1("");
+          setAddress2("");
+        } else if (parts.length === 1) {
+          const commaParts = parts[0]
+            .split(/,\s*/)
+            .map((s: string) => s.trim())
+            .filter(Boolean);
+          setAddress1(commaParts[0] || "");
+          setAddress2(commaParts[1] || "");
+        } else {
+          setAddress1(parts[0] || "");
+          setAddress2(parts.slice(1).join(", ") || "");
+        }
+      }
       if (profile.social_urls) {
         setFacebook(profile.social_urls.facebook || "");
         setLinkedIn(profile.social_urls.linked_in || "");
@@ -214,9 +261,14 @@ export default function ProfilePage() {
       name,
       phone,
       address,
+      address1,
+      address2,
       state,
+      stateName,
       city,
+      cityName,
       county,
+      countyName,
       zip,
       country,
       facebook,
@@ -277,9 +329,14 @@ export default function ProfilePage() {
       name,
       phone,
       address,
+      address1,
+      address2,
       state,
+      stateName,
       city,
+      cityName,
       county,
+      countyName,
       zip,
       country,
       facebook,
@@ -331,9 +388,9 @@ export default function ProfilePage() {
       name,
       phone,
       address,
-      state,
-      city,
-      county,
+      state: state,
+      city: city,
+      county: county,
       zip,
       country,
       social_urls: {
@@ -351,6 +408,16 @@ export default function ProfilePage() {
       company_website: companyWebsite,
       short_description: aboutShort,
       long_description: aboutLong,
+    };
+    // include an address object that APIs may expect
+    payload.address = {
+      address_1: address1 || address,
+      address_2: address2 || "",
+      city: cityName || city,
+      state: stateName || state,
+      zipcode: zip,
+      country: country || null,
+      county: countyName || county,
     };
     if (companyLogoResultRef.current)
       payload.company_logo = companyLogoResultRef.current;
@@ -377,6 +444,30 @@ export default function ProfilePage() {
           ))}
       </>
     );
+  };
+
+  const handleAddressChange = (val: string) => {
+    setAddress(val);
+    // split by newline first, then by comma if needed
+    const parts = val
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (parts.length === 0) {
+      setAddress1("");
+      setAddress2("");
+    } else if (parts.length === 1) {
+      // further try comma split
+      const commaParts = parts[0]
+        .split(/,\s*/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      setAddress1(commaParts[0] || "");
+      setAddress2(commaParts[1] || "");
+    } else {
+      setAddress1(parts[0] || "");
+      setAddress2(parts.slice(1).join(", ") || "");
+    }
   };
 
   if (isLoading) {
@@ -516,7 +607,8 @@ export default function ProfilePage() {
             <input
               className={inputCls}
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              onChange={(e) => handleAddressChange(e.target.value)}
+              placeholder="Address line 1 (enter second line on new line)"
             />
           </div>
 
@@ -527,9 +619,13 @@ export default function ProfilePage() {
                 className={selectCls}
                 value={state}
                 onChange={(e) => {
-                  setState(e.target.value);
+                  const v = e.target.value;
+                  setState(v);
+                  setStateName(getOptionLabel(states, v));
                   setCounty("");
+                  setCountyName("");
                   setCity("");
+                  setCityName("");
                 }}
                 disabled={statesLoading}
               >
@@ -547,9 +643,12 @@ export default function ProfilePage() {
                 className={selectCls}
                 value={county}
                 onChange={(e) => {
-                  setCounty(e.target.value);
-                  setCountry(e.target.value);
+                  const v = e.target.value;
+                  setCounty(v);
+                  setCountyName(getOptionLabel(counties, v));
+                  setCountry(v);
                   setCity("");
+                  setCityName("");
                 }}
                 disabled={!state || countiesLoading}
               >
@@ -561,7 +660,11 @@ export default function ProfilePage() {
               <select
                 className={selectCls}
                 value={city}
-                onChange={(e) => setCity(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setCity(v);
+                  setCityName(getOptionLabel(cities, v));
+                }}
                 disabled={!county || citiesLoading}
               >
                 {renderSelect(cities, citiesLoading, "Select city")}
