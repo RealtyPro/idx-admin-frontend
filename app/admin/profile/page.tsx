@@ -26,13 +26,15 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function ProfilePage() {
+  type PhoneValue = { code: string; number: string };
+
   const queryClient = useQueryClient();
   const { data, isLoading, isError } = useProfile();
   const updateProfileMutation = useUpdateProfile();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState<PhoneValue>({ code: "", number: "" });
   const [address, setAddress] = useState("");
   const [address1, setAddress1] = useState("");
   const [address2, setAddress2] = useState("");
@@ -115,6 +117,45 @@ export default function ProfilePage() {
     return "";
   };
 
+  const parsePhoneToObject = (phoneData: any): PhoneValue => {
+    if (!phoneData) return { code: "", number: "" };
+
+    if (typeof phoneData === "object") {
+      return {
+        code: String(phoneData.code || "").trim(),
+        number: String(phoneData.number || "").trim(),
+      };
+    }
+
+    if (typeof phoneData === "string") {
+      const raw = phoneData.trim();
+      if (!raw) return { code: "", number: "" };
+
+      if (raw.startsWith("{") && raw.includes('"code"')) {
+        try {
+          const parsed = JSON.parse(raw);
+          return {
+            code: String(parsed?.code || "").trim(),
+            number: String(parsed?.number || "").trim(),
+          };
+        } catch {
+          return { code: "", number: raw };
+        }
+      }
+
+      const m = raw.match(/^(\+\d[\d\s()-]*)\s+(.+)$/);
+      if (m) {
+        return { code: m[1].trim(), number: m[2].trim() };
+      }
+
+      return { code: "", number: raw };
+    }
+
+    return { code: "", number: "" };
+  };
+
+  const toPhoneInputValue = (phoneData: any): string => formatPhone(phoneData);
+
   useEffect(() => {
     if (statesData) {
     }
@@ -133,7 +174,7 @@ export default function ProfilePage() {
       if (profile.photo) setProfilePhoto(profile.photo);
       setName(profile.name || "");
       setEmail(profile.email || "");
-      setPhone(formatPhone(profile.phone || profile.mobile));
+      setPhone(parsePhoneToObject(profile.phone || profile.mobile));
       setCity(profile.city || "");
       setState(profile.state || "");
       setZip(profile.zip || "");
@@ -187,7 +228,7 @@ export default function ProfilePage() {
       setCompanyName(profile.company_name || comp?.name || "");
       setCompanyAddress(profile.company_address || comp?.address || "");
       setCompanyEmail(profile.company_email || comp?.email || "");
-      setCompanyPhone(profile.company_phone || comp?.phone || "");
+      setCompanyPhone(toPhoneInputValue(profile.company_phone || comp?.phone || ""));
       setCompanyWebsite(
         profile.company_website || profile.web || comp?.website || "",
       );
@@ -236,7 +277,7 @@ export default function ProfilePage() {
         const result = await uploadProfilePhoto(file);
         if (result?.path) {
           setProfilePhoto(result.path);
-          const payload = { ...buildPayload(), photo: result };
+            const payload = { ...buildPayload(), photo: Array.isArray(result) ? result : [result] };
           updateProfileMutation.mutate(payload, {
             onSuccess: () => {
               queryClient.invalidateQueries({ queryKey: ["profile"] });
@@ -386,7 +427,10 @@ export default function ProfilePage() {
   const buildPayload = () => {
     const payload: any = {
       name,
-      phone,
+      phone: {
+        code: phone?.code || "",
+        number: phone?.number || "",
+      },
       address,
       state: state,
       city: city,
@@ -598,7 +642,7 @@ export default function ProfilePage() {
               className={inputCls}
               type="tel"
               value={formatPhone(phone)}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(parsePhoneToObject(e.target.value))}
               placeholder="+971 1234567890"
             />
           </div>
@@ -894,7 +938,7 @@ export default function ProfilePage() {
               <input
                 className={inputCls}
                 type="tel"
-                value={companyPhone}
+                value={toPhoneInputValue(companyPhone)}
                 onChange={(e) => setCompanyPhone(e.target.value)}
                 placeholder="+971 1234567890"
               />
