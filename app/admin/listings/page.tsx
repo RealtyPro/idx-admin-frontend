@@ -99,6 +99,14 @@ function ListingsContent() {
       return "bg-emerald-50 text-emerald-600 border border-emerald-200";
     if (s === "pending")
       return "bg-amber-50 text-amber-600 border border-amber-200";
+    if (s === "coming soon" || s === "coming-soon")
+      return "bg-blue-50 text-blue-600 border border-blue-200";
+    if(s === "leased" || s === "rented" || s === "closed")
+      return "bg-purple-50 text-purple-600 border border-purple-200";
+    if(s === "expired")
+      return "bg-gray-50 text-gray-600 border border-gray-200";
+    if(s === "off market" || s === "off-market")
+      return "bg-slate-50 text-slate-600 border border-slate-200";
     return "bg-slate-50 text-slate-600 border border-slate-200";
   };
 
@@ -654,7 +662,7 @@ function ListingsContent() {
                   }
                 >
                   {/* Image */}
-                  <div className="relative w-[200px] min-h-[160px] flex-shrink-0 overflow-hidden">
+                  <div className="relative w-[200px] min-h-[160px] max-h-[180px] flex-shrink-0 overflow-hidden">
                     <img
                       src={getListingImage(listing)}
                       alt={
