@@ -110,7 +110,11 @@ export default function UsersPage() {
       const params: any = { page: currentPage };
       const qs = buildQueryString(filtersToUse);
       const fetchKey = `${currentPage}|${qs}`;
-      if (!force && lastFetchKeyRef.current === fetchKey) { setLoading(false); return; }
+      // Skip duplicate fetch only when we already have data to render.
+      if (!force && lastFetchKeyRef.current === fetchKey && users.length > 0) {
+        setLoading(false);
+        return;
+      }
       lastFetchKeyRef.current = fetchKey;
       if (qs) params.q = qs;
 
@@ -261,7 +265,7 @@ export default function UsersPage() {
 
       {/* ---- Header ---- */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-[22px] font-semibold text-slate-900">Users</h1>
+        <h1 className="text-[22px] font-semibold text-slate-900">Users & Leads</h1>
 
         <div className="flex items-center gap-3">
           {/* Search bar */}
@@ -282,7 +286,7 @@ export default function UsersPage() {
 
           {/* Add New User */}
           <Link
-            href="/admin/register"
+            href="/admin/users/create"
             className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-colors shadow-sm"
           >
             <PlusIcon className="w-4 h-4" />
