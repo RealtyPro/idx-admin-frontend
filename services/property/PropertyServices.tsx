@@ -27,6 +27,14 @@ export const fetchProperties = async (params: PropertySearchParams = {}) => {
 	return response.data;
 };
 
+// Search properties (GET https://adminapi.realtipro.com/api/v1/properties/search)
+export const searchProperties = async (keyword: string) => {
+	const params: Record<string, string> = {};
+	if (keyword.trim()) params.keyword = keyword.trim();
+	const response = await axiosInstance.get('v1/properties/search', { params });
+	return response.data;
+};
+
 // Fetch single property (GET v1/admin/property/${id})
 export const fetchSingleProperty = async (id: string) => {
 	const response = await axiosInstance.get(`v1/admin/property/${id}`);

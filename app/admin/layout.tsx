@@ -14,6 +14,7 @@ import {
   EnvelopeIcon,
   MapPinIcon,
   Squares2X2Icon,
+  CalendarDaysIcon
 } from "@heroicons/react/24/outline";
 import { useLogout } from "@/services/auth/AuthQueries";
 
@@ -21,7 +22,7 @@ const navigation = [
   { name: "Dashboard", href: "/admin", icon: Squares2X2Icon },
   { name: "Listings", href: "/admin/listings", icon: HomeIcon },
   { name: "Users & Leads", href: "/admin/users", icon: UsersIcon },
-  { name: "Enquiries", href: "/admin/inquiries", icon: EnvelopeIcon },
+  // { name: "Enquiries", href: "/admin/inquiries", icon: EnvelopeIcon },
   { name: "Blog Posts", href: "/admin/blog", icon: DocumentTextIcon },
   {
     name: "Testimonials",
@@ -30,6 +31,7 @@ const navigation = [
   },
   { name: "Newsletter", href: "/admin/newsletter", icon: DocumentTextIcon },
   { name: "Neighborhoods", href: "/admin/neighbourhoods", icon: MapPinIcon },
+  { name: "Open Houses", href: "/admin/open-houses", icon: CalendarDaysIcon },
 ];
 
 export default function adminLayout({
