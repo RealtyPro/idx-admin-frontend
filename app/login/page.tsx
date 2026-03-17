@@ -120,6 +120,10 @@ export default function Login() {
               if (profilePic) {
                 sessionStorage.setItem("user_profile_pic", profilePic);
               }
+
+              if(profile?.uuid) {
+                sessionStorage.setItem("user_uuid", profile.uuid);
+              }
             } catch (profileError) {
               console.error("Failed to fetch profile:", profileError);
             }
