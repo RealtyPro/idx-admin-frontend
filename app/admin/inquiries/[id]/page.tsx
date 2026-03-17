@@ -1,18 +1,36 @@
 "use client";
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axiosInstance from '@/services/Api';
-import { Mail, Phone, Calendar, User, MessageSquare, FileText, Tag } from 'lucide-react';
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import React from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axiosInstance from "@/services/Api";
+import {
+  Mail,
+  Phone,
+  Calendar,
+  User as UserIcon,
+  MessageSquare,
+  FileText,
+  Home,
+  Ruler,
+  Bath,
+  BedDouble,
+  Tag,
+} from "lucide-react";
 
 function useEnquiryDetail(id: string) {
   return useQuery({
-    queryKey: ['enquiry', id],
+    queryKey: ["enquiry", id],
     queryFn: async () => {
       const res = await axiosInstance.get(`v1/admin/enquiry/${id}`);
       return res.data;
@@ -21,7 +39,11 @@ function useEnquiryDetail(id: string) {
   });
 }
 
-export default function EnquiryDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EnquiryDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   // Unwrap params using React.use() for Next.js compatibility
@@ -34,12 +56,15 @@ export default function EnquiryDetailPage({ params }: { params: Promise<{ id: st
     },
     onSuccess: () => {
       alert("Enquiry deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ['enquiries'] });
+      queryClient.invalidateQueries({ queryKey: ["enquiries"] });
       router.push("/admin/inquiries");
     },
     onError: (error: any) => {
       console.error("Error deleting enquiry:", error);
-      const errorMessage = error?.response?.data?.message || error?.message || "Failed to delete enquiry.";
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to delete enquiry.";
       alert(errorMessage);
     },
   });
@@ -72,7 +97,9 @@ export default function EnquiryDetailPage({ params }: { params: Promise<{ id: st
         <Card>
           <CardHeader>
             <CardTitle>Enquiry Not Found</CardTitle>
-            <CardDescription>The enquiry you are looking for does not exist.</CardDescription>
+            <CardDescription>
+              The enquiry you are looking for does not exist.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild variant="secondary">
@@ -85,6 +112,61 @@ export default function EnquiryDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const enquiry = data?.data || data || {};
+  const listing = enquiry?.listings || enquiry?.listing || null;
+
+  const formatDateTime = (value?: string) => {
+    if (!value) return "N/A";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleString();
+  };
+
+  const getImageUrl = (listing: any) => {
+    const img = listing?.images || listing?.image || listing?.photos;
+    if (!img) return null;
+
+    if (typeof img === "string") {
+      return img.startsWith("http")
+        ? img
+        : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img}`;
+    }
+
+    if (Array.isArray(img) && img.length > 0) {
+      const first = img[0];
+      if (typeof first === "string") {
+        return first.startsWith("http")
+          ? first
+          : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${first}`;
+      }
+      if (first && typeof first === "object" && "path" in first) {
+        const path = String((first as { path?: string }).path || "");
+        if (!path) return null;
+        return path.startsWith("http")
+          ? path
+          : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${path}`;
+      }
+    }
+
+    if (img && typeof img === "object" && "path" in img) {
+      const path = String((img as { path?: string }).path || "");
+      if (!path) return null;
+      return path.startsWith("http")
+        ? path
+        : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${path}`;
+    }
+
+    return null;
+  };
+
+  const formatPrice = (price: any) => {
+    if (price === null || price === undefined || price === "") return "N/A";
+    const num =
+      typeof price === "number"
+        ? price
+        : Number(String(price).replace(/[^0-9.-]/g, ""));
+    if (Number.isNaN(num)) return String(price);
+    return `$${num.toLocaleString()}`;
+  };
 
   return (
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6">
@@ -107,10 +189,14 @@ export default function EnquiryDetailPage({ params }: { params: Promise<{ id: st
                 <span>{enquiry.contact_no}</span>
               </div>
             )}
-            {(enquiry.date || enquiry.created_at) && (
+            {(enquiry.created_at || enquiry.date) && (
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                <span>{new Date(enquiry.date || enquiry.created_at).toLocaleDateString()}</span>
+                <span>
+                  {new Date(
+                    enquiry.created_at || enquiry.date,
+                  ).toLocaleDateString()}
+                </span>
               </div>
             )}
           </div>
@@ -118,38 +204,226 @@ export default function EnquiryDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex gap-2 flex-wrap">
           <Button asChild variant="secondary" size="sm">
             <Link href="/admin/inquiries">Back</Link>
-          </Button>
+          </Button>{" "}
+          <Button asChild variant="secondary" size="sm">
+            <Link href={`/admin/inquiries/${id}/edit`}>Edit</Link>
+          </Button>{" "}
           <Button
             variant="destructive"
             size="sm"
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
           >
-            {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            {deleteMutation.isPending ? "Deleting..." : "Delete"}
           </Button>
         </div>
       </div>
 
       {/* Main Content Grid */}
       <div className="grid gap-6 md:grid-cols-3">
-        {/* Message Content */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              <CardTitle>Message</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {(enquiry.message || enquiry.description) ? (
-              <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                {enquiry.message || enquiry.description}
-              </p>
-            ) : (
-              <p className="text-muted-foreground italic">No message available</p>
-            )}
-          </CardContent>
-        </Card>
+        <div className="md:col-span-2 space-y-6">
+          {/* User Information Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <UserIcon className="w-5 h-5" />
+                <CardTitle>User Information</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Name */}
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                    Full Name
+                  </h3>
+                  <p className="text-sm">
+                    {enquiry.name || enquiry.full_name || "N/A"}
+                  </p>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                    Email
+                  </h3>
+                  <p className="text-sm break-all">{enquiry.email || "N/A"}</p>
+                </div>
+
+                {/* Contact Number */}
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                    Contact Number
+                  </h3>
+                  <p className="text-sm">{enquiry.contact_no || "N/A"}</p>
+                </div>
+
+                {/* Property Type */}
+                {enquiry.property_type && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                      Property Type
+                    </h3>
+                    <p className="text-sm">{enquiry.property_type}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Enquiry Details Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                <CardTitle>Enquiry Details</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-md bg-muted/40 p-3">
+                <p className="text-xs text-muted-foreground mb-1">
+                  Message / Description
+                </p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {enquiry.message ||
+                    enquiry.description ||
+                    "No message provided."}
+                </p>
+              </div>
+              {/* <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">
+                    {enquiry.subject || enquiry.title || "Enquiry"}
+                  </p>
+                  {enquiry.status && (
+                    <Badge
+                      variant={
+                        String(enquiry.status || "").toLowerCase() ===
+                          "active" ||
+                        String(enquiry.status || "").toLowerCase() === "new"
+                          ? "default"
+                          : "secondary"
+                      }
+                      className={
+                        String(enquiry.status || "").toLowerCase() ===
+                          "active" ||
+                        String(enquiry.status || "").toLowerCase() === "new"
+                          ? "bg-green-500"
+                          : ""
+                      }
+                    >
+                      {enquiry.status || "N/A"}
+                    </Badge>
+                  )}
+                </div>
+
+               
+                {(enquiry.listing_id || enquiry.listingId) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-muted-foreground text-xs mb-1">
+                        Listing ID
+                      </p>
+                      <p className="font-mono">
+                        {enquiry.listing_id || enquiry.listingId}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-md bg-muted/40 p-3">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Message / Description
+                  </p>
+                  <p className="text-sm whitespace-pre-wrap">
+                    {enquiry.message ||
+                      enquiry.description ||
+                      "No message provided."}
+                  </p>
+                </div>
+              </div> */}
+            </CardContent>
+          </Card>
+          {/* Listing Details Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Home className="w-5 h-5" />
+                <CardTitle>Listing Details</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {listing ? (
+                (() => {
+                  const title =
+                    listing.title ||
+                    listing.name ||
+                    listing.address ||
+                    `Property ${listing.id || ""}`;
+                  const image = getImageUrl(listing);
+                  const price = formatPrice(
+                    listing.price || listing.list_price,
+                  );
+                  const beds = listing.bed ?? listing.beds ?? "-";
+                  const baths = listing.bath ?? listing.baths ?? "-";
+                  const sqft =
+                    listing.sqft ?? listing.square_feet ?? listing.area ?? "-";
+                  const location = listing.address || listing.location || "N/A";
+
+                  return (
+                    <div className="rounded-lg border p-4">
+                      <div className="flex gap-4">
+                        <div className="w-28 h-20 rounded-md bg-muted overflow-hidden flex-shrink-0">
+                          {image ? (
+                            <img
+                              src={image}
+                              alt={title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                              No image
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold truncate">{title}</p>
+                          <p className="text-sm text-muted-foreground truncate mt-0.5">
+                            {location}
+                          </p>
+
+                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                            <span className="inline-flex items-center gap-1">
+                              <Tag className="w-3.5 h-3.5" />
+                              {price}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <BedDouble className="w-3.5 h-3.5" />
+                              {beds} bd
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <Bath className="w-3.5 h-3.5" />
+                              {baths} ba
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <Ruler className="w-3.5 h-3.5" />
+                              {sqft} sqft
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No listing details available for this user.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Details Sidebar */}
         <Card>
@@ -163,71 +437,61 @@ export default function EnquiryDetailPage({ params }: { params: Promise<{ id: st
             {/* Status */}
             {enquiry.status && (
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Status</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                  Status
+                </h3>
                 <Badge
-                  variant={enquiry.status === 'active' || enquiry.status === 'new' ? 'default' : 'secondary'}
-                  className={enquiry.status === 'active' || enquiry.status === 'new' ? 'bg-green-500' : ''}
+                  variant={
+                    String(enquiry.status || "").toLowerCase() === "active" ||
+                    String(enquiry.status || "").toLowerCase() === "new"
+                      ? "default"
+                      : "secondary"
+                  }
+                  className={
+                    String(enquiry.status || "").toLowerCase() === "active" ||
+                    String(enquiry.status || "").toLowerCase() === "new"
+                      ? "bg-green-500"
+                      : ""
+                  }
                 >
-                  {enquiry.status}
+                  {enquiry.status || "N/A"}
                 </Badge>
               </div>
             )}
 
-            {/* Name */}
+            {/* Enquiry ID */}
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-1">Name</h3>
-              <p className="text-sm">{enquiry.name || enquiry.full_name || 'N/A'}</p>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                Enquiry ID
+              </h3>
+              <p className="text-sm font-mono">{enquiry.id || "N/A"}</p>
             </div>
-
-            {/* Email */}
-            {enquiry.email && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Email</h3>
-                <p className="text-sm break-all">{enquiry.email}</p>
-              </div>
-            )}
-
-            {/* Contact Number */}
-            {enquiry.contact_no && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Contact Number</h3>
-                <p className="text-sm">{enquiry.contact_no}</p>
-              </div>
-            )}
-
-            {/* Listing ID */}
-            {(enquiry.listing_id || enquiry.listingId) && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Listing ID</h3>
-                <p className="text-sm font-mono">{enquiry.listing_id || enquiry.listingId}</p>
-              </div>
-            )}
-
             {/* Property Type */}
             {enquiry.property_type && (
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Property Type</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Property Type
+                </h3>
                 <p className="text-sm">{enquiry.property_type}</p>
               </div>
             )}
-
             {/* Created At */}
             {enquiry.created_at && (
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Created At</h3>
-                <p className="text-sm">
-                  {new Date(enquiry.created_at).toLocaleString()}
-                </p>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Created At
+                </h3>
+                <p className="text-sm">{formatDateTime(enquiry.created_at)}</p>
               </div>
             )}
 
             {/* Updated At */}
             {enquiry.updated_at && (
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Updated At</h3>
-                <p className="text-sm">
-                  {new Date(enquiry.updated_at).toLocaleString()}
-                </p>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Updated At
+                </h3>
+                <p className="text-sm">{formatDateTime(enquiry.updated_at)}</p>
               </div>
             )}
           </CardContent>

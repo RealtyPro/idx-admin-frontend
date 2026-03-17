@@ -101,11 +101,11 @@ function ListingsContent() {
       return "bg-amber-50 text-amber-600 border border-amber-200";
     if (s === "coming soon" || s === "coming-soon")
       return "bg-blue-50 text-blue-600 border border-blue-200";
-    if(s === "leased" || s === "rented" || s === "closed")
+    if (s === "leased" || s === "rented" || s === "closed")
       return "bg-purple-50 text-purple-600 border border-purple-200";
-    if(s === "expired")
+    if (s === "expired")
       return "bg-gray-50 text-gray-600 border border-gray-200";
-    if(s === "off market" || s === "off-market")
+    if (s === "off market" || s === "off-market")
       return "bg-slate-50 text-slate-600 border border-slate-200";
     return "bg-slate-50 text-slate-600 border border-slate-200";
   };
@@ -168,7 +168,9 @@ function ListingsContent() {
   if (freshListings.length > 0) prevListingsRef.current = freshListings;
   // Only fall back to old data while a fetch is in-flight; an empty completed response should show the empty state
   const listings =
-    (freshListings.length === 0 && isFetching) ? prevListingsRef.current : freshListings;
+    freshListings.length === 0 && isFetching
+      ? prevListingsRef.current
+      : freshListings;
   const pagination = data?.meta || data?.pagination || null;
   const totalPages =
     pagination?.last_page ||

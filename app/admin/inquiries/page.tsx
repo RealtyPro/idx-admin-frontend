@@ -371,6 +371,12 @@ function InquiriesContent() {
               <AdjustmentsHorizontalIcon className="w-4 h-4" />
             </button>
           </div>
+          <Link
+            href="/admin/inquiries/create"
+            className="px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+          >
+            Create Enquiry
+          </Link>
 
           {/* Dark mode */}
           <button className="p-2 rounded-full hover:bg-white transition">
