@@ -21,8 +21,8 @@ import { useLogout } from "@/services/auth/AuthQueries";
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: Squares2X2Icon },
   { name: "Listings", href: "/admin/listings", icon: HomeIcon },
-  { name: "Users & Leads", href: "/admin/users", icon: UsersIcon },
-  // { name: "Enquiries", href: "/admin/inquiries", icon: EnvelopeIcon },
+  // { name: "Users & Leads", href: "/admin/users", icon: UsersIcon },
+  { name: "Users & Leads", href: "/admin/inquiries", icon: EnvelopeIcon },
   { name: "Blog Posts", href: "/admin/blog", icon: DocumentTextIcon },
   {
     name: "Testimonials",

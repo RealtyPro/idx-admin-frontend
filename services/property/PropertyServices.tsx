@@ -62,6 +62,7 @@ export const deleteProperty = async (id: string) => {
 export const addFeaturedProperty = async (id: string) => {
   const response = await axiosInstance.patch(
     `v1/admin/property/action/${id}/feature`,
+    { is_featured: 1 },
   );
   return response.data;
 };
@@ -70,6 +71,7 @@ export const addFeaturedProperty = async (id: string) => {
 export const removeFeaturedProperty = async (id: string) => {
   const response = await axiosInstance.patch(
     `v1/admin/property/action/${id}/feature`,
+    { is_featured: 0 },
   );
   return response.data;
 };

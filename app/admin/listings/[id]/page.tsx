@@ -5,7 +5,25 @@ import { Button } from "@/components/ui/button";
 import React, { useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { useSingleProperty } from "@/services/property/PropertyQueries";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { createOpenHouse } from "@/services/open-house/OpenHouseServices";
+
+interface OpenHouseFormState {
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  description: string;
+  status: string;
+}
 
 export default function ListingDetailsPage() {
   const params = useParams();
@@ -21,6 +39,17 @@ export default function ListingDetailsPage() {
   const { data, isLoading, isError } = useSingleProperty(id);
   const listing = data?.data || data;
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [isOpenHouseModalOpen, setIsOpenHouseModalOpen] = useState(false);
+  const [openHouseLoading, setOpenHouseLoading] = useState(false);
+  const [openHouseError, setOpenHouseError] = useState("");
+  const [openHouseSuccess, setOpenHouseSuccess] = useState("");
+  const [openHouseForm, setOpenHouseForm] = useState<OpenHouseFormState>({
+    event_date: "",
+    start_time: "",
+    end_time: "",
+    description: "",
+    status: "scheduled",
+  });
 
   // Navigation functions for slider
   const handlePrevImage = () => {
@@ -82,6 +111,66 @@ export default function ListingDetailsPage() {
 
   const images = getImages();
   const views = parseViews(listing?.views) || [];
+  const bannerImage = images[0] || "/placeholder-image.jpg";
+  const listingTitle =
+    listing?.title || listing?.name || listing?.address || `Listing ${listing?.id || ""}`;
+  const listingAddress =
+    listing?.address || listing?.location || listing?.mls_address || "Location not available";
+  const listingMlsId =
+    listing?.mls_listingid || listing?.mls_id || listing?.mls_number || listing?.ref || "N/A";
+
+  const resetOpenHouseForm = () => {
+    setOpenHouseForm({
+      event_date: "",
+      start_time: "",
+      end_time: "",
+      description: "",
+      status: "scheduled",
+    });
+    setOpenHouseError("");
+    setOpenHouseSuccess("");
+  };
+
+  const onCloseOpenHouseModal = (open: boolean) => {
+    setIsOpenHouseModalOpen(open);
+    if (!open) {
+      resetOpenHouseForm();
+    }
+  };
+
+  const onCreateOpenHouse = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setOpenHouseError("");
+    setOpenHouseSuccess("");
+
+    if (!openHouseForm.event_date || !openHouseForm.start_time) {
+      setOpenHouseError("Event date and start time are required.");
+      return;
+    }
+
+    setOpenHouseLoading(true);
+    try {
+      await createOpenHouse({
+        property_id: String(listing?.id),
+        event_date: openHouseForm.event_date,
+        start_time: openHouseForm.start_time,
+        end_time: openHouseForm.end_time || undefined,
+        description: openHouseForm.description.trim() || undefined,
+        status: openHouseForm.status || undefined,
+      });
+      setOpenHouseSuccess("Open house event created successfully.");
+      setTimeout(() => {
+        setIsOpenHouseModalOpen(false);
+        resetOpenHouseForm();
+      }, 800);
+    } catch (err: any) {
+      setOpenHouseError(
+        err?.response?.data?.message || err?.message || "Failed to create open house event"
+      );
+    } finally {
+      setOpenHouseLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -129,7 +218,7 @@ export default function ListingDetailsPage() {
   return (
     <div className="container mx-auto py-6 px-2 sm:px-4 space-y-6 max-w-6xl">
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-start gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-2">
             {listing.title ||
@@ -142,10 +231,154 @@ export default function ListingDetailsPage() {
             {listing.ref && <p className="text-sm">Ref: {listing.ref}</p>}
           </div>
         </div>
-        <Button asChild variant="secondary" size="sm">
-          <Link href={`/admin/listings?page=${fromPage}`}>Back</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setIsOpenHouseModalOpen(true)}
+            className="px-4 py-2 text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+          >
+            Create Openhouse
+          </Button>
+          <Button asChild variant="secondary" size="sm">
+            <Link href={`/admin/listings?page=${fromPage}`}>Back</Link>
+          </Button>
+        </div>
       </div>
+
+      <Dialog open={isOpenHouseModalOpen} onOpenChange={onCloseOpenHouseModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Openhouse Event</DialogTitle>
+            <DialogDescription>
+              Use this listing details to quickly create an open house event.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg border overflow-hidden">
+            <img
+              src={bannerImage}
+              alt={`${listingTitle} banner`}
+              className="w-full h-48 object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
+              }}
+            />
+            <div className="p-4 space-y-1.5">
+              <p className="font-semibold text-base text-slate-900">{listingTitle}</p>
+              <p className="text-sm text-slate-600">{listingAddress}</p>
+              <p className="text-sm text-slate-500">MLS ID: {listingMlsId}</p>
+            </div>
+          </div>
+
+          <form className="space-y-4" onSubmit={onCreateOpenHouse}>
+            {openHouseSuccess && (
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                {openHouseSuccess}
+              </div>
+            )}
+            {openHouseError && (
+              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {openHouseError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="event_date" className="block text-sm font-medium text-slate-700 mb-1">
+                  Event Date
+                </label>
+                <Input
+                  id="event_date"
+                  type="date"
+                  value={openHouseForm.event_date}
+                  onChange={(e) =>
+                    setOpenHouseForm((prev) => ({ ...prev, event_date: e.target.value }))
+                  }
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium text-slate-700 mb-1">
+                  Status
+                </label>
+                <select
+                  id="status"
+                  value={openHouseForm.status}
+                  onChange={(e) =>
+                    setOpenHouseForm((prev) => ({ ...prev, status: e.target.value }))
+                  }
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
+                >
+                  <option value="scheduled">Scheduled</option>
+                  <option value="active">Active</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="start_time" className="block text-sm font-medium text-slate-700 mb-1">
+                  Start Time
+                </label>
+                <Input
+                  id="start_time"
+                  type="time"
+                  value={openHouseForm.start_time}
+                  onChange={(e) =>
+                    setOpenHouseForm((prev) => ({ ...prev, start_time: e.target.value }))
+                  }
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="end_time" className="block text-sm font-medium text-slate-700 mb-1">
+                  End Time
+                </label>
+                <Input
+                  id="end_time"
+                  type="time"
+                  value={openHouseForm.end_time}
+                  onChange={(e) =>
+                    setOpenHouseForm((prev) => ({ ...prev, end_time: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="openhouse_description" className="block text-sm font-medium text-slate-700 mb-1">
+                Event Notes
+              </label>
+              <textarea
+                id="openhouse_description"
+                rows={4}
+                value={openHouseForm.description}
+                onChange={(e) =>
+                  setOpenHouseForm((prev) => ({ ...prev, description: e.target.value }))
+                }
+                className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
+                placeholder="Add event notes or instructions"
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => onCloseOpenHouseModal(false)}
+                disabled={openHouseLoading}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="px-4 py-2 text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-colors" disabled={openHouseLoading}>
+                {openHouseLoading ? "Creating..." : "Create Openhouse"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Main Photo Gallery with Slider */}
       {images.length > 0 && (
