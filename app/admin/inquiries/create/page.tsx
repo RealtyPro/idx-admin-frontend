@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 import {
   ArrowLeftIcon,
   ChevronDownIcon,
@@ -61,6 +62,12 @@ interface FormErrors {
   email?: string;
   contact_no?: string;
   description?: string;
+  source?: string;
+  listing_id?: string;
+  tour_date?: string;
+  time_slot?: string;
+  planning_to_buy?: string;
+  planning_to_sell?: string;
 }
 
 const initialForm: CreateEnquiryForm = {
@@ -124,6 +131,156 @@ export default function CreateEnquiryPage() {
     loadProperties("");
   }, []);
 
+  const clearFieldErrors = (fields: (keyof FormErrors)[]) => {
+    setErrors((prev) => {
+      const next = { ...prev };
+      fields.forEach((field) => {
+        delete next[field];
+      });
+      return next;
+    });
+  };
+
+  const updateField = (field: keyof CreateEnquiryForm, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+
+    if (errors[field as keyof FormErrors]) {
+      clearFieldErrors([field as keyof FormErrors]);
+    }
+
+    if (errorMessage) {
+      setErrorMessage("");
+    }
+
+    if (successMessage) {
+      setSuccessMessage("");
+    }
+  };
+
+  const getFieldError = (value: unknown) => {
+    if (Array.isArray(value)) {
+      return value.find((item) => typeof item === "string") || "Invalid value";
+    }
+
+    if (typeof value === "string") {
+      return value;
+    }
+
+    return undefined;
+  };
+
+  const inferFieldFromMessage = (message: string): keyof FormErrors | null => {
+    const normalized = message.toLowerCase();
+
+    if (normalized.includes("contact") || normalized.includes("phone")) {
+      return "contact_no";
+    }
+    if (normalized.includes("email")) {
+      return "email";
+    }
+    if (normalized.includes("name")) {
+      return "name";
+    }
+    if (normalized.includes("description") || normalized.includes("message")) {
+      return "description";
+    }
+    if (normalized.includes("source") || normalized.includes("type")) {
+      return "source";
+    }
+    if (normalized.includes("listing") || normalized.includes("property")) {
+      return "listing_id";
+    }
+    if (normalized.includes("tour date")) {
+      return "tour_date";
+    }
+    if (normalized.includes("time slot") || normalized.includes("tour time")) {
+      return "time_slot";
+    }
+    if (normalized.includes("buy")) {
+      return "planning_to_buy";
+    }
+    if (normalized.includes("sell")) {
+      return "planning_to_sell";
+    }
+
+    return null;
+  };
+
+  const mapApiErrorsToForm = (apiErrors: unknown): FormErrors => {
+    const nextErrors: FormErrors = {};
+
+    if (Array.isArray(apiErrors)) {
+      apiErrors
+        .filter((item): item is string => typeof item === "string")
+        .forEach((message) => {
+          const mappedField = inferFieldFromMessage(message);
+          if (mappedField && !nextErrors[mappedField]) {
+            nextErrors[mappedField] = message;
+          }
+        });
+
+      return nextErrors;
+    }
+
+    if (!apiErrors || typeof apiErrors !== "object") {
+      return nextErrors;
+    }
+
+    Object.entries(apiErrors as Record<string, unknown>).forEach(
+      ([field, value]) => {
+      const message = getFieldError(value);
+
+      if (!message) {
+        return;
+      }
+
+      switch (field) {
+        case "type":
+        case "source":
+          nextErrors.source = message;
+          break;
+        case "property_id":
+        case "listing_id":
+          nextErrors.listing_id = message;
+          break;
+        case "tour_date":
+          nextErrors.tour_date = message;
+          break;
+        case "tour_time":
+        case "time_slot":
+          nextErrors.time_slot = message;
+          break;
+        case "schedule":
+          if (form.source === SELL_SOURCE) {
+            nextErrors.planning_to_sell = message;
+          } else {
+            nextErrors.planning_to_buy = message;
+          }
+          break;
+        case "planning_to_buy":
+          nextErrors.planning_to_buy = message;
+          break;
+        case "planning_to_sell":
+          nextErrors.planning_to_sell = message;
+          break;
+        case "name":
+        case "email":
+        case "contact_no":
+        case "description":
+          nextErrors[field] = message;
+          break;
+        case "phone":
+          nextErrors.contact_no = message;
+          break;
+        default:
+          break;
+      }
+    },
+    );
+
+    return nextErrors;
+  };
+
   useEffect(() => {
     const outsideClick = (event: MouseEvent) => {
       if (
@@ -150,12 +307,19 @@ export default function CreateEnquiryPage() {
   const onSelectProperty = (item: PropertyItem) => {
     setSelectedProperty(item);
     setForm((prev) => ({ ...prev, listing_id: String(item.id) }));
+    clearFieldErrors(["listing_id"]);
+    setErrorMessage("");
     setShowDropdown(false);
     setPropertyQuery("");
   };
 
   const validate = () => {
     const nextErrors: FormErrors = {};
+    const showListing = LISTING_SOURCES.includes(form.source);
+    const showTourFields = form.source === SCHEDULE_TOUR_SOURCE;
+    const showPlanning =
+      form.source === SCHEDULE_TOUR_SOURCE || form.source === ENQUIRY_SOURCE;
+    const showSellPlanning = form.source === SELL_SOURCE;
 
     if (!form.name.trim()) {
       nextErrors.name = "Name is required";
@@ -173,6 +337,30 @@ export default function CreateEnquiryPage() {
 
     if (!form.description.trim()) {
       nextErrors.description = "Description is required";
+    }
+
+    if (!form.source) {
+      nextErrors.source = "Source is required";
+    }
+
+    if (showListing && !form.listing_id) {
+      nextErrors.listing_id = "Select a listing to attach";
+    }
+
+    if (showTourFields && !form.tour_date) {
+      nextErrors.tour_date = "Tour date is required";
+    }
+
+    if (showTourFields && !form.time_slot) {
+      nextErrors.time_slot = "Time slot is required";
+    }
+
+    if (showPlanning && !form.planning_to_buy) {
+      nextErrors.planning_to_buy = "Select when the client plans to buy";
+    }
+
+    if (showSellPlanning && !form.planning_to_sell) {
+      nextErrors.planning_to_sell = "Select when the client plans to sell";
     }
 
     setErrors(nextErrors);
@@ -226,15 +414,39 @@ export default function CreateEnquiryPage() {
       await axiosInstance.post("v1/admin/enquiry", params);
 
       setSuccessMessage("Enquiry created successfully.");
+      setErrors({});
       setForm(initialForm);
       setSelectedProperty(null);
       setTimeout(() => router.push("/admin/inquiries"), 1200);
-    } catch (err: any) {
-      setErrorMessage(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Failed to create enquiry",
-      );
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const apiErrors = err.response?.data?.errors;
+        const mappedErrors = apiErrors ? mapApiErrorsToForm(apiErrors) : {};
+
+        if (Object.keys(mappedErrors).length > 0) {
+          setErrors((prev) => ({ ...prev, ...mappedErrors }));
+        }
+
+        if (err.response?.status === 422) {
+          const fallbackValidationMessage = Array.isArray(apiErrors)
+            ? apiErrors.find((item): item is string => typeof item === "string")
+            : undefined;
+
+          setErrorMessage(
+            err.response?.data?.message ||
+              fallbackValidationMessage ||
+              "Review the highlighted fields and try again.",
+          );
+        } else {
+          setErrorMessage(
+            err.response?.data?.message ||
+              err.message ||
+              "Failed to create enquiry",
+          );
+        }
+      } else {
+        setErrorMessage("Failed to create enquiry");
+      }
     } finally {
       setLoading(false);
     }
@@ -266,8 +478,12 @@ export default function CreateEnquiryPage() {
           )}
 
           {errorMessage && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-              {errorMessage}
+            <div
+              role="alert"
+              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+            >
+              {/* <p className="font-medium text-red-700">Unable to create enquiry</p> */}
+              <p className="mt-1">{errorMessage}</p>
             </div>
           )}
 
@@ -282,11 +498,12 @@ export default function CreateEnquiryPage() {
             <Input
               id="name"
               value={form.name}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, name: e.target.value }))
-              }
+              onChange={(e) => updateField("name", e.target.value)}
               required
-              className="rounded-xl border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+              aria-invalid={!!errors.name}
+              className={`rounded-xl focus:border-emerald-400 focus:ring-emerald-500/20 ${
+                errors.name ? "border-red-300 focus:border-red-400" : "border-slate-200"
+              }`}
               placeholder="Enter name"
             />
             {errors.name && (
@@ -307,11 +524,14 @@ export default function CreateEnquiryPage() {
                 id="email"
                 type="email"
                 value={form.email}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, email: e.target.value }))
-                }
+                onChange={(e) => updateField("email", e.target.value)}
                 required
-                className="rounded-xl border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                aria-invalid={!!errors.email}
+                className={`rounded-xl focus:border-emerald-400 focus:ring-emerald-500/20 ${
+                  errors.email
+                    ? "border-red-300 focus:border-red-400"
+                    : "border-slate-200"
+                }`}
                 placeholder="name@example.com"
               />
               {errors.email && (
@@ -330,11 +550,14 @@ export default function CreateEnquiryPage() {
               <Input
                 id="contact_no"
                 value={form.contact_no}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, contact_no: e.target.value }))
-                }
+                onChange={(e) => updateField("contact_no", e.target.value)}
                 required
-                className="rounded-xl border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                aria-invalid={!!errors.contact_no}
+                className={`rounded-xl focus:border-emerald-400 focus:ring-emerald-500/20 ${
+                  errors.contact_no
+                    ? "border-red-300 focus:border-red-400"
+                    : "border-slate-200"
+                }`}
                 placeholder="Enter contact number"
               />
               {errors.contact_no && (
@@ -354,18 +577,41 @@ export default function CreateEnquiryPage() {
             <select
               id="source"
               value={form.source}
-              onChange={(e) =>
+              onChange={(e) => {
+                const value = e.target.value;
                 setForm((prev) => ({
                   ...prev,
-                  source: e.target.value,
+                  source: value,
                   listing_id: "",
                   tour_date: "",
                   time_slot: "",
                   planning_to_buy: "",
                   planning_to_sell: "",
-                }))
-              }
-              className="w-full px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition"
+                }));
+                setSelectedProperty(null);
+                setPropertyQuery("");
+                setShowDropdown(false);
+                clearFieldErrors([
+                  "source",
+                  "listing_id",
+                  "tour_date",
+                  "time_slot",
+                  "planning_to_buy",
+                  "planning_to_sell",
+                ]);
+                if (errorMessage) {
+                  setErrorMessage("");
+                }
+                if (successMessage) {
+                  setSuccessMessage("");
+                }
+              }}
+              aria-invalid={!!errors.source}
+              className={`w-full px-4 py-2 text-sm rounded-xl border bg-white focus:outline-none focus:ring-2 transition ${
+                errors.source
+                  ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
+                  : "border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+              }`}
             >
               <option value="">Select source</option>
               <option value="sell">Sell</option>
@@ -376,6 +622,9 @@ export default function CreateEnquiryPage() {
               <option value="openhouse">Open House</option>
               <option value="idx-admin">IDX Admin</option>
             </select>
+            {errors.source && (
+              <p className="text-xs text-red-500 mt-1">{errors.source}</p>
+            )}
           </div>
 
           {/* Listing Search — shown for specific sources */}
@@ -386,7 +635,13 @@ export default function CreateEnquiryPage() {
               </label>
               {!selectedProperty ? (
                 <div className="relative">
-                  <div className="flex items-center gap-2 w-full px-3 py-2 border border-slate-200 rounded-xl bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-500/20 transition">
+                  <div
+                    className={`flex items-center gap-2 w-full px-3 py-2 border rounded-xl bg-white transition ${
+                      errors.listing_id
+                        ? "border-red-300 focus-within:border-red-400 focus-within:ring-2 focus-within:ring-red-500/20"
+                        : "border-slate-200 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-500/20"
+                    }`}
+                  >
                     <MagnifyingGlassIcon className="w-4 h-4 text-slate-400 flex-shrink-0" />
                     <input
                       type="text"
@@ -450,12 +705,16 @@ export default function CreateEnquiryPage() {
                       setSelectedProperty(null);
                       setForm((prev) => ({ ...prev, listing_id: "" }));
                       setPropertyQuery("");
+                      setShowDropdown(true);
                     }}
                     className="text-xs text-slate-500 hover:text-red-500 flex-shrink-0 transition"
                   >
                     Remove
                   </button>
                 </div>
+              )}
+              {errors.listing_id && (
+                <p className="text-xs text-red-500 mt-1">{errors.listing_id}</p>
               )}
             </div>
           )}
@@ -474,11 +733,17 @@ export default function CreateEnquiryPage() {
                   id="tour_date"
                   type="date"
                   value={form.tour_date}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, tour_date: e.target.value }))
-                  }
-                  className="rounded-xl border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                  onChange={(e) => updateField("tour_date", e.target.value)}
+                  aria-invalid={!!errors.tour_date}
+                  className={`rounded-xl focus:border-emerald-400 focus:ring-emerald-500/20 ${
+                    errors.tour_date
+                      ? "border-red-300 focus:border-red-400"
+                      : "border-slate-200"
+                  }`}
                 />
+                {errors.tour_date && (
+                  <p className="text-xs text-red-500 mt-1">{errors.tour_date}</p>
+                )}
               </div>
               <div>
                 <label
@@ -490,10 +755,13 @@ export default function CreateEnquiryPage() {
                 <select
                   id="time_slot"
                   value={form.time_slot}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, time_slot: e.target.value }))
-                  }
-                  className="w-full px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition"
+                  onChange={(e) => updateField("time_slot", e.target.value)}
+                  aria-invalid={!!errors.time_slot}
+                  className={`w-full px-4 py-2 text-sm rounded-xl border bg-white focus:outline-none focus:ring-2 transition ${
+                    errors.time_slot
+                      ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
+                      : "border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                  }`}
                 >
                   <option value="">Select time slot</option>
                   {TIME_SLOTS.map((t) => (
@@ -502,6 +770,9 @@ export default function CreateEnquiryPage() {
                     </option>
                   ))}
                 </select>
+                {errors.time_slot && (
+                  <p className="text-xs text-red-500 mt-1">{errors.time_slot}</p>
+                )}
               </div>
             </div>
           )}
@@ -519,13 +790,13 @@ export default function CreateEnquiryPage() {
               <select
                 id="planning_to_buy"
                 value={form.planning_to_buy}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    planning_to_buy: e.target.value,
-                  }))
-                }
-                className="w-full px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition"
+                onChange={(e) => updateField("planning_to_buy", e.target.value)}
+                aria-invalid={!!errors.planning_to_buy}
+                className={`w-full px-4 py-2 text-sm rounded-xl border bg-white focus:outline-none focus:ring-2 transition ${
+                  errors.planning_to_buy
+                    ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
+                    : "border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                }`}
               >
                 <option value="">Select timeline</option>
                 {PLANNING_OPTIONS.map((o) => (
@@ -534,6 +805,11 @@ export default function CreateEnquiryPage() {
                   </option>
                 ))}
               </select>
+              {errors.planning_to_buy && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.planning_to_buy}
+                </p>
+              )}
             </div>
           )}
 
@@ -549,13 +825,13 @@ export default function CreateEnquiryPage() {
               <select
                 id="planning_to_sell"
                 value={form.planning_to_sell}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    planning_to_sell: e.target.value,
-                  }))
-                }
-                className="w-full px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition"
+                onChange={(e) => updateField("planning_to_sell", e.target.value)}
+                aria-invalid={!!errors.planning_to_sell}
+                className={`w-full px-4 py-2 text-sm rounded-xl border bg-white focus:outline-none focus:ring-2 transition ${
+                  errors.planning_to_sell
+                    ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
+                    : "border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                }`}
               >
                 <option value="">Select timeline</option>
                 {PLANNING_OPTIONS.map((o) => (
@@ -564,6 +840,11 @@ export default function CreateEnquiryPage() {
                   </option>
                 ))}
               </select>
+              {errors.planning_to_sell && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.planning_to_sell}
+                </p>
+              )}
             </div>
           )}
 
@@ -579,11 +860,14 @@ export default function CreateEnquiryPage() {
               id="description"
               rows={4}
               value={form.description}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, description: e.target.value }))
-              }
+              onChange={(e) => updateField("description", e.target.value)}
               required
-              className="w-full px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition resize-none"
+              aria-invalid={!!errors.description}
+              className={`w-full px-4 py-2 text-sm rounded-xl border bg-white focus:outline-none focus:ring-2 transition resize-none ${
+                errors.description
+                  ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
+                  : "border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+              }`}
               placeholder="Enter enquiry message"
             />
             {errors.description && (
