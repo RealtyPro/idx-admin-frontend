@@ -201,17 +201,26 @@ export default function CreateEnquiryPage() {
         email: form.email.trim(),
         contact_no: form.contact_no.trim(),
         description: form.description.trim(),
-        source: form.source || undefined,
+        // source: form.source || undefined,
         type: form.source || undefined,
-        listing_id: showListing ? form.listing_id || undefined : undefined,
+        // listing_id: showListing ? form.listing_id || undefined : undefined,
+        property_id: showListing ? form.listing_id || undefined : undefined,
         tour_date: showTourFields ? form.tour_date || undefined : undefined,
-        time_slot: showTourFields ? form.time_slot || undefined : undefined,
-        planning_to_buy: showPlanning
+        tour_time: showTourFields ? form.time_slot || undefined : undefined,
+        // time_slot: showTourFields ? form.time_slot || undefined : undefined,
+        // planning_to_buy: showPlanning
+        //   ? form.planning_to_buy || undefined
+        //   : undefined,
+
+        // planning_to_sell: showSellPlanning
+        //   ? form.planning_to_sell || undefined
+        //   : undefined,
+
+        schedule: showPlanning
           ? form.planning_to_buy || undefined
-          : undefined,
-        planning_to_sell: showSellPlanning
-          ? form.planning_to_sell || undefined
-          : undefined,
+          : showSellPlanning
+            ? form.planning_to_sell || undefined
+            : undefined,
       };
 
       await axiosInstance.post("v1/admin/enquiry", params);
