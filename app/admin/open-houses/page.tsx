@@ -11,6 +11,7 @@ import React, {
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowTopRightOnSquareIcon,
   AdjustmentsHorizontalIcon,
   CalendarDaysIcon,
   ClockIcon,
@@ -410,6 +411,29 @@ export default function OpenHousesListPage() {
               openHouse.property_name ||
               listingDetails?.address ||
               "Property details not linked";
+            const propertyLocation =
+              openHouse.property?.address ||
+              listingDetails?.address ||
+              listingDetails?.location ||
+              "";
+            const fallbackQuery = new URLSearchParams({
+              eventName,
+              propertyTitle: propertyName,
+              propertyLocation: String(propertyLocation),
+              price: String(listingDetails?.price || ""),
+              beds: String(listingDetails?.bed ?? listingDetails?.beds ?? ""),
+              baths: String(
+                listingDetails?.bath ?? listingDetails?.baths ?? "",
+              ),
+              sqft: String(listingDetails?.sqft ?? listingDetails?.bua ?? ""),
+              image: String(listingCoverPhoto || ""),
+              eventDate: String(dateValue || ""),
+              startTime: String(timeFrom || ""),
+              endTime: String(timeTo || ""),
+              propertyId: String(
+                listingDetails?.id || (openHouse.property as { id?: string })?.id || "",
+              ),
+            }).toString();
 
             return (
               <div
@@ -479,6 +503,14 @@ export default function OpenHousesListPage() {
                   className="flex items-center gap-2 pr-5 flex-shrink-0"
                   onClick={(event) => event.stopPropagation()}
                 >
+                  <Link
+                    href={`/open-houses/${openHouse.id}?${fallbackQuery}`}
+                    target="_blank"
+                    className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:border-emerald-300 transition"
+                    title="Open Public Page"
+                  >
+                    <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                  </Link>
                   <Link
                     href={`/admin/open-houses/${openHouse.id}`}
                     className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors"

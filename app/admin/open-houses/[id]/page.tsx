@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowTopRightOnSquareIcon,
   ArrowRightIcon,
   ArrowLeftIcon,
   CalendarDaysIcon,
@@ -340,6 +341,16 @@ export default function OpenHouseDetailsPage() {
             >
               <ArrowLeftIcon className="w-4 h-4" />
               Back
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link
+              href={`/open-houses/${id}`}
+              target="_blank"
+              className="inline-flex items-center gap-2"
+            >
+              <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+              Open Public Page
             </Link>
           </Button>
           {!isEditMode ? (
