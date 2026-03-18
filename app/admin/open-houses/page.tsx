@@ -140,6 +140,7 @@ export default function OpenHousesListPage() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userUuid, setUserUuid] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data, isLoading, isError, error, isFetching } = useOpenHouses({
@@ -172,6 +173,7 @@ export default function OpenHousesListPage() {
   }, []);
 
   useEffect(() => {
+    setUserUuid(sessionStorage.getItem("user_uuid") || "");
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
@@ -433,6 +435,7 @@ export default function OpenHousesListPage() {
               propertyId: String(
                 listingDetails?.id || (openHouse.property as { id?: string })?.id || "",
               ),
+              mlsAgentId: userUuid,
             }).toString();
 
             return (
