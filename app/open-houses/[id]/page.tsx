@@ -173,6 +173,7 @@ export default function PublicOpenHousePage() {
     const startTime = searchParams.get("startTime") || "";
     const endTime = searchParams.get("endTime") || "";
     const propertyId = searchParams.get("propertyId") || "";
+    const mlsAgentId = searchParams.get("mlsAgentId") || "";
 
     const hasFallback =
       !!eventName || !!propertyTitle || !!propertyLocation || !!image;
@@ -183,6 +184,7 @@ export default function PublicOpenHousePage() {
       eventDate,
       startTime,
       endTime,
+      mlsAgentId,
       property: {
         id: propertyId,
         title: propertyTitle,
@@ -289,17 +291,17 @@ export default function PublicOpenHousePage() {
 
     try {
       const uuid =
-        typeof window !== "undefined"
+        fallbackFromQuery?.mlsAgentId ||
+        (typeof window !== "undefined"
           ? sessionStorage.getItem("user_uuid") || ""
-          : "";
+          : "");
 
-      await axiosInstance.post("v1/admin/enquiry", {
+      await axiosInstance.post("v1/enquiry", {
         lagnt: uuid,
         name: form.name.trim(),
         email: form.email.trim(),
         contact_no: form.phone.trim(),
         description: form.comments.trim(),
-        type: "openhouse",
         schedule: form.planningToBuy,
         property_id: String(
           listing?.id ||
@@ -307,6 +309,7 @@ export default function PublicOpenHousePage() {
             fallbackFromQuery?.property?.id ||
             "",
         ),
+        type: "openhouse",
       });
 
       setSubmitSuccess("Enquiry submitted successfully.");

@@ -197,6 +197,11 @@ export default function OpenHouseDetailsPage() {
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [userUuid, setUserUuid] = useState("");
+
+  useEffect(() => {
+    setUserUuid(sessionStorage.getItem("user_uuid") || "");
+  }, []);
 
   const { data: propertyData, isFetching: loadingProperties } = useProperties({
     page: 1,
@@ -322,6 +327,22 @@ export default function OpenHouseDetailsPage() {
   const propertyBaths = property?.bath ?? property?.baths ?? "-";
   const propertySqft = property?.sqft ?? property?.bua ?? "-";
 
+  const fallbackQuery = new URLSearchParams({
+    eventName,
+    propertyTitle,
+    propertyLocation,
+    price: String(property?.price || ""),
+    beds: String(propertyBeds),
+    baths: String(propertyBaths),
+    sqft: String(propertySqft),
+    image: String(propertyImage || ""),
+    eventDate: String(eventDateValue || ""),
+    startTime: String(startTimeValue || ""),
+    endTime: String(endTimeValue || ""),
+    propertyId: String(property?.id || openHouse.property_id || ""),
+    mlsAgentId: userUuid,
+  }).toString();
+
   return (
     <div className="px-6 lg:px-8 max-w-[1100px] mx-auto py-1 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -345,7 +366,7 @@ export default function OpenHouseDetailsPage() {
           </Button>
           <Button asChild variant="outline">
             <Link
-              href={`/open-houses/${id}`}
+              href={`/open-houses/${id}?${fallbackQuery}`}
               target="_blank"
               className="inline-flex items-center gap-2"
             >
