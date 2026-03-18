@@ -11,6 +11,11 @@ import {
 import { Input } from "@/components/ui/input";
 import axiosInstance from "@/services/Api";
 import { searchProperties } from "@/services/property/PropertyServices";
+import {
+  useCitiesByCounty,
+  useCountiesByState,
+  useStates,
+} from "@/services/location/LocationQueries";
 
 const LISTING_SOURCES = [
   "listing_tour",
@@ -48,6 +53,11 @@ interface CreateEnquiryForm {
   name: string;
   email: string;
   contact_no: string;
+  address: string;
+  state: string;
+  county: string;
+  city: string;
+  zip: string;
   description: string;
   listing_id: string;
   source: string;
@@ -61,6 +71,11 @@ interface FormErrors {
   name?: string;
   email?: string;
   contact_no?: string;
+  address?: string;
+  state?: string;
+  county?: string;
+  city?: string;
+  zip?: string;
   description?: string;
   source?: string;
   listing_id?: string;
@@ -74,6 +89,11 @@ const initialForm: CreateEnquiryForm = {
   name: "",
   email: "",
   contact_no: "",
+  address: "",
+  state: "",
+  county: "",
+  city: "",
+  zip: "",
   description: "",
   listing_id: "",
   source: "",
@@ -99,8 +119,59 @@ export default function CreateEnquiryPage() {
   const [selectedProperty, setSelectedProperty] = useState<PropertyItem | null>(
     null,
   );
+  const [stateName, setStateName] = useState("");
+  const [cityName, setCityName] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const { data: statesData, isLoading: statesLoading } = useStates();
+  const { data: countiesData, isLoading: countiesLoading } =
+    useCountiesByState(form.state);
+  const { data: citiesData, isLoading: citiesLoading } =
+    useCitiesByCounty(form.county);
+
+  const states = statesData?.data || statesData || [];
+  const counties = countiesData?.data || countiesData || [];
+  const cities = citiesData?.data || citiesData || [];
+
+  const getOptionLabel = (opts: any[], val: string) => {
+    if (!Array.isArray(opts)) return "";
+    const found = opts.find((o: any) => String(o.id || o.value || o) === val);
+    if (!found) return "";
+    return String(found.name || found.title || found.label || "");
+  };
+
+  const getCityZip = (cityId: string) => {
+    if (!cityId || !Array.isArray(cities)) return "";
+    const selectedCity = cities.find(
+      (o: any) => String(o.id || o.value || o) === cityId,
+    );
+    if (!selectedCity || typeof selectedCity !== "object") return "";
+
+    const zipValue =
+      selectedCity.zip ||
+      selectedCity.zipcode ||
+      selectedCity.zip_code ||
+      selectedCity.postal_code ||
+      selectedCity.postalCode ||
+      selectedCity.postal;
+
+    return zipValue ? String(zipValue) : "";
+  };
+
+  const renderSelect = (opts: any[], loading: boolean, placeholder: string) => {
+    return (
+      <>
+        <option value="">{loading ? "Loading..." : placeholder}</option>
+        {Array.isArray(opts) &&
+          opts.map((o: any, i: number) => (
+            <option key={o.id || i} value={String(o.id || o.value || o)}>
+              {o.name || o.title || o.label || o}
+            </option>
+          ))}
+      </>
+    );
+  };
 
   const propertyLabel = (item: PropertyItem) => {
     return (
@@ -184,6 +255,21 @@ export default function CreateEnquiryPage() {
     if (normalized.includes("description") || normalized.includes("message")) {
       return "description";
     }
+    if (normalized.includes("address")) {
+      return "address";
+    }
+    if (normalized.includes("state") || normalized.includes("region")) {
+      return "state";
+    }
+    if (normalized.includes("county")) {
+      return "county";
+    }
+    if (normalized.includes("city")) {
+      return "city";
+    }
+    if (normalized.includes("zip") || normalized.includes("postal")) {
+      return "zip";
+    }
     if (normalized.includes("source") || normalized.includes("type")) {
       return "source";
     }
@@ -249,6 +335,26 @@ export default function CreateEnquiryPage() {
         case "tour_time":
         case "time_slot":
           nextErrors.time_slot = message;
+          break;
+        case "address":
+          nextErrors.address = message;
+          break;
+        case "region_id":
+        case "state":
+          nextErrors.state = message;
+          break;
+        case "county_id":
+        case "county":
+          nextErrors.county = message;
+          break;
+        case "city_id":
+        case "city":
+          nextErrors.city = message;
+          break;
+        case "zip":
+        case "zipcode":
+        case "postal_code":
+          nextErrors.zip = message;
           break;
         case "schedule":
           if (form.source === SELL_SOURCE) {
@@ -388,6 +494,14 @@ export default function CreateEnquiryPage() {
         name: form.name.trim(),
         email: form.email.trim(),
         contact_no: form.contact_no.trim(),
+        address: form.address.trim() || undefined,
+        state: stateName || undefined,
+        region_id: form.state || undefined,
+        county_id: form.county || undefined,
+        city: cityName || undefined,
+        city_id: form.city || undefined,
+        zip: form.zip.trim() || undefined,
+        zipcode: form.zip.trim() || undefined,
         description: form.description.trim(),
         // source: form.source || undefined,
         type: form.source || undefined,
@@ -416,6 +530,8 @@ export default function CreateEnquiryPage() {
       setSuccessMessage("Enquiry created successfully.");
       setErrors({});
       setForm(initialForm);
+      setStateName("");
+      setCityName("");
       setSelectedProperty(null);
       setTimeout(() => router.push("/admin/inquiries"), 1200);
     } catch (err: unknown) {
@@ -565,6 +681,178 @@ export default function CreateEnquiryPage() {
               )}
             </div>
           </div>
+
+          <div>
+            <label
+              htmlFor="address"
+              className="block text-sm font-medium text-slate-700 mb-1.5"
+            >
+              Address
+            </label>
+            <Input
+              id="address"
+              value={form.address}
+              onChange={(e) => updateField("address", e.target.value)}
+              aria-invalid={!!errors.address}
+              className={`rounded-xl focus:border-emerald-400 focus:ring-emerald-500/20 ${
+                errors.address
+                  ? "border-red-300 focus:border-red-400"
+                  : "border-slate-200"
+              }`}
+              placeholder="Enter full address"
+            />
+            {errors.address && (
+              <p className="text-xs text-red-500 mt-1">{errors.address}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+            <div>
+              <label
+                htmlFor="state"
+                className="block text-sm font-medium text-slate-700 mb-1.5"
+              >
+                State
+              </label>
+              <select
+                id="state"
+                value={form.state}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const selectedStateName = getOptionLabel(states, value);
+                  setForm((prev) => ({
+                    ...prev,
+                    state: value,
+                    county: "",
+                    city: "",
+                    zip: "",
+                  }));
+                  setStateName(selectedStateName);
+                  setCityName("");
+                  clearFieldErrors(["state", "county", "city", "zip"]);
+                  if (errorMessage) {
+                    setErrorMessage("");
+                  }
+                }}
+                disabled={statesLoading}
+                aria-invalid={!!errors.state}
+                className={`w-full px-4 py-2 text-sm rounded-xl border bg-white focus:outline-none focus:ring-2 transition ${
+                  errors.state
+                    ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
+                    : "border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                }`}
+              >
+                {renderSelect(states, statesLoading, "Select state")}
+              </select>
+              {errors.state && (
+                <p className="text-xs text-red-500 mt-1">{errors.state}</p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="county"
+                className="block text-sm font-medium text-slate-700 mb-1.5"
+              >
+                County
+              </label>
+              <select
+                id="county"
+                value={form.county}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setForm((prev) => ({
+                    ...prev,
+                    county: value,
+                    city: "",
+                    zip: "",
+                  }));
+                  setCityName("");
+                  clearFieldErrors(["county", "city", "zip"]);
+                  if (errorMessage) {
+                    setErrorMessage("");
+                  }
+                }}
+                disabled={!form.state || countiesLoading}
+                aria-invalid={!!errors.county}
+                className={`w-full px-4 py-2 text-sm rounded-xl border bg-white focus:outline-none focus:ring-2 transition ${
+                  errors.county
+                    ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
+                    : "border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                }`}
+              >
+                {renderSelect(counties, countiesLoading, "Select county")}
+              </select>
+              {errors.county && (
+                <p className="text-xs text-red-500 mt-1">{errors.county}</p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="city"
+                className="block text-sm font-medium text-slate-700 mb-1.5"
+              >
+                City
+              </label>
+              <select
+                id="city"
+                value={form.city}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const detectedZip = getCityZip(value);
+                  const selectedCityName = getOptionLabel(cities, value);
+                  setForm((prev) => ({
+                    ...prev,
+                    city: value,
+                    zip: detectedZip || "",
+                  }));
+                  setCityName(selectedCityName);
+                  clearFieldErrors(["city", "zip"]);
+                  if (errorMessage) {
+                    setErrorMessage("");
+                  }
+                }}
+                disabled={!form.county || citiesLoading}
+                aria-invalid={!!errors.city}
+                className={`w-full px-4 py-2 text-sm rounded-xl border bg-white focus:outline-none focus:ring-2 transition ${
+                  errors.city
+                    ? "border-red-300 focus:border-red-400 focus:ring-red-500/20"
+                    : "border-slate-200 focus:border-emerald-400 focus:ring-emerald-500/20"
+                }`}
+              >
+                {renderSelect(cities, citiesLoading, "Select city")}
+              </select>
+              {errors.city && (
+                <p className="text-xs text-red-500 mt-1">{errors.city}</p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="zip"
+                className="block text-sm font-medium text-slate-700 mb-1.5"
+              >
+                Zip
+              </label>
+              <Input
+                id="zip"
+                value={form.zip}
+                onChange={(e) => updateField("zip", e.target.value)}
+                aria-invalid={!!errors.zip}
+                className={`rounded-xl focus:border-emerald-400 focus:ring-emerald-500/20 ${
+                  errors.zip
+                    ? "border-red-300 focus:border-red-400"
+                    : "border-slate-200"
+                }`}
+                placeholder={form.city ? "Auto-filled or enter zip" : "Enter zip"}
+              />
+              {errors.zip && (
+                <p className="text-xs text-red-500 mt-1">{errors.zip}</p>
+              )}
+            </div>
+          </div>
+          
 
           {/* Source */}
           <div>
