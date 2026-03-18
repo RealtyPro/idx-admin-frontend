@@ -10,6 +10,7 @@ export interface OpenHousePayload {
   start_time: string;
   end_time?: string;
   description?: string;
+  notes?: string;
   property_id: string;
   status?: string;
 }
@@ -51,8 +52,6 @@ export interface OpenHouseItem {
 }
 
 const OPEN_HOUSE_ENDPOINTS = [
-  "v1/admin/open-house",
-  "v1/admin/open-houses",
   "v1/admin/openhouse",
 ];
 

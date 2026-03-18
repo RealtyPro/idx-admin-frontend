@@ -18,7 +18,7 @@ export const useOpenHouses = (params: OpenHouseSearchParams = {}) => {
 
 export const useSingleOpenHouse = (id: string) => {
   return useQuery({
-    queryKey: ["open-house", id],
+    queryKey: ["openhouse", id],
     queryFn: () => fetchSingleOpenHouse(id),
     enabled: !!id,
   });
