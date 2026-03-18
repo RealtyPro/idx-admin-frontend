@@ -156,6 +156,7 @@ export default function ListingDetailsPage() {
         start_time: openHouseForm.start_time,
         end_time: openHouseForm.end_time || undefined,
         description: openHouseForm.description.trim() || undefined,
+        notes: openHouseForm.description.trim() || undefined,
         status: openHouseForm.status || undefined,
       });
       setOpenHouseSuccess("Open house event created successfully.");
