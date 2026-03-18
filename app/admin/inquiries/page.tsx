@@ -40,6 +40,16 @@ import {
 /* ------------------------------------------------------------------ */
 /*  Avatar colour palette                                              */
 /* ------------------------------------------------------------------ */
+const SOURCE_LABELS: Record<string, { label: string; className: string }> = {
+  sell:             { label: "Sell",            className: "bg-orange-100 text-orange-700" },
+  connect:          { label: "General",         className: "bg-blue-100 text-blue-700" },
+  listing_tour:     { label: "Schedule Tour",   className: "bg-violet-100 text-violet-700" },
+  listing_enquire:  { label: "Listing Inquire", className: "bg-cyan-100 text-cyan-700" },
+  signup:           { label: "Sign Up",         className: "bg-emerald-100 text-emerald-700" },
+  openhouse:        { label: "Open House",      className: "bg-amber-100 text-amber-700" },
+  "idx-admin":      { label: "IDX Admin",       className: "bg-slate-100 text-slate-600" },
+};
+
 const avatarColors = [
   "bg-blue-100 text-blue-600",
   "bg-emerald-100 text-emerald-600",
@@ -209,7 +219,9 @@ function InquiriesContent() {
         `v1/admin/enquiry/sync-enquiry-to-crm/${inquiry.id}`,
         { params: { enquiry_id: inquiry.id } },
       );
-      toast.success(response.data.message || "Enquiry successfully synced to CRM");
+      toast.success(
+        response.data.message || "Enquiry successfully synced to CRM",
+      );
       queryClient.invalidateQueries({ queryKey: ["enquiries", activeFilters] });
     } catch (err: any) {
       if (err.response?.status === 401)
@@ -449,6 +461,13 @@ function InquiriesContent() {
                       <span className="text-[15px] font-semibold text-slate-900">
                         {name}
                       </span>
+                      {inquiry.type && SOURCE_LABELS[inquiry.type] && (
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${SOURCE_LABELS[inquiry.type].className}`}
+                        >
+                          {SOURCE_LABELS[inquiry.type].label}
+                        </span>
+                      )}
                     </div>
 
                     {/* Meta row */}
@@ -474,10 +493,10 @@ function InquiriesContent() {
                     </div>
 
                     {/* Message preview */}
-                    {inquiry.message && (
+                    {(inquiry.message || inquiry.description) && (
                       <p className="text-sm text-slate-400 line-clamp-2 leading-relaxed">
                         <ChatBubbleLeftEllipsisIcon className="w-3.5 h-3.5 inline mr-1 -mt-0.5 text-slate-300" />
-                        {inquiry.message}
+                        {inquiry.message || inquiry.description}
                       </p>
                     )}
                   </div>
@@ -507,10 +526,10 @@ function InquiriesContent() {
                     )}
                     <Link
                       href={`/admin/inquiries/${inquiry.id}`}
-                      className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors"
+                      className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition disabled:opacity-50"
                     >
                       <EyeIcon className="w-4 h-4" />
-                      View
+                      {/* View */}
                     </Link>
                     <button
                       onClick={() => {
@@ -568,7 +587,14 @@ function InquiriesContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+      />
     </div>
   );
 }

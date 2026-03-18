@@ -28,6 +28,22 @@ import {
   Tag,
 } from "lucide-react";
 
+const SOURCE_LABELS: Record<string, { label: string; className: string }> = {
+  sell: { label: "Sell", className: "bg-orange-100 text-orange-700" },
+  connect: { label: "General", className: "bg-blue-100 text-blue-700" },
+  listing_tour: {
+    label: "Schedule Tour",
+    className: "bg-violet-100 text-violet-700",
+  },
+  listing_enquire: {
+    label: "Listing Inquire",
+    className: "bg-cyan-100 text-cyan-700",
+  },
+  signup: { label: "Sign Up", className: "bg-emerald-100 text-emerald-700" },
+  openhouse: { label: "Open House", className: "bg-amber-100 text-amber-700" },
+  "idx-admin": { label: "IDX Admin", className: "bg-slate-100 text-slate-600" },
+};
+
 function useEnquiryDetail(id: string) {
   return useQuery({
     queryKey: ["enquiry", id],
@@ -112,7 +128,9 @@ export default function EnquiryDetailPage({
   }
 
   const enquiry = data?.data || data || {};
-  const listing = enquiry?.listings || enquiry?.listing || null;
+  const listing =
+    enquiry?.listings || enquiry?.listing || enquiry?.listing_details || null;
+  const sourceMeta = enquiry.type ? SOURCE_LABELS[String(enquiry.type)] : null;
 
   const formatDateTime = (value?: string) => {
     if (!value) return "N/A";
@@ -122,7 +140,7 @@ export default function EnquiryDetailPage({
   };
 
   const getImageUrl = (listing: any) => {
-    const img = listing?.images || listing?.image || listing?.photos;
+    const img = listing?.images || listing?.image || listing?.photos || listing?.photo || listing?.cover_photo || null;
     if (!img) return null;
 
     if (typeof img === "string") {
@@ -345,6 +363,7 @@ export default function EnquiryDetailPage({
             </CardContent>
           </Card>
           {/* Listing Details Card */}
+          {listing && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -367,9 +386,13 @@ export default function EnquiryDetailPage({
                   const beds = listing.bed ?? listing.beds ?? "-";
                   const baths = listing.bath ?? listing.baths ?? "-";
                   const sqft =
-                    listing.sqft ?? listing.square_feet ?? listing.area ?? "-";
-                  const location = listing.address || listing.location || "N/A";
-
+                    listing.sqft ?? listing.square_feet ?? listing.area ?? listing?.bua ?? "-";
+                  const location =
+                    listing.address ||
+                    listing.location ||
+                    listing?.UnparsedAddress ||
+                    "N/A";
+                  const PropertySubType = listing.PropertySubType || "";
                   return (
                     <div className="rounded-lg border p-4">
                       <div className="flex gap-4">
@@ -388,7 +411,17 @@ export default function EnquiryDetailPage({
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate">{title}</p>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <p className="font-semibold truncate">{title}</p>
+                            {PropertySubType && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs whitespace-nowrap"
+                              >
+                                {PropertySubType}
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-sm text-muted-foreground truncate mt-0.5">
                             {location}
                           </p>
@@ -400,15 +433,15 @@ export default function EnquiryDetailPage({
                             </span>
                             <span className="inline-flex items-center gap-1">
                               <BedDouble className="w-3.5 h-3.5" />
-                              {beds} bd
+                              {beds} {beds === 1 ? "Bedroom" : "Bedrooms"}
                             </span>
                             <span className="inline-flex items-center gap-1">
                               <Bath className="w-3.5 h-3.5" />
-                              {baths} ba
+                              {baths} {baths === 1 ? "Bathroom" : "Bathrooms"}
                             </span>
                             <span className="inline-flex items-center gap-1">
                               <Ruler className="w-3.5 h-3.5" />
-                              {sqft} sqft
+                              {sqft} Sqft
                             </span>
                           </div>
                         </div>
@@ -423,6 +456,7 @@ export default function EnquiryDetailPage({
               )}
             </CardContent>
           </Card>
+          )}
         </div>
 
         {/* Details Sidebar */}
@@ -455,6 +489,17 @@ export default function EnquiryDetailPage({
                   }
                 >
                   {enquiry.status || "N/A"}
+                </Badge>
+              </div>
+            )}
+
+            {sourceMeta && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                  Source
+                </h3>
+                <Badge variant="secondary" className={sourceMeta.className}>
+                  {sourceMeta.label}
                 </Badge>
               </div>
             )}
