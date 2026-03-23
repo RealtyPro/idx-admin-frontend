@@ -51,9 +51,7 @@ export interface OpenHouseItem {
   [key: string]: unknown;
 }
 
-const OPEN_HOUSE_ENDPOINTS = [
-  "v1/admin/openhouse",
-];
+const OPEN_HOUSE_ENDPOINTS = ["v1/admin/openhouse"];
 
 const isValidString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
@@ -70,7 +68,7 @@ const buildQuery = (params: OpenHouseSearchParams = {}) => {
 };
 
 const tryEndpoints = async (
-  requestFactory: (endpoint: string) => Promise<unknown>
+  requestFactory: (endpoint: string) => Promise<unknown>,
 ): Promise<unknown> => {
   let lastError: unknown;
 
@@ -86,7 +84,7 @@ const tryEndpoints = async (
 };
 
 export const fetchOpenHouses = async (
-  params: OpenHouseSearchParams = {}
+  params: OpenHouseSearchParams = {},
 ): Promise<unknown> => {
   const query = buildQuery(params);
 
@@ -103,8 +101,17 @@ export const fetchSingleOpenHouse = async (id: string): Promise<unknown> => {
   });
 };
 
+export const fetchPublicSingleOpenHouse = async (
+  id: string,
+): Promise<unknown> => {
+  return tryEndpoints(async (endpoint) => {
+    const response = await axiosInstance.get(`${'v1/openhouse'}?openhouse_id=${id}`);
+    return response.data;
+  });
+};
+
 export const createOpenHouse = async (
-  payload: OpenHousePayload
+  payload: OpenHousePayload,
 ): Promise<unknown> => {
   return tryEndpoints(async (endpoint) => {
     const response = await axiosInstance.post(endpoint, payload);
@@ -114,7 +121,7 @@ export const createOpenHouse = async (
 
 export const updateOpenHouse = async (
   id: string,
-  payload: Partial<OpenHousePayload>
+  payload: Partial<OpenHousePayload>,
 ): Promise<unknown> => {
   return tryEndpoints(async (endpoint) => {
     const response = await axiosInstance.patch(`${endpoint}/${id}`, payload);

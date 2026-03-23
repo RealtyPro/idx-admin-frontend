@@ -198,6 +198,7 @@ export default function OpenHouseDetailsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [userUuid, setUserUuid] = useState("");
+  const [isClosingEvent, setIsClosingEvent] = useState(false);
 
   useEffect(() => {
     setUserUuid(sessionStorage.getItem("user_uuid") || "");
@@ -279,6 +280,35 @@ export default function OpenHouseDetailsPage() {
     }
   };
 
+  const handleCloseEvent = async () => {
+    if (!id) return;
+
+    setIsClosingEvent(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await updateMutation.mutateAsync({
+        id,
+        payload: { status: "cancelled" },
+      });
+
+      await queryClient.invalidateQueries({ queryKey: ["open-house", id] });
+      await queryClient.invalidateQueries({ queryKey: ["open-houses"] });
+
+      setStatus("expired");
+      setSuccessMessage("Open house event closed successfully.");
+    } catch (closeError) {
+      const message =
+        closeError instanceof Error
+          ? closeError.message
+          : "Failed to close open house event.";
+      setErrorMessage(message);
+    } finally {
+      setIsClosingEvent(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="px-6 lg:px-8 max-w-[1100px] mx-auto space-y-4 py-1">
@@ -313,6 +343,12 @@ export default function OpenHouseDetailsPage() {
 
   const eventName =
     openHouse.title || openHouse.name || `Open House ${openHouse.id}`;
+  const normalizedCurrentStatus = String(
+    openHouse.status || status || "",
+  ).toLowerCase();
+  const canCloseEvent = ["active", "scheduled"].includes(
+    normalizedCurrentStatus,
+  );
   const eventDateValue = openHouse.event_date || openHouse.date || "";
   const startTimeValue = openHouse.start_time || openHouse.time || "";
   const endTimeValue = openHouse.end_time || "";
@@ -371,9 +407,19 @@ export default function OpenHouseDetailsPage() {
               className="inline-flex items-center gap-2"
             >
               <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-              Open Public Page
+              Open
             </Link>
           </Button>
+          {canCloseEvent && !isEditMode && (
+            <Button
+              variant="destructive"
+              onClick={handleCloseEvent}
+              disabled={isClosingEvent || updateMutation.isPending}
+              className="inline-flex items-center gap-1.5"
+            >
+              {isClosingEvent ? "Closing..." : "Close Event"}
+            </Button>
+          )}
           {!isEditMode ? (
             <Button
               onClick={() => setIsEditMode(true)}
@@ -614,11 +660,13 @@ export default function OpenHouseDetailsPage() {
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <BedDouble className="w-3.5 h-3.5" />
-                        {propertyBeds} {Number(propertyBeds) === 1 ? "Bedroom" : "Bedrooms"}
+                        {propertyBeds}{" "}
+                        {Number(propertyBeds) === 1 ? "Bedroom" : "Bedrooms"}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Bath className="w-3.5 h-3.5" />
-                        {propertyBaths} {Number(propertyBaths) === 1 ? "Bathroom" : "Bathrooms"}
+                        {propertyBaths}{" "}
+                        {Number(propertyBaths) === 1 ? "Bathroom" : "Bathrooms"}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Ruler className="w-3.5 h-3.5" />
@@ -661,11 +709,13 @@ export default function OpenHouseDetailsPage() {
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <BedDouble className="w-3.5 h-3.5" />
-                        {propertyBeds} {Number(propertyBeds) === 1 ? "Bedroom" : "Bedrooms"}
+                        {propertyBeds}{" "}
+                        {Number(propertyBeds) === 1 ? "Bedroom" : "Bedrooms"}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Bath className="w-3.5 h-3.5" />
-                        {propertyBaths} {Number(propertyBaths) === 1 ? "Bathroom" : "Bathrooms"}
+                        {propertyBaths}{" "}
+                        {Number(propertyBaths) === 1 ? "Bathroom" : "Bathrooms"}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Ruler className="w-3.5 h-3.5" />
