@@ -423,17 +423,11 @@ export default function OpenHousesListPage() {
               propertyTitle: propertyName,
               propertyLocation: String(propertyLocation),
               price: String(listingDetails?.price || ""),
-              beds: String(listingDetails?.bed ?? listingDetails?.beds ?? ""),
-              baths: String(
-                listingDetails?.bath ?? listingDetails?.baths ?? "",
-              ),
-              sqft: String(listingDetails?.sqft ?? listingDetails?.bua ?? ""),
-              image: String(listingCoverPhoto || ""),
-              eventDate: String(dateValue || ""),
-              startTime: String(timeFrom || ""),
-              endTime: String(timeTo || ""),
+
               propertyId: String(
-                listingDetails?.id || (openHouse.property as { id?: string })?.id || "",
+                listingDetails?.id ||
+                  (openHouse.property as { id?: string })?.id ||
+                  "",
               ),
               mlsAgentId: userUuid,
             }).toString();
@@ -471,9 +465,13 @@ export default function OpenHousesListPage() {
                         {openHouse.status}
                       </span>
                     )}
-                    {(listingDetails?.property_type || listingDetails?.PropertyType || listingDetails?.PropertySubType) && (
+                    {(listingDetails?.property_type ||
+                      listingDetails?.PropertyType ||
+                      listingDetails?.PropertySubType) && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200 flex-shrink-0">
-                        {listingDetails.property_type || listingDetails.PropertyType || listingDetails.PropertySubType}
+                        {listingDetails.property_type ||
+                          listingDetails.PropertyType ||
+                          listingDetails.PropertySubType}
                       </span>
                     )}
                   </div>

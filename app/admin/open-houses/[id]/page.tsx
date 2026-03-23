@@ -368,13 +368,6 @@ export default function OpenHouseDetailsPage() {
     propertyTitle,
     propertyLocation,
     price: String(property?.price || ""),
-    beds: String(propertyBeds),
-    baths: String(propertyBaths),
-    sqft: String(propertySqft),
-    image: String(propertyImage || ""),
-    eventDate: String(eventDateValue || ""),
-    startTime: String(startTimeValue || ""),
-    endTime: String(endTimeValue || ""),
     propertyId: String(property?.id || openHouse.property_id || ""),
     mlsAgentId: userUuid,
   }).toString();
