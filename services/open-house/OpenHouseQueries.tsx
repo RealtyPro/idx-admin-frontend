@@ -3,6 +3,7 @@ import {
   createOpenHouse,
   deleteOpenHouse,
   fetchOpenHouses,
+  fetchPublicSingleOpenHouse,
   fetchSingleOpenHouse,
   OpenHousePayload,
   OpenHouseSearchParams,
@@ -20,6 +21,14 @@ export const useSingleOpenHouse = (id: string) => {
   return useQuery({
     queryKey: ["openhouse", id],
     queryFn: () => fetchSingleOpenHouse(id),
+    enabled: !!id,
+  });
+};
+
+export const usePublicSingleOpenHouse = (id: string) => {
+  return useQuery({
+    queryKey: ["public-openhouse", id],
+    queryFn: () => fetchPublicSingleOpenHouse(id),
     enabled: !!id,
   });
 };

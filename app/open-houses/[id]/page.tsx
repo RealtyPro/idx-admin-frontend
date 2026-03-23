@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import axiosInstance from "@/services/Api";
 import {
-  useSingleOpenHouse,
+  usePublicSingleOpenHouse,
   useUpdateOpenHouse,
 } from "@/services/open-house/OpenHouseQueries";
 
@@ -146,7 +146,7 @@ export default function PublicOpenHousePage() {
         ? params.id[0]
         : "";
 
-  const { data, isLoading, isError } = useSingleOpenHouse(id);
+  const { data, isLoading, isError } = usePublicSingleOpenHouse(id);
   const endOpenHouseMutation = useUpdateOpenHouse();
 
   const [form, setForm] = useState<EnquiryForm>(initialForm);
@@ -178,7 +178,7 @@ export default function PublicOpenHousePage() {
     const hasFallback =
       !!eventName || !!propertyTitle || !!propertyLocation || !!image;
     if (!hasFallback) return null;
-
+    return {};
     return {
       eventName,
       eventDate,
@@ -364,6 +364,15 @@ export default function PublicOpenHousePage() {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eef7ff,#f8fafc_42%,#f6f9f3)] pb-10">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-6">
         <div className="flex justify-end gap-2 mb-4">
+          {/* <Button
+            type="button"
+            variant="destructive"
+            className="rounded-full"
+            onClick={handleEndOpenHouse}
+            disabled={isEnding}
+          >
+            {isEnding ? "Ending..." : "End Open House"}
+          </Button> */}
           <Button
             variant="outline"
             className="rounded-full"
@@ -372,15 +381,6 @@ export default function PublicOpenHousePage() {
           >
             <XMarkIcon className="w-4 h-4 mr-1" />
             Close
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            className="rounded-full"
-            onClick={handleEndOpenHouse}
-            disabled={isEnding}
-          >
-            {isEnding ? "Ending..." : "End Open House"}
           </Button>
         </div>
 
