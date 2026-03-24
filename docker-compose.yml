@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  idx_admin:
+    build: .
+    container_name: idx_admin
+    ports:
+      - "3002:3000"
+    restart: always
