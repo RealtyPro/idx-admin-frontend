@@ -5,7 +5,6 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
-  ArrowLeftIcon,
   CalendarDaysIcon,
   ClockIcon,
   HomeModernIcon,
@@ -14,7 +13,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { Bath, BedDouble, Ruler, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import axiosInstance from "@/services/Api";
@@ -331,320 +329,267 @@ export default function PublicOpenHousePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 sm:px-8 py-8 space-y-6">
-        <Skeleton className="h-14 w-full rounded-2xl" />
-        <Skeleton className="h-[320px] w-full rounded-3xl" />
-        <Skeleton className="h-[160px] w-full rounded-2xl" />
-        <Skeleton className="h-[340px] w-full rounded-2xl" />
+      <div className="h-screen bg-slate-50 flex flex-col gap-3 p-6">
+        <Skeleton className="h-12 w-full" />
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <Skeleton className="h-full w-full" />
+          <Skeleton className="h-full w-full" />
+        </div>
       </div>
     );
   }
 
   if ((isError || !openHouse) && !fallbackFromQuery) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 sm:px-8 py-8 flex items-center justify-center">
-        <Card className="max-w-xl w-full">
-          <CardHeader>
-            <CardTitle>Open house unavailable</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-slate-600">
-              This open house is no longer available or the link is invalid.
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/">Go Back</Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="h-screen bg-slate-50 flex items-center justify-center">
+        <div className="max-w-md w-full border border-slate-200 bg-white p-8">
+          <h2 className="text-lg font-semibold text-slate-900 mb-2">Open house unavailable</h2>
+          <p className="text-sm text-slate-500 mb-6">
+            This open house is no longer available or the link is invalid.
+          </p>
+          <Button asChild variant="outline" className="rounded-none">
+            <Link href="/">Go Back</Link>
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eef7ff,#f8fafc_42%,#f6f9f3)] pb-10">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-6">
-        <div className="flex justify-end gap-2 mb-4">
-          {/* <Button
-            type="button"
-            variant="destructive"
-            className="rounded-full"
-            onClick={handleEndOpenHouse}
-            disabled={isEnding}
-          >
-            {isEnding ? "Ending..." : "End Open House"}
-          </Button> */}
-          <Button
-            variant="outline"
-            className="rounded-full"
-            onClick={handleClosePage}
-            type="button"
-          >
-            <XMarkIcon className="w-4 h-4 mr-1" />
-            Close
-          </Button>
+    <div className="h-screen flex flex-col overflow-hidden bg-slate-100">
+      {/* ── Top bar ── */}
+      <header className="flex-none flex items-center justify-between bg-white border-b border-slate-200 px-5 py-0 h-12">
+        <div className="flex items-center gap-2 text-emerald-700">
+          <HomeModernIcon className="w-5 h-5" />
+          <span className="text-xs font-semibold tracking-widest uppercase">Open House</span>
         </div>
+        <button
+          type="button"
+          onClick={handleClosePage}
+          className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 transition-colors"
+        >
+          <XMarkIcon className="w-4 h-4" />
+          Close
+        </button>
+      </header>
 
-        <section className="overflow-hidden rounded-3xl border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-          <div className="relative h-[260px] sm:h-[360px] lg:h-[440px] bg-slate-100">
+      {/* ── Main two-column layout ── */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] overflow-hidden">
+
+        {/* ── LEFT: Property showcase ── */}
+        <div className="flex flex-col overflow-hidden border-r border-slate-200">
+          {/* Hero image */}
+          <div className="relative flex-1 bg-slate-800 overflow-hidden min-h-0">
             {bannerImage ? (
               <img
                 src={bannerImage}
                 alt={propertyTitle}
-                className="w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-400">
-                <HomeModernIcon className="w-12 h-12" />
+              <div className="absolute inset-0 flex items-center justify-center text-slate-500">
+                <HomeModernIcon className="w-16 h-16 opacity-30" />
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/45 via-slate-900/5 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-7 text-white">
-              <p className="text-xs tracking-[0.2em] uppercase text-white/80 mb-2">
+            {/* Dark overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
+
+            {/* Property title overlay */}
+            <div className="absolute bottom-0 left-0 right-0 px-6 pb-5 pt-16">
+              <p className="text-[10px] tracking-[0.25em] uppercase text-emerald-400 font-semibold mb-1">
                 Open House
               </p>
-              <h1 className="text-2xl sm:text-4xl font-semibold leading-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-white leading-snug line-clamp-2">
                 {resolvedEventName}
               </h1>
-              <p className="mt-2 text-sm sm:text-base text-white/90 inline-flex items-center gap-1.5">
-                <MapPinIcon className="w-4 h-4" />
-                {propertyLocation}
+              <p className="mt-1.5 text-sm text-white/75 flex items-center gap-1.5">
+                <MapPinIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="truncate">{propertyLocation}</span>
               </p>
             </div>
-          </div>
 
-          {imageUrls.length > 1 && (
-            <div className="px-4 sm:px-6 py-3 border-t border-slate-100 bg-slate-50/70">
-              <div className="flex gap-2 overflow-auto">
+            {/* Image strip */}
+            {imageUrls.length > 1 && (
+              <div className="absolute top-3 right-3 flex flex-col gap-1.5 max-h-[calc(100%-80px)] overflow-y-auto">
                 {imageUrls.map((img, index) => (
                   <button
                     key={`${img}-${index}`}
                     type="button"
                     onClick={() => setActiveImage(index)}
-                    className={`w-20 h-14 rounded-lg overflow-hidden border-2 transition ${
+                    className={`w-14 h-10 overflow-hidden border-2 transition flex-shrink-0 ${
                       index === activeImage
-                        ? "border-emerald-500"
-                        : "border-transparent hover:border-slate-300"
+                        ? "border-emerald-400"
+                        : "border-white/30 hover:border-white/70"
                     }`}
                   >
                     <img
                       src={img}
-                      alt={`Property image ${index + 1}`}
+                      alt={`View ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
                   </button>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Property stats bar */}
+          <div className="flex-none bg-white border-t border-slate-200">
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-slate-200">
+              <div className="px-4 py-3 flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Price</span>
+                <span className="text-sm font-bold text-slate-900 flex items-center gap-1">
+                  <Tag className="w-3.5 h-3.5 text-emerald-600" />
+                  {propertyPrice}
+                </span>
+              </div>
+              <div className="px-4 py-3 flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Beds</span>
+                <span className="text-sm font-bold text-slate-900 flex items-center gap-1">
+                  <BedDouble className="w-3.5 h-3.5 text-emerald-600" />
+                  {propertyBeds}
+                </span>
+              </div>
+              <div className="px-4 py-3 flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Baths</span>
+                <span className="text-sm font-bold text-slate-900 flex items-center gap-1">
+                  <Bath className="w-3.5 h-3.5 text-emerald-600" />
+                  {propertyBaths}
+                </span>
+              </div>
+              <div className="px-4 py-3 flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Sq Ft</span>
+                <span className="text-sm font-bold text-slate-900 flex items-center gap-1">
+                  <Ruler className="w-3.5 h-3.5 text-emerald-600" />
+                  {propertySqft}
+                </span>
+              </div>
             </div>
-          )}
-        </section>
+            {/* Date/time strip */}
+            <div className="border-t border-slate-200 bg-emerald-50 px-4 py-2.5 flex flex-wrap gap-x-6 gap-y-1">
+              <span className="text-xs text-emerald-800 flex items-center gap-1.5">
+                <CalendarDaysIcon className="w-3.5 h-3.5" />
+                {formatDate(eventDate)}
+              </span>
+              <span className="text-xs text-emerald-800 flex items-center gap-1.5">
+                <ClockIcon className="w-3.5 h-3.5" />
+                {formatTime(eventStart)}{eventEnd ? ` – ${formatTime(eventEnd)}` : ""}
+              </span>
+            </div>
+          </div>
+        </div>
 
-        <section className="mt-4 space-y-4">
-          {/* <Card className="rounded-2xl border-slate-100 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-xl">Property Snapshot</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-xs text-slate-500">Price</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900 inline-flex items-center gap-1">
-                      <Tag className="w-3.5 h-3.5 text-slate-500" />
-                      {propertyPrice}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-xs text-slate-500">Bedrooms</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900 inline-flex items-center gap-1">
-                      <BedDouble className="w-3.5 h-3.5 text-slate-500" />
-                      {propertyBeds}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-xs text-slate-500">Bathrooms</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900 inline-flex items-center gap-1">
-                      <Bath className="w-3.5 h-3.5 text-slate-500" />
-                      {propertyBaths}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-xs text-slate-500">Square Feet</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900 inline-flex items-center gap-1">
-                      <Ruler className="w-3.5 h-3.5 text-slate-500" />
-                      {propertySqft}
-                    </p>
-                  </div>
-                </div>
+        {/* ── RIGHT: Enquiry form ── */}
+        <div className="flex flex-col overflow-y-auto bg-white">
+          <div className="px-6 pt-5 pb-3 border-b border-slate-100">
+            <h2 className="text-base font-bold text-slate-900">Interested In This Home?</h2>
+            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+              Tell us about your timeline — we&apos;ll reach out with personalized guidance.
+            </p>
+          </div>
 
-                <div className="mt-4 rounded-xl border border-slate-200 bg-emerald-50/40 p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                  <p className="inline-flex items-center gap-1.5 text-slate-700">
-                    <CalendarDaysIcon className="w-4 h-4 text-emerald-700" />
-                    {formatDate(eventDate)}
-                  </p>
-                  <p className="inline-flex items-center gap-1.5 text-slate-700">
-                    <ClockIcon className="w-4 h-4 text-emerald-700" />
-                    {formatTime(eventStart)}
-                    {eventEnd ? ` - ${formatTime(eventEnd)}` : ""}
-                  </p>
-                </div>
-              </CardContent>
-          </Card> */}
+          <form className="flex-1 px-6 py-4 flex flex-col gap-3" onSubmit={handleSubmit}>
+            {submitSuccess && (
+              <div className="border border-emerald-300 bg-emerald-50 text-emerald-700 px-3 py-2 text-xs">
+                {submitSuccess}
+              </div>
+            )}
+            {submitError && (
+              <div className="border border-red-300 bg-red-50 text-red-600 px-3 py-2 text-xs">
+                {submitError}
+              </div>
+            )}
 
-          <Card className="rounded-2xl border-slate-100 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl">
-                Interested In This Home?
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-slate-600 leading-6">
-                Tell us a little about your timeline and we will contact you
-                with personalized guidance and next steps.
-              </p>
-            </CardContent>
-          </Card>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1" htmlFor="name">
+                  Name
+                </label>
+                <Input
+                  id="name"
+                  value={form.name}
+                  onChange={(e) => updateField("name", e.target.value)}
+                  className="rounded-none border-slate-300 focus:border-emerald-500 focus:ring-0 text-sm h-9"
+                  placeholder="Full name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1" htmlFor="email">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => updateField("email", e.target.value)}
+                  className="rounded-none border-slate-300 focus:border-emerald-500 focus:ring-0 text-sm h-9"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+            </div>
 
-          <Card className="rounded-2xl border-slate-100 shadow-lg">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Open House Enquiry</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form
-                className="grid grid-cols-1 md:grid-cols-2 gap-3"
-                onSubmit={handleSubmit}
-              >
-                {submitSuccess && (
-                  <div className="md:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-2 text-sm">
-                    {submitSuccess}
-                  </div>
-                )}
-                {submitError && (
-                  <div className="md:col-span-2 rounded-xl border border-red-200 bg-red-50 text-red-600 px-3 py-2 text-sm">
-                    {submitError}
-                  </div>
-                )}
-
-                <div>
-                  <label
-                    className="block text-sm font-medium text-slate-700 mb-1.5"
-                    htmlFor="name"
-                  >
-                    Name
-                  </label>
-                  <Input
-                    id="name"
-                    value={form.name}
-                    onChange={(event) =>
-                      updateField("name", event.target.value)
-                    }
-                    className="rounded-xl"
-                    placeholder="Your full name"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label
-                    className="block text-sm font-medium text-slate-700 mb-1.5"
-                    htmlFor="email"
-                  >
-                    Email
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={form.email}
-                    onChange={(event) =>
-                      updateField("email", event.target.value)
-                    }
-                    className="rounded-xl"
-                    placeholder="you@example.com"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label
-                    className="block text-sm font-medium text-slate-700 mb-1.5"
-                    htmlFor="phone"
-                  >
-                    Phone
-                  </label>
-                  <Input
-                    id="phone"
-                    value={form.phone}
-                    onChange={(event) =>
-                      updateField("phone", event.target.value)
-                    }
-                    className="rounded-xl"
-                    placeholder="Your phone number"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label
-                    className="block text-sm font-medium text-slate-700 mb-1.5"
-                    htmlFor="planning_to_buy"
-                  >
-                    When are you planning to buy?
-                  </label>
-                  <select
-                    id="planning_to_buy"
-                    value={form.planningToBuy}
-                    onChange={(event) =>
-                      updateField("planningToBuy", event.target.value)
-                    }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
-                    required
-                  >
-                    <option value="">Select timeline</option>
-                    {PLANNING_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label
-                    className="block text-sm font-medium text-slate-700 mb-1.5"
-                    htmlFor="comments"
-                  >
-                    Comments
-                  </label>
-                  <textarea
-                    id="comments"
-                    rows={4}
-                    value={form.comments}
-                    onChange={(event) =>
-                      updateField("comments", event.target.value)
-                    }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
-                    placeholder="Share your goals, preferred move timeline, or questions"
-                    required
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={!canSubmit || isSubmitting}
-                  className="md:col-span-2 w-full rounded-xl bg-emerald-600 hover:bg-emerald-700"
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1" htmlFor="phone">
+                  Phone
+                </label>
+                <Input
+                  id="phone"
+                  value={form.phone}
+                  onChange={(e) => updateField("phone", e.target.value)}
+                  className="rounded-none border-slate-300 focus:border-emerald-500 focus:ring-0 text-sm h-9"
+                  placeholder="Phone number"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1" htmlFor="planning_to_buy">
+                  Planning to Buy
+                </label>
+                <select
+                  id="planning_to_buy"
+                  value={form.planningToBuy}
+                  onChange={(e) => updateField("planningToBuy", e.target.value)}
+                  className="w-full border border-slate-300 bg-white px-3 h-9 text-sm focus:outline-none focus:border-emerald-500 text-slate-700"
+                  required
                 >
-                  {isSubmitting ? "Submitting..." : "Submit Enquiry"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </section>
+                  <option value="">Select timeline</option>
+                  {PLANNING_OPTIONS.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-        <div className="mt-8">
-          <Button asChild variant="ghost" className="text-slate-600">
-            <Link href="/">
-              <ArrowLeftIcon className="w-4 h-4 mr-1" />
-              Back to Home
-            </Link>
-          </Button>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1" htmlFor="comments">
+                Comments
+              </label>
+              <textarea
+                id="comments"
+                rows={3}
+                value={form.comments}
+                onChange={(e) => updateField("comments", e.target.value)}
+                className="w-full border border-slate-300 bg-white px-3 py-2 text-sm resize-none focus:outline-none focus:border-emerald-500"
+                placeholder="Share your goals, preferred timeline, or questions…"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={!canSubmit || isSubmitting}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 transition-colors"
+            >
+              {isSubmitting ? "Submitting…" : "Submit Enquiry"}
+            </button>
+
+            <p className="text-[11px] text-slate-400 text-center">
+              Your information is kept private and never shared.
+            </p>
+          </form>
         </div>
       </div>
     </div>
