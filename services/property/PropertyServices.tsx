@@ -67,7 +67,7 @@ export const addFeaturedProperty = async (id: string) => {
   return response.data;
 };
 
-// Remove featured (PATCH v1/admin/property/action/${id}/unfeature)
+// Remove featured (PATCH v1/admin/property/action/${id}/feature)
 export const removeFeaturedProperty = async (id: string) => {
   const response = await axiosInstance.patch(
     `v1/admin/property/action/${id}/feature`,
