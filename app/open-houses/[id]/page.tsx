@@ -329,11 +329,10 @@ export default function PublicOpenHousePage() {
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-slate-50 flex flex-col gap-3 p-6">
-        <Skeleton className="h-12 w-full" />
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <Skeleton className="h-full w-full" />
-          <Skeleton className="h-full w-full" />
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+        <div className="w-full max-w-5xl rounded-2xl overflow-hidden border border-slate-200 shadow-lg grid grid-cols-1 lg:grid-cols-[3fr_2fr]">
+          <Skeleton className="h-96 w-full" />
+          <Skeleton className="h-96 w-full bg-slate-200" />
         </div>
       </div>
     );
@@ -341,13 +340,14 @@ export default function PublicOpenHousePage() {
 
   if ((isError || !openHouse) && !fallbackFromQuery) {
     return (
-      <div className="h-screen bg-slate-50 flex items-center justify-center">
-        <div className="max-w-md w-full border border-slate-200 bg-white p-8">
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">Open house unavailable</h2>
-          <p className="text-sm text-slate-500 mb-6">
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+        <div className="max-w-sm w-full bg-white border border-slate-200 rounded-2xl p-10 text-center shadow-md">
+          <HomeModernIcon className="w-9 h-9 text-[#C9A84C] mx-auto mb-4" />
+          <h2 className="text-base font-semibold text-slate-900 mb-2">Open house unavailable</h2>
+          <p className="text-sm text-slate-500 mb-7 leading-relaxed">
             This open house is no longer available or the link is invalid.
           </p>
-          <Button asChild variant="outline" className="rounded-none">
+          <Button asChild variant="outline" className="border-[#C9A84C] text-[#C9A84C] hover:bg-[#C9A84C]/10 rounded-lg text-xs font-bold tracking-widest uppercase">
             <Link href="/">Go Back</Link>
           </Button>
         </div>
@@ -356,240 +356,216 @@ export default function PublicOpenHousePage() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-slate-100">
+    <div className="min-h-screen bg-slate-100 flex flex-col">
+
       {/* ── Top bar ── */}
-      <header className="flex-none flex items-center justify-between bg-white border-b border-slate-200 px-5 py-0 h-12">
-        <div className="flex items-center gap-2 text-emerald-700">
+      <header className="flex-none flex items-center justify-between px-6 h-13 py-3 border-b border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center gap-2.5 text-[#C9A84C]">
           <HomeModernIcon className="w-5 h-5" />
-          <span className="text-xs font-semibold tracking-widest uppercase">Open House</span>
+          <span className="text-[11px] font-bold tracking-[0.25em] uppercase text-slate-800">Open House</span>
         </div>
         <button
           type="button"
           onClick={handleClosePage}
-          className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 transition-colors"
+          className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-[#C9A84C] transition-colors font-medium"
         >
           <XMarkIcon className="w-4 h-4" />
           Close
         </button>
       </header>
 
-      {/* ── Main two-column layout ── */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[3fr_2fr] overflow-hidden">
+      {/* ── Centered card ── */}
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-10">
+        <div className="w-full max-w-6xl rounded-2xl overflow-hidden border border-slate-200 shadow-[0_16px_48px_rgba(0,0,0,0.1)] grid grid-cols-1 lg:grid-cols-[55%_45%]">
 
-        {/* ── LEFT: Property showcase ── */}
-        <div className="flex flex-col overflow-hidden border-r border-slate-200">
-          {/* Hero image */}
-          <div className="relative flex-1 bg-slate-800 overflow-hidden min-h-0">
-            {bannerImage ? (
-              <img
-                src={bannerImage}
-                alt={propertyTitle}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-slate-500">
-                <HomeModernIcon className="w-16 h-16 opacity-30" />
-              </div>
-            )}
-            {/* Dark overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
+          {/* ── LEFT: Property photo + info ── */}
+          <div className="relative flex flex-col min-h-[440px] lg:min-h-0">
+            {/* Photo */}
+            <div className="absolute inset-0">
+              {bannerImage ? (
+                <img src={bannerImage} alt={propertyTitle} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-slate-200 flex items-center justify-center">
+                  <HomeModernIcon className="w-16 h-16 text-slate-400" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+            </div>
 
-            {/* Property title overlay */}
-            <div className="absolute bottom-0 left-0 right-0 px-6 pb-5 pt-16">
-              <p className="text-[10px] tracking-[0.25em] uppercase text-emerald-400 font-semibold mb-1">
-                Open House
-              </p>
-              <h1 className="text-xl sm:text-2xl font-bold text-white leading-snug line-clamp-2">
+            {/* Badge + thumbnails row */}
+            <div className="relative z-10 p-5 flex items-start justify-between">
+              <span className="inline-flex items-center gap-1.5 border border-[#C9A84C] bg-white/90 backdrop-blur-sm text-[#C9A84C] text-[9px] font-bold tracking-[0.2em] uppercase px-3 py-1 rounded-full shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#C9A84C] animate-pulse" />
+                Live Open House
+              </span>
+
+              {imageUrls.length > 1 && (
+                <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+                  {imageUrls.map((img, index) => (
+                    <button
+                      key={`${img}-${index}`}
+                      type="button"
+                      onClick={() => setActiveImage(index)}
+                      className={`w-12 h-9 overflow-hidden border-2 transition flex-shrink-0 rounded-lg shadow ${
+                        index === activeImage ? "border-[#C9A84C]" : "border-white/60 hover:border-[#C9A84C]"
+                      }`}
+                    >
+                      <img src={img} alt={`View ${index + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Property info — bottom */}
+            <div className="relative z-10 mt-auto px-7 pb-6">
+              <div className="w-8 h-0.5 bg-[#C9A84C] mb-3" />
+              <h1 className="text-3xl sm:text-4xl font-bold text-white leading-snug line-clamp-2 mb-2 tracking-tight">
                 {resolvedEventName}
               </h1>
-              <p className="mt-1.5 text-sm text-white/75 flex items-center gap-1.5">
-                <MapPinIcon className="w-3.5 h-3.5 flex-shrink-0" />
+              <p className="text-base text-white/70 flex items-center gap-1.5 mb-6">
+                <MapPinIcon className="w-3.5 h-3.5 flex-shrink-0 text-[#C9A84C]" />
                 <span className="truncate">{propertyLocation}</span>
+              </p>
+
+              {/* Stats */}
+              <div className="grid grid-cols-4 divide-x divide-white/20 border border-white/20 bg-white/10 backdrop-blur-sm rounded-xl overflow-hidden">
+                {[
+                  { label: "Price", value: propertyPrice, Icon: Tag },
+                  { label: "Beds", value: propertyBeds, Icon: BedDouble },
+                  { label: "Baths", value: propertyBaths, Icon: Bath },
+                  { label: "Sq Ft", value: propertySqft, Icon: Ruler },
+                ].map(({ label, value, Icon }) => (
+                  <div key={label} className="px-4 py-3.5 flex flex-col gap-1.5">
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-white/50 font-semibold">{label}</span>
+                    <span className="text-sm font-bold text-white flex items-center gap-1.5">
+                      <Icon className="w-3.5 h-3.5 text-[#C9A84C] flex-shrink-0" />
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Date/time */}
+              <div className="mt-2 px-5 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl flex flex-wrap gap-x-6 gap-y-1">
+                <span className="text-sm text-white/80 flex items-center gap-1.5 font-medium">
+                  <CalendarDaysIcon className="w-4 h-4 text-[#C9A84C]" />
+                  {formatDate(eventDate)}
+                </span>
+                <span className="text-sm text-white/80 flex items-center gap-1.5 font-medium">
+                  <ClockIcon className="w-4 h-4 text-[#C9A84C]" />
+                  {formatTime(eventStart)}{eventEnd ? ` – ${formatTime(eventEnd)}` : ""}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── RIGHT: Enquiry form ── */}
+          <div className="flex flex-col bg-white border-t lg:border-t-0 lg:border-l border-slate-100">
+
+            <div className="px-8 pt-8 pb-6 border-b border-slate-100">
+              <div className="w-8 h-0.5 bg-[#C9A84C] mb-4" />
+              <p className="text-[10px] tracking-[0.25em] uppercase text-[#C9A84C] font-bold mb-2">Private Enquiry</p>
+              <h2 className="text-2xl font-bold text-slate-900 leading-snug tracking-tight">Interested In This Home?</h2>
+              <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                Tell us about your timeline — we&apos;ll reach out with personalized guidance.
               </p>
             </div>
 
-            {/* Image strip */}
-            {imageUrls.length > 1 && (
-              <div className="absolute top-3 right-3 flex flex-col gap-1.5 max-h-[calc(100%-80px)] overflow-y-auto">
-                {imageUrls.map((img, index) => (
-                  <button
-                    key={`${img}-${index}`}
-                    type="button"
-                    onClick={() => setActiveImage(index)}
-                    className={`w-14 h-10 overflow-hidden border-2 transition flex-shrink-0 ${
-                      index === activeImage
-                        ? "border-emerald-400"
-                        : "border-white/30 hover:border-white/70"
-                    }`}
+            <form className="flex-1 px-8 py-7 flex flex-col gap-4 overflow-y-auto" onSubmit={handleSubmit}>
+              {submitSuccess && (
+                <div className="rounded-lg border border-[#C9A84C]/40 bg-[#C9A84C]/10 text-[#8a6d1e] px-4 py-3 text-sm font-semibold">
+                  {submitSuccess}
+                </div>
+              )}
+              {submitError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm font-semibold">
+                  {submitError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.15em]" htmlFor="name">Name</label>
+                  <input
+                    id="name"
+                    value={form.name}
+                    onChange={(e) => updateField("name", e.target.value)}
+                    className="bg-slate-50 border border-slate-200 hover:border-[#C9A84C]/50 text-slate-900 text-sm px-3.5 h-11 rounded-lg placeholder:text-slate-300 focus:outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/20 transition-colors"
+                    placeholder="Full name"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.15em]" htmlFor="email">Email</label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => updateField("email", e.target.value)}
+                    className="bg-slate-50 border border-slate-200 hover:border-[#C9A84C]/50 text-slate-900 text-sm px-3.5 h-11 rounded-lg placeholder:text-slate-300 focus:outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/20 transition-colors"
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.15em]" htmlFor="phone">Phone</label>
+                  <input
+                    id="phone"
+                    value={form.phone}
+                    onChange={(e) => updateField("phone", e.target.value)}
+                    className="bg-slate-50 border border-slate-200 hover:border-[#C9A84C]/50 text-slate-900 text-sm px-3.5 h-11 rounded-lg placeholder:text-slate-300 focus:outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/20 transition-colors"
+                    placeholder="Phone number"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.15em]" htmlFor="planning_to_buy">Timeline</label>
+                  <select
+                    id="planning_to_buy"
+                    value={form.planningToBuy}
+                    onChange={(e) => updateField("planningToBuy", e.target.value)}
+                    className="bg-slate-50 border border-slate-200 hover:border-[#C9A84C]/50 text-slate-900 text-sm px-3.5 h-11 rounded-lg focus:outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/20 transition-colors appearance-none"
+                    required
                   >
-                    <img
-                      src={img}
-                      alt={`View ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
+                    <option value="">Select timeline</option>
+                    {PLANNING_OPTIONS.map((option) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            )}
-          </div>
 
-          {/* Property stats bar */}
-          <div className="flex-none bg-white border-t border-slate-200">
-            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-slate-200">
-              <div className="px-4 py-3 flex flex-col gap-0.5">
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Price</span>
-                <span className="text-sm font-bold text-slate-900 flex items-center gap-1">
-                  <Tag className="w-3.5 h-3.5 text-emerald-600" />
-                  {propertyPrice}
-                </span>
-              </div>
-              <div className="px-4 py-3 flex flex-col gap-0.5">
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Beds</span>
-                <span className="text-sm font-bold text-slate-900 flex items-center gap-1">
-                  <BedDouble className="w-3.5 h-3.5 text-emerald-600" />
-                  {propertyBeds}
-                </span>
-              </div>
-              <div className="px-4 py-3 flex flex-col gap-0.5">
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Baths</span>
-                <span className="text-sm font-bold text-slate-900 flex items-center gap-1">
-                  <Bath className="w-3.5 h-3.5 text-emerald-600" />
-                  {propertyBaths}
-                </span>
-              </div>
-              <div className="px-4 py-3 flex flex-col gap-0.5">
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Sq Ft</span>
-                <span className="text-sm font-bold text-slate-900 flex items-center gap-1">
-                  <Ruler className="w-3.5 h-3.5 text-emerald-600" />
-                  {propertySqft}
-                </span>
-              </div>
-            </div>
-            {/* Date/time strip */}
-            <div className="border-t border-slate-200 bg-emerald-50 px-4 py-2.5 flex flex-wrap gap-x-6 gap-y-1">
-              <span className="text-xs text-emerald-800 flex items-center gap-1.5">
-                <CalendarDaysIcon className="w-3.5 h-3.5" />
-                {formatDate(eventDate)}
-              </span>
-              <span className="text-xs text-emerald-800 flex items-center gap-1.5">
-                <ClockIcon className="w-3.5 h-3.5" />
-                {formatTime(eventStart)}{eventEnd ? ` – ${formatTime(eventEnd)}` : ""}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* ── RIGHT: Enquiry form ── */}
-        <div className="flex flex-col overflow-y-auto bg-white">
-          <div className="px-6 pt-5 pb-3 border-b border-slate-100">
-            <h2 className="text-base font-bold text-slate-900">Interested In This Home?</h2>
-            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-              Tell us about your timeline — we&apos;ll reach out with personalized guidance.
-            </p>
-          </div>
-
-          <form className="flex-1 px-6 py-4 flex flex-col gap-3" onSubmit={handleSubmit}>
-            {submitSuccess && (
-              <div className="border border-emerald-300 bg-emerald-50 text-emerald-700 px-3 py-2 text-xs">
-                {submitSuccess}
-              </div>
-            )}
-            {submitError && (
-              <div className="border border-red-300 bg-red-50 text-red-600 px-3 py-2 text-xs">
-                {submitError}
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1" htmlFor="name">
-                  Name
-                </label>
-                <Input
-                  id="name"
-                  value={form.name}
-                  onChange={(e) => updateField("name", e.target.value)}
-                  className="rounded-none border-slate-300 focus:border-emerald-500 focus:ring-0 text-sm h-9"
-                  placeholder="Full name"
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.15em]" htmlFor="comments">Comments</label>
+                <textarea
+                  id="comments"
+                  rows={4}
+                  value={form.comments}
+                  onChange={(e) => updateField("comments", e.target.value)}
+                  className="bg-slate-50 border border-slate-200 hover:border-[#C9A84C]/50 text-slate-900 text-sm px-3.5 py-3 rounded-lg resize-none placeholder:text-slate-300 focus:outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/20 transition-colors"
+                  placeholder="Share your goals, preferred timeline, or questions…"
                   required
                 />
               </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1" htmlFor="email">
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => updateField("email", e.target.value)}
-                  className="rounded-none border-slate-300 focus:border-emerald-500 focus:ring-0 text-sm h-9"
-                  placeholder="you@example.com"
-                  required
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1" htmlFor="phone">
-                  Phone
-                </label>
-                <Input
-                  id="phone"
-                  value={form.phone}
-                  onChange={(e) => updateField("phone", e.target.value)}
-                  className="rounded-none border-slate-300 focus:border-emerald-500 focus:ring-0 text-sm h-9"
-                  placeholder="Phone number"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1" htmlFor="planning_to_buy">
-                  Planning to Buy
-                </label>
-                <select
-                  id="planning_to_buy"
-                  value={form.planningToBuy}
-                  onChange={(e) => updateField("planningToBuy", e.target.value)}
-                  className="w-full border border-slate-300 bg-white px-3 h-9 text-sm focus:outline-none focus:border-emerald-500 text-slate-700"
-                  required
-                >
-                  <option value="">Select timeline</option>
-                  {PLANNING_OPTIONS.map((option) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+              <button
+                type="submit"
+                disabled={!canSubmit || isSubmitting}
+                className="w-full bg-[#C9A84C] hover:bg-[#b8943d] disabled:bg-slate-100 disabled:text-slate-300 disabled:cursor-not-allowed text-white text-base font-bold py-3.5 rounded-lg tracking-wide transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                {isSubmitting ? "Submitting…" : "Submit Enquiry"}
+              </button>
 
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wide mb-1" htmlFor="comments">
-                Comments
-              </label>
-              <textarea
-                id="comments"
-                rows={3}
-                value={form.comments}
-                onChange={(e) => updateField("comments", e.target.value)}
-                className="w-full border border-slate-300 bg-white px-3 py-2 text-sm resize-none focus:outline-none focus:border-emerald-500"
-                placeholder="Share your goals, preferred timeline, or questions…"
-                required
-              />
-            </div>
+              <p className="text-[11px] text-slate-400 text-center">
+                Your information is kept private and never shared.
+              </p>
+            </form>
+          </div>
 
-            <button
-              type="submit"
-              disabled={!canSubmit || isSubmitting}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 transition-colors"
-            >
-              {isSubmitting ? "Submitting…" : "Submit Enquiry"}
-            </button>
-
-            <p className="text-[11px] text-slate-400 text-center">
-              Your information is kept private and never shared.
-            </p>
-          </form>
         </div>
       </div>
     </div>
