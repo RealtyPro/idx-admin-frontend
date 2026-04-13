@@ -16,14 +16,72 @@ import axiosInstance from "@/services/Api";
 import { fetchProfile } from "@/services/profile/ProfileServices";
 import { useRegister } from "@/services/auth/AuthQueries";
 import { RegisterPayload } from "@/services/auth/AuthServices";
+import {
+  BarChart3,
+  Building2,
+  Users,
+  FileText,
+  Mail,
+  MessageSquare,
+  Home,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  CheckCircle2,
+} from "lucide-react";
 
+// ─── Feature data ───────────────────────────────────────────────────────────
+const features = [
+  {
+    icon: Building2,
+    title: "Property Management",
+    desc: "Manage MLS listings, photos & property details in one place.",
+    color: "from-emerald-400 to-teal-500",
+  },
+  {
+    icon: Users,
+    title: "Agent Management",
+    desc: "Onboard agents, assign leads, and track performance easily.",
+    color: "from-cyan-400 to-blue-500",
+  },
+  {
+    icon: BarChart3,
+    title: "Advanced Analytics",
+    desc: "Real-time dashboards for traffic, leads, and conversions.",
+    color: "from-violet-400 to-purple-500",
+  },
+  {
+    icon: FileText,
+    title: "Blog & Content",
+    desc: "Publish market updates and real estate guides seamlessly.",
+    color: "from-amber-400 to-orange-500",
+  },
+  {
+    icon: Mail,
+    title: "Newsletter Engine",
+    desc: "Automate subscriber campaigns and track open rates.",
+    color: "from-pink-400 to-rose-500",
+  },
+  {
+    icon: MessageSquare,
+    title: "Lead & Inquiries",
+    desc: "Centralise all buyer inquiries and contact requests.",
+    color: "from-lime-400 to-green-500",
+  },
+];
+
+// ─── Component ───────────────────────────────────────────────────────────────
 export default function Login() {
   const router = useRouter();
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [activeFeature, setActiveFeature] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const registerMutation = useRegister();
 
   // Redirect to dashboard if token already exists
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== "undefined") {
       const token = sessionStorage.getItem("access_token");
       if (token) {
@@ -31,6 +89,14 @@ export default function Login() {
       }
     }
   }, [router]);
+
+  // Auto-advance feature carousel
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveFeature((prev) => (prev + 1) % features.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -272,126 +338,457 @@ export default function Login() {
   };
 
   return (
-    <main className="min-h-screen bg-white flex">
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 sm:px-6 lg:px-8 py-12">
-        <div className="max-w-md w-full mx-auto space-y-8">
-          <div>
-            <Link href="/" className="flex items-center mb-8">
-              <Image
-                src="/images/realtipro-logo.png"
-                alt="RealtiPro Logo"
-                width={180}
-                height={60}
-                className="h-10 w-auto"
-                priority
-              />
-            </Link>
-            <h2 className="font-serif  text-dark">Welcome back</h2>
-            <p className="mt-2 text-body text-dark-secondary">
-              Please enter your details to sign in
+    <>
+      {/* Keyframe animations */}
+      <style>{`
+        @keyframes float-slow {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        @keyframes float-med {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-14px) rotate(-4deg); }
+        }
+        @keyframes pulse-ring {
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16,185,129,0.6); }
+          70% { transform: scale(1); box-shadow: 0 0 0 14px rgba(16,185,129,0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+        }
+        @keyframes slide-up-fade {
+          from { opacity: 0; transform: translateY(30px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slide-right-fade {
+          from { opacity: 0; transform: translateX(-30px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes gradient-shift {
+          0%   { background-position: 0% 50%; }
+          50%  { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes orb1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33%       { transform: translate(40px, -60px) scale(1.1); }
+          66%       { transform: translate(-30px, 30px) scale(0.9); }
+        }
+        @keyframes orb2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33%       { transform: translate(-50px, 40px) scale(1.15); }
+          66%       { transform: translate(35px, -25px) scale(0.85); }
+        }
+        @keyframes dot-bounce {
+          0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+          40%            { transform: translateY(-6px); opacity: 1; }
+        }
+        .animate-float-slow  { animation: float-slow 6s ease-in-out infinite; }
+        .animate-float-med   { animation: float-med 4.5s ease-in-out infinite; }
+        .animate-pulse-ring  { animation: pulse-ring 2.5s cubic-bezier(0.455,0.03,0.515,0.955) infinite; }
+        .animate-slide-up    { animation: slide-up-fade 0.7s ease forwards; }
+        .animate-slide-right { animation: slide-right-fade 0.6s ease forwards; }
+        .gradient-animate    {
+          background-size: 200% 200%;
+          animation: gradient-shift 8s ease infinite;
+        }
+        .feature-card-enter {
+          animation: slide-up-fade 0.5s ease forwards;
+        }
+        .glass {
+          background: rgba(255,255,255,0.06);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255,255,255,0.12);
+        }
+        .input-focus-ring:focus {
+          outline: none;
+          border-color: #10b981;
+          box-shadow: 0 0 0 3px rgba(16,185,129,0.15);
+        }
+        .btn-shine {
+          position: relative;
+          overflow: hidden;
+        }
+        .btn-shine::after {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -60%;
+          width: 30%;
+          height: 200%;
+          background: rgba(255,255,255,0.2);
+          transform: skewX(-20deg);
+          transition: left 0.6s ease;
+        }
+        .btn-shine:hover::after {
+          left: 130%;
+        }
+      `}</style>
+
+      <main className="min-h-screen flex overflow-hidden">
+        {/* ── LEFT: Feature Showcase ──────────────────────────────────────── */}
+        <div
+          className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative flex-col justify-between overflow-hidden"
+          style={{ background: "linear-gradient(135deg, #071c1b 0%, #0a2a29 40%, #0d3530 70%, #0f3d38 100%)" }}
+        >
+          {/* Animated background orbs */}
+          <div
+            className="absolute rounded-full opacity-20 pointer-events-none"
+            style={{
+              width: 520,
+              height: 520,
+              background: "radial-gradient(circle, #10b981 0%, transparent 70%)",
+              top: "-120px",
+              left: "-100px",
+              animation: "orb1 18s ease-in-out infinite",
+            }}
+          />
+          <div
+            className="absolute rounded-full opacity-15 pointer-events-none"
+            style={{
+              width: 400,
+              height: 400,
+              background: "radial-gradient(circle, #06b6d4 0%, transparent 70%)",
+              bottom: "60px",
+              right: "-80px",
+              animation: "orb2 22s ease-in-out infinite",
+            }}
+          />
+          <div
+            className="absolute rounded-full opacity-10 pointer-events-none"
+            style={{
+              width: 280,
+              height: 280,
+              background: "radial-gradient(circle, #8b5cf6 0%, transparent 70%)",
+              top: "45%",
+              left: "55%",
+              animation: "orb1 14s ease-in-out infinite reverse",
+            }}
+          />
+
+          {/* Grid pattern overlay */}
+          <div
+            className="absolute inset-0 opacity-5 pointer-events-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M0 0h1v40H0V0zm40 0v1H0V0h40zM0 20h40v1H0v-1z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}
+          />
+
+          {/* Top logo area */}
+          <div className="relative z-10 p-10 pb-0">
+            <div className="flex items-center gap-3 animate-slide-right">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center animate-pulse-ring"
+                style={{ background: "linear-gradient(135deg, #10b981, #06b6d4)" }}
+              >
+                <Home className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-white font-bold text-xl tracking-tight">RealtiPro</span>
+              <span
+                className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                style={{ background: "rgba(16,185,129,0.2)", color: "#6ee7b7" }}
+              >
+                Admin
+              </span>
+            </div>
+          </div>
+
+          {/* Hero text */}
+          <div className="relative z-10 px-10 py-8">
+            <div style={{ animationDelay: "0.1s" }} className="animate-slide-up opacity-0" >
+              <p className="text-emerald-400 text-sm font-semibold tracking-widest uppercase mb-4">
+                Real Estate Command Center
+              </p>
+            </div>
+            <h1
+              className="text-white font-bold leading-tight mb-5"
+              style={{
+                fontSize: "clamp(2rem, 3.5vw, 3rem)",
+                animationDelay: "0.2s",
+              }}
+            >
+              <span
+                className="animate-slide-up opacity-0 block"
+                style={{ animationDelay: "0.2s" }}
+              >
+                Everything you need
+              </span>
+              <span
+                className="block animate-slide-up opacity-0"
+                style={{
+                  animationDelay: "0.35s",
+                  background: "linear-gradient(90deg, #10b981, #06b6d4, #8b5cf6)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                to close more deals.
+              </span>
+            </h1>
+            <p
+              className="text-slate-400 text-base leading-relaxed max-w-md animate-slide-up opacity-0"
+              style={{ animationDelay: "0.45s" }}
+            >
+              The all-in-one admin dashboard built for modern real estate teams — listings, leads, analytics, and more.
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-dark"
-              >
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className={`mt-1 block w-full rounded-lg border ${
-                  errors.email ? "border-red-500" : "border-border"
-                } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
-              )}
+          {/* Feature cards grid */}
+          <div className="relative z-10 px-10 flex-1 pb-4">
+            <div className="grid grid-cols-2 gap-3">
+              {features.map((f, i) => {
+                const Icon = f.icon;
+                const isActive = activeFeature === i;
+                return (
+                  <button
+                    key={f.title}
+                    onClick={() => setActiveFeature(i)}
+                    className={`glass rounded-2xl p-4 text-left transition-all duration-500 cursor-pointer group ${
+                      isActive
+                        ? "border-emerald-500/40 bg-white/10 scale-[1.02]"
+                        : "hover:border-white/20 hover:bg-white/08"
+                    }`}
+                    style={{
+                      animationDelay: `${0.5 + i * 0.08}s`,
+                    }}
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-xl mb-3 flex items-center justify-center bg-gradient-to-br ${f.color} transition-all duration-300 ${
+                        isActive ? "scale-110 shadow-lg" : "group-hover:scale-105"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 text-white" strokeWidth={2.5} />
+                    </div>
+                    <p className={`text-sm font-semibold mb-1 transition-colors duration-300 ${isActive ? "text-white" : "text-slate-300 group-hover:text-white"}`}>
+                      {f.title}
+                    </p>
+                    <p className="text-xs text-slate-500 leading-snug group-hover:text-slate-400 transition-colors duration-300">
+                      {f.desc}
+                    </p>
+                    {isActive && (
+                      <div className="mt-2 flex items-center gap-1 text-emerald-400 text-xs font-medium">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Active
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
+          </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-dark"
-              >
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                className={`mt-1 block w-full rounded-lg border ${
-                  errors.password ? "border-red-500" : "border-border"
-                } px-4 py-3 text-dark shadow-sm focus:border-primary focus:outline-none`}
-              />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
-              )}
-            </div>
+        </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+        {/* ── RIGHT: Login Form ────────────────────────────────────────────── */}
+        <div className="w-full lg:w-1/2 xl:w-2/5 flex flex-col justify-center bg-white relative overflow-hidden">
+          {/* Subtle background decoration */}
+          <div
+            className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-5 pointer-events-none"
+            style={{ background: "radial-gradient(circle, #10b981, transparent 70%)", transform: "translate(30%,-30%)" }}
+          />
+          <div
+            className="absolute bottom-0 left-0 w-56 h-56 rounded-full opacity-5 pointer-events-none"
+            style={{ background: "radial-gradient(circle, #06b6d4, transparent 70%)", transform: "translate(-30%,30%)" }}
+          />
+
+          <div className="relative z-10 w-full max-w-sm mx-auto px-6 py-12">
+            {/* Logo */}
+            <div className="mb-10 animate-slide-up opacity-0" style={{ animationDelay: "0.05s" }}>
+              <Link href="/" className="inline-flex items-center gap-2 group">
+                <Image
+                  src="/images/realtipro-logo.png"
+                  alt="RealtiPro Logo"
+                  width={160}
+                  height={54}
+                  className="h-9 w-auto"
+                  priority
                 />
-                <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-sm text-dark"
-                >
-                  Remember me
-                </label>
-              </div>
-
-              <Link
-                href="/forgot-password"
-                className="text-sm text-primary hover:text-primary-light"
-              >
-                Forgot password?
               </Link>
             </div>
 
-            <button
-              type="submit"
-              className="w-full flex justify-center py-3 px-4 rounded-[37.5px] bg-gradient-to-br from-primary to-primary-light text-white font-bold text-button hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-              disabled={loginMutation.status === "pending"}
-            >
-              {loginMutation.isPending ? "Signing in..." : "Sign in"}
-            </button>
-            {loginMutation.isError && (
-              <p className="mt-2 text-sm text-red-500 text-center">
-                {(loginMutation.error as Error)?.message}
+            {/* Header */}
+            <div className="mb-8">
+              <h2
+                className="text-2xl font-bold text-gray-900 mb-1 animate-slide-up opacity-0"
+                style={{ animationDelay: "0.12s" }}
+              >
+                Welcome back 👋
+              </h2>
+              <p
+                className="text-sm text-gray-500 animate-slide-up opacity-0"
+                style={{ animationDelay: "0.2s" }}
+              >
+                Sign in to your admin dashboard
               </p>
-            )}
-          </form>
+            </div>
 
-          {/* <p className="text-center text-sm text-dark-secondary">
-            Don't have an account?{' '}
-            <button
-              onClick={() => setShowRegisterModal(true)}
-              className="text-primary hover:text-primary-light font-medium"
+            {/* Login form */}
+            <form className="space-y-5" onSubmit={handleSubmit}>
+              {/* Email */}
+              <div
+                className="animate-slide-up opacity-0"
+                style={{ animationDelay: "0.28s" }}
+              >
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Email address
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  className={`input-focus-ring w-full rounded-xl border px-4 py-3 text-sm text-dark transition-all duration-200 ${
+                    errors.email
+                      ? "border-red-400 bg-red-50"
+                      : "border-gray-200 bg-gray-50 hover:border-gray-300 focus:bg-white"
+                  }`}
+                />
+                {errors.email && (
+                  <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                    <span>⚠</span> {errors.email}
+                  </p>
+                )}
+              </div>
+
+              {/* Password */}
+              <div
+                className="animate-slide-up opacity-0"
+                style={{ animationDelay: "0.35s" }}
+              >
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    className={`input-focus-ring w-full rounded-xl border px-4 py-3 pr-11 text-sm text-dark transition-all duration-200 ${
+                      errors.password
+                        ? "border-red-400 bg-red-50"
+                        : "border-gray-200 bg-gray-50 hover:border-gray-300 focus:bg-white"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                    <span>⚠</span> {errors.password}
+                  </p>
+                )}
+              </div>
+
+              {/* Remember me / Forgot */}
+              <div
+                className="flex items-center justify-between animate-slide-up opacity-0"
+                style={{ animationDelay: "0.42s" }}
+              >
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 accent-emerald-500"
+                  />
+                  <span className="text-sm text-gray-600 group-hover:text-gray-800 transition-colors">
+                    Remember me
+                  </span>
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
+              {/* Submit */}
+              <div
+                className="animate-slide-up opacity-0"
+                style={{ animationDelay: "0.5s" }}
+              >
+                <button
+                  type="submit"
+                  disabled={loginMutation.status === "pending"}
+                  className="btn-shine w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl text-white font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/25 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  style={{
+                    background: loginMutation.isPending
+                      ? "#6b7280"
+                      : "linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)",
+                  }}
+                >
+                  {loginMutation.isPending ? (
+                    <>
+                      <span
+                        className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white"
+                        style={{ animation: "spin 0.8s linear infinite" }}
+                      />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign in
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+
+                {loginMutation.isError && (
+                  <div className="mt-3 p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600 text-center">
+                    {(loginMutation.error as Error)?.message}
+                  </div>
+                )}
+              </div>
+            </form>
+
+            {/* Divider */}
+            <div className="mt-8 relative animate-slide-up opacity-0" style={{ animationDelay: "0.58s" }}>
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-100" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="px-4 bg-white text-xs text-gray-400 tracking-wide">
+                  SECURED ADMIN ACCESS
+                </span>
+              </div>
+            </div>
+
+            {/* Trust badges */}
+            <div
+              className="mt-6 flex items-center justify-center gap-6 animate-slide-up opacity-0"
+              style={{ animationDelay: "0.65s" }}
             >
-              Sign Up
-            </button>
-          </p> */}
+              {[
+                { icon: "🔒", text: "SSL Encrypted" },
+                { icon: "🛡️", text: "2FA Ready" },
+                { icon: "⚡", text: "99.9% Uptime" },
+              ].map((b) => (
+                <div key={b.text} className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <span>{b.icon}</span>
+                  <span>{b.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      </main>
 
-      {/* Register Modal */}
+      {/* ── Register Modal ─────────────────────────────────────────────────── */}
       <Dialog open={showRegisterModal} onOpenChange={setShowRegisterModal}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -541,18 +938,6 @@ export default function Login() {
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Right Section - Image */}
-      <div className="hidden lg:block lg:w-1/2 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-light opacity-90"></div>
-        <Image
-          src="/images/hero-image.png"
-          alt="Login"
-          fill
-          className="object-cover"
-          priority
-        />
-      </div>
-    </main>
+    </>
   );
 }
