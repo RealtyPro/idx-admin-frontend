@@ -6,31 +6,32 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
-  HomeIcon,
-  ChatBubbleLeftRightIcon,
+  HomeModernIcon,
+  StarIcon,
   ArrowLeftOnRectangleIcon,
   UsersIcon,
-  DocumentTextIcon,
-  EnvelopeIcon,
-  MapPinIcon,
-  Squares2X2Icon,
-  CalendarDaysIcon
+  NewspaperIcon,
+  InboxArrowDownIcon,
+  MapIcon,
+  RectangleGroupIcon,
+  CalendarDaysIcon,
+  UserCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  SunIcon,
+  MoonIcon,
 } from "@heroicons/react/24/outline";
 import { useLogout } from "@/services/auth/AuthQueries";
+import { useTheme } from "@/app/provider/ThemeProvider";
 
 const navigation = [
-  { name: "Dashboard", href: "/admin", icon: Squares2X2Icon },
-  { name: "Listings", href: "/admin/listings", icon: HomeIcon },
-  // { name: "Users & Leads", href: "/admin/users", icon: UsersIcon },
-  { name: "Users & Leads", href: "/admin/inquiries", icon: EnvelopeIcon },
-  { name: "Blog Posts", href: "/admin/blog", icon: DocumentTextIcon },
-  {
-    name: "Testimonials",
-    href: "/admin/testimonials",
-    icon: ChatBubbleLeftRightIcon,
-  },
-  { name: "Newsletter", href: "/admin/newsletter", icon: DocumentTextIcon },
-  { name: "Neighborhoods", href: "/admin/neighbourhoods", icon: MapPinIcon },
+  { name: "Dashboard", href: "/admin", icon: RectangleGroupIcon },
+  { name: "Listings", href: "/admin/listings", icon: HomeModernIcon },
+  { name: "Users & Leads", href: "/admin/inquiries", icon: UsersIcon },
+  { name: "Blog Posts", href: "/admin/blog", icon: NewspaperIcon },
+  { name: "Testimonials", href: "/admin/testimonials", icon: StarIcon },
+  { name: "Newsletter", href: "/admin/newsletter", icon: InboxArrowDownIcon },
+  { name: "Neighborhoods", href: "/admin/neighbourhoods", icon: MapIcon },
   { name: "Open Houses", href: "/admin/open-houses", icon: CalendarDaysIcon },
 ];
 
@@ -46,6 +47,11 @@ export default function adminLayout({
   const [userEmail, setUserEmail] = useState("user@example.com");
   const [userInitials, setUserInitials] = useState("JD");
   const [userProfilePic, setUserProfilePic] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
+  const isDark = theme === "dark";
+
+  const sidebarW = collapsed ? 56 : 240;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -88,55 +94,101 @@ export default function adminLayout({
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA]">
+    <div className="min-h-screen admin-page-bg bg-[#F5F6FA]">
+      {/* Expand / collapse toggle — outside sidebar so it's never clipped */}
+      <button
+        onClick={() => setCollapsed((c) => !c)}
+        className="fixed z-40 flex items-center justify-center rounded-full shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-2xl"
+        style={{
+          top: "50%",
+          transform: "translateY(-50%)",
+          left: sidebarW - 22,
+          width: 44,
+          height: 44,
+          background: "linear-gradient(135deg, #8dc572, #6aad52)",
+          border: "3px solid #fff",
+          boxShadow: "0 4px 16px rgba(141,197,114,0.5)",
+        }}
+        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {collapsed
+          ? <ChevronRightIcon className="w-6 h-6 text-white" />
+          : <ChevronLeftIcon className="w-6 h-6 text-white" />
+        }
+      </button>
+
+      {/* Theme toggle — fixed to right edge of screen */}
+      <button
+        onClick={toggleTheme}
+        title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        className="fixed z-50 right-5 top-5 flex items-center justify-center rounded-2xl transition-all duration-200 hover:scale-110 shadow-lg"
+        style={{
+          width: 44,
+          height: 44,
+          background: isDark ? "rgba(141,197,114,0.18)" : "#ffffff",
+          border: "2px solid rgba(141,197,114,0.45)",
+          boxShadow: isDark
+            ? "0 4px 16px rgba(141,197,114,0.25)"
+            : "0 4px 16px rgba(141,197,114,0.20)",
+        }}
+      >
+        {isDark
+          ? <SunIcon className="w-5 h-5" style={{ color: "#8dc572" }} />
+          : <MoonIcon className="w-5 h-5" style={{ color: "#6aad52" }} />
+        }
+      </button>
+
       {/* Sidebar */}
       <div
-        className="fixed inset-y-0 left-0 w-[230px] z-30 flex flex-col overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #071c1b 0%, #0a2a29 45%, #0d3530 75%, #0f3d38 100%)" }}
+        className="fixed inset-y-0 left-0 z-30 flex flex-col transition-all duration-300"
+        style={{
+          width: `${sidebarW}px`,
+          background: isDark
+            ? "linear-gradient(170deg, #071c1b 0%, #0a2a29 40%, #0d3530 75%, #0f3d38 100%)"
+            : "#ffffff",
+          boxShadow: "none",
+          borderRight: isDark
+            ? "2.5px solid rgba(141,197,114,0.25)"
+            : "2.5px solid rgba(141,197,114,0.35)",
+        }}
       >
-        {/* Ambient orbs */}
+        {/* Ambient blobs */}
         <div
-          className="absolute -top-20 -left-16 w-64 h-64 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)" }}
+          className="absolute -top-10 -left-10 w-48 h-48 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(141,197,114,0.10) 0%, transparent 70%)" }}
         />
         <div
-          className="absolute bottom-20 -right-12 w-48 h-48 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)" }}
-        />
-        {/* Grid pattern */}
-        <div
-          className="absolute inset-0 opacity-[0.03] pointer-events-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M0 0h1v40H0V0zm40 0v1H0V0h40zM0 20h40v1H0v-1z'/%3E%3C/g%3E%3C/svg%3E")`,
-          }}
+          className="absolute bottom-24 -right-8 w-36 h-36 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(141,197,114,0.06) 0%, transparent 70%)" }}
         />
 
         {/* Logo */}
-        <div className="relative z-10 flex items-center gap-3 px-5 pt-6 pb-5">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: "linear-gradient(135deg, #10b981, #06b6d4)" }}
-          >
-            <HomeIcon className="w-4 h-4 text-white" />
-          </div>
-          <Image
-            src="/images/forlightbg-logo.png"
-            alt="RealtiPro"
-            width={110}
-            height={32}
-            className="h-6 w-auto brightness-0 invert opacity-90"
-          />
+        <div className={`relative z-10 flex items-center justify-center px-4 pt-6 pb-5`}>
+          {collapsed ? (
+            <Image
+              src={isDark ? "/images/ria-fordark.png" : "/images/ria-forlight.png"}
+              alt="RIA"
+              width={44}
+              height={44}
+              className="w-11 h-11 object-contain"
+            />
+          ) : (
+            <Image
+              src="/images/forlightbg-logo.png"
+              alt="RealtiPro"
+              width={160}
+              height={48}
+              className={`h-10 w-auto ${isDark ? "brightness-0 invert opacity-90" : ""}`}
+            />
+          )}
         </div>
 
-        {/* Section label */}
-        <div className="relative z-10 px-5 mb-2">
-          <span className="text-[10px] font-semibold tracking-widest uppercase text-emerald-500/70">
-            Main Menu
-          </span>
-        </div>
+
+
+
 
         {/* Navigation */}
-        <nav className="relative z-10 flex-1 px-3 space-y-0.5 overflow-y-auto">
+        <nav className="relative z-10 flex-1 px-2 pt-6 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
             const isActive =
               item.href === "/admin"
@@ -146,88 +198,159 @@ export default function adminLayout({
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group relative ${
+                title={collapsed ? item.name : undefined}
+                className={`flex items-center ${collapsed ? "justify-center px-2" : "gap-3.5 px-3"} py-3 rounded-xl text-[14px] font-semibold transition-all duration-200 group relative ${
                   isActive
-                    ? "text-white"
-                    : "text-slate-400 hover:text-slate-100"
+                    ? (isDark ? "text-white" : "text-slate-900")
+                    : (isDark ? "text-slate-400 hover:text-slate-100" : "text-slate-500 hover:text-slate-800")
                 }`}
               >
                 {/* Active pill background */}
                 {isActive && (
                   <span
-                    className="absolute inset-0 rounded-xl"
-                    style={{ background: "linear-gradient(90deg, rgba(16,185,129,0.2), rgba(6,182,212,0.1))", borderLeft: "2px solid #10b981" }}
+                    className="absolute inset-0"
+                    style={{
+                      background: "linear-gradient(90deg, rgba(141,197,114,0.18) 0%, rgba(141,197,114,0.07) 100%)",
+                      borderLeft: collapsed ? "none" : "3px solid #8dc572",
+                      borderRadius: collapsed ? "12px" : "0 12px 12px 0",
+                    }}
                   />
                 )}
                 {/* Hover background */}
                 {!isActive && (
-                  <span className="absolute inset-0 rounded-xl bg-white/0 group-hover:bg-white/5 transition-colors duration-200" />
+                  <span
+                    className="absolute inset-0 rounded-xl transition-colors duration-200"
+                    style={{ background: "transparent" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? "rgba(141,197,114,0.12)" : "rgba(141,197,114,0.09)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  />
                 )}
                 <item.icon
-                  className={`relative z-10 w-[18px] h-[18px] shrink-0 transition-colors ${
-                    isActive ? "text-emerald-400" : "text-slate-500 group-hover:text-slate-300"
+                  className={`relative z-10 w-[22px] h-[22px] shrink-0 transition-colors ${
+                    isActive ? "" : "text-slate-400 group-hover:text-[#8dc572]"
                   }`}
+                  style={isActive ? { color: "#8dc572" } : {}}
                 />
-                <span className="relative z-10">{item.name}</span>
-                {isActive && (
-                  <span className="relative z-10 ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                {!collapsed && <span className="relative z-10">{item.name}</span>}
+                {!collapsed && isActive && (
+                  <span
+                    className="relative z-10 ml-auto w-2 h-2 rounded-full shrink-0"
+                    style={{ background: "#8dc572" }}
+                  />
                 )}
               </Link>
             );
           })}
         </nav>
 
-        {/* Divider */}
-        <div className="relative z-10 mx-4 my-2 h-px bg-white/8" />
-
-        {/* User Section */}
-        <div className="relative z-10 p-3">
-          <Link
-            href="/admin/profile"
-            className="flex items-center gap-3 rounded-xl px-3 py-3 mb-2 transition-all duration-200 group"
-            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.09)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
-          >
-            {/* Avatar */}
-            <div className="flex-shrink-0 w-9 h-9 rounded-full relative overflow-hidden flex items-center justify-center border-2 border-emerald-400/40"
-              style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(6,182,212,0.2))" }}
+        {/* ── Bottom Card ── */}
+        <div className={`relative z-10 p-3 pb-4 ${collapsed ? "flex flex-col items-center gap-2" : ""}`}>
+          {collapsed ? (
+            /* Collapsed: icon-only avatars */
+            <>
+              <Link
+                href="/admin/profile"
+                title={userName}
+                className="w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-md overflow-hidden relative shrink-0 transition-transform hover:scale-110"
+                style={{ background: "linear-gradient(135deg, #8dc572, #6aad52)", borderColor: "#fff" }}
+              >
+                <span className="font-bold text-sm text-white select-none">{userInitials}</span>
+                {userProfilePic && (
+                  <img
+                    src={userProfilePic}
+                    alt={userName}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                )}
+              </Link>
+              <button
+                onClick={handleLogout}
+                disabled={logoutMutation.isPending}
+                title="Sign Out"
+                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+              >
+                <ArrowLeftOnRectangleIcon className="w-5 h-5 text-slate-400 hover:text-red-500" />
+              </button>
+            </>
+          ) : (
+            /* Expanded: full green card */
+            <div
+              className="relative rounded-3xl overflow-hidden"
+              style={{
+                background: "linear-gradient(145deg, #5e9045 0%, #4a7535 50%, #3d6229 100%)",
+                boxShadow: isDark
+                  ? "0 10px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.10)"
+                  : "0 10px 32px rgba(61,98,41,0.45), 0 3px 10px rgba(61,98,41,0.25), inset 0 1px 0 rgba(255,255,255,0.12)",
+              }}
             >
-              <span className="text-emerald-300 font-semibold text-xs select-none">{userInitials}</span>
-              {userProfilePic && (
-                <img
-                  src={userProfilePic}
-                  alt={userName}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  onError={(e) => { e.currentTarget.style.display = "none"; }}
-                />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-white truncate">{userName}</p>
-              <p className="text-[10px] text-slate-500 truncate">{userEmail}</p>
-            </div>
-          </Link>
+              {/* Subtle top shine */}
+              <div
+                className="absolute inset-x-0 top-0 h-px pointer-events-none"
+                style={{ background: "rgba(255,255,255,0.18)" }}
+              />
+              {/* Top-right glow orb */}
+              <div
+                className="absolute -top-6 -right-6 w-28 h-28 rounded-full pointer-events-none"
+                style={{ background: "radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%)" }}
+              />
+              {/* Bottom-left depth shadow */}
+              <div
+                className="absolute -bottom-5 -left-5 w-20 h-20 rounded-full pointer-events-none"
+                style={{ background: "radial-gradient(circle, rgba(0,0,0,0.18) 0%, transparent 70%)" }}
+              />
 
-          {/* Logout button */}
-          <button
-            onClick={handleLogout}
-            disabled={logoutMutation.isPending}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-slate-400 hover:text-red-400 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ border: "1px solid rgba(255,255,255,0.06)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(239,68,68,0.08)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-            type="button"
-          >
-            <ArrowLeftOnRectangleIcon className="w-[18px] h-[18px] shrink-0 text-slate-500 group-hover:text-red-400 transition-colors" />
-            {logoutMutation.isPending ? "Signing out…" : "Sign Out"}
-          </button>
+              {/* Profile link */}
+              <Link
+                href="/admin/profile"
+                className="relative flex items-center gap-3 px-4 pt-4 pb-3 group"
+              >
+                {/* Avatar */}
+                <div
+                  className="flex-shrink-0 w-10 h-10 rounded-2xl relative overflow-hidden flex items-center justify-center border-2 shadow-lg"
+                  style={{ borderColor: "rgba(255,255,255,0.40)", background: "rgba(255,255,255,0.18)" }}
+                >
+                  <span className="font-bold text-sm text-white select-none">{userInitials}</span>
+                  {userProfilePic && (
+                    <img
+                      src={userProfilePic}
+                      alt={userName}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-bold text-white truncate group-hover:text-white/90 transition-colors drop-shadow-sm">{userName}</p>
+                  <p className="text-[11px] text-white/80 truncate">{userEmail}</p>
+                </div>
+                <UserCircleIcon className="w-4 h-4 text-white/60 group-hover:text-white transition-colors shrink-0" />
+              </Link>
+
+              {/* Divider */}
+              <div className="mx-4 h-px" style={{ background: "rgba(255,255,255,0.18)" }} />
+
+              {/* Sign Out */}
+              <button
+                onClick={handleLogout}
+                disabled={logoutMutation.isPending}
+                className="relative w-full flex items-center gap-3 px-4 py-3 text-[13px] font-semibold text-white/85 transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed hover:text-white"
+                type="button"
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.15)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+              >
+                <ArrowLeftOnRectangleIcon className="w-[18px] h-[18px] shrink-0 text-white/50 group-hover:text-white transition-colors" />
+                {logoutMutation.isPending ? "Signing out…" : "Sign Out"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="pl-[230px]">
-        <main className="py-6">{children}</main>
+      <div className="transition-all duration-300" style={{ paddingLeft: `${sidebarW}px` }}>
+        <main className="py-4">{children}</main>
       </div>
     </div>
   );

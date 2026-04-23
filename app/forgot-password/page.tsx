@@ -17,7 +17,6 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  Home,
 } from "lucide-react";
 
 // ─── Steps data ─────────────────────────────────────────────────────────────
@@ -346,12 +345,15 @@ export default function ForgotPassword() {
 
           {/* Logo */}
           <div className="relative z-10 p-10 pb-0">
-            <div className="flex items-center gap-3 animate-slide-right">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center animate-pulse-ring" style={{ background: "linear-gradient(135deg, #10b981, #06b6d4)" }}>
-                <Home className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-white font-bold text-xl tracking-tight">RealtiPro</span>
-              <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(16,185,129,0.2)", color: "#6ee7b7" }}>Admin</span>
+            <div className="animate-slide-right">
+              <Image
+                src="/images/realtipro-logo.png"
+                alt="RealtiPro Logo"
+                width={180}
+                height={58}
+                className="h-10 w-auto"
+                priority
+              />
             </div>
           </div>
 

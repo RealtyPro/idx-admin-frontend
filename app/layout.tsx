@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import React from "react";
 import Providers from "./provider/QueryProvider";
+import { ThemeProvider } from "./provider/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "RealtiPro - Admin",
@@ -20,16 +21,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <Providers>
-        <head>
-          <link
-            href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&display=swap"
-            rel="stylesheet"
-          />
-        </head>
-
-        <body>{children}</body>
+        <body>
+          <ThemeProvider>{children}</ThemeProvider>
+        </body>
       </Providers>
     </html>
   );

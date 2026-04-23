@@ -3,9 +3,8 @@
 @tailwind utilities;
 
 @layer base {
-  @font-face {
-    font-family: 'Source Serif 4';
-    src: url('https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&display=swap');
+  body {
+    font-family: 'Lato', sans-serif;
   }
   :root {
     --background: 0 0% 100%;
@@ -34,27 +33,28 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+  /* ── Dark theme: neutral dark with #8dc572 accent only ── */
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --background: 220 13% 9%;         /* #131619 */
+    --foreground: 210 17% 90%;        /* #e1e6ea */
+    --card: 220 13% 11%;              /* #171b1f */
+    --card-foreground: 210 17% 90%;   /* #e1e6ea */
+    --popover: 220 12% 13%;           /* #1c2025 */
+    --popover-foreground: 210 17% 90%;
+    --primary: 105 44% 61%;           /* #8dc572 */
+    --primary-foreground: 220 13% 9%;
+    --secondary: 220 12% 15%;         /* #20262b */
+    --secondary-foreground: 210 17% 90%;
+    --muted: 220 12% 15%;             /* #20262b */
+    --muted-foreground: 215 12% 53%;  /* #7a8693 */
+    --accent: 220 12% 18%;            /* #252c33 */
+    --accent-foreground: 210 17% 90%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
+    --border: 220 13% 18%;            /* #252b32 */
+    --input: 220 12% 15%;             /* #20262b */
+    --ring: 105 44% 61%;              /* #8dc572 */
+    --chart-1: 105 44% 61%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
@@ -115,4 +115,401 @@
   .scroll-smooth {
     scroll-behavior: smooth;
   }
-} 
+}
+
+/* ================================================================
+   DARK THEME — neutral dark, #8dc572 accent only
+   ================================================================ */
+
+html.dark {
+  color-scheme: dark;
+}
+
+/* ── Page background ────────────────────────────────────────────── */
+html.dark .admin-page-bg          { background-color: #131619; }
+
+/* ── White surface → dark card ──────────────────────────────────── */
+html.dark .bg-white               { background-color: #171b1f; }
+
+/* ── Subtle surfaces ────────────────────────────────────────────── */
+html.dark .bg-slate-50            { background-color: #1c2025; }
+html.dark .bg-slate-100           { background-color: #20262b; }
+html.dark .bg-slate-200           { background-color: #252c33; }
+html.dark .bg-gray-50             { background-color: #1c2025; }
+html.dark .bg-gray-100            { background-color: #20262b; }
+html.dark .bg-gray-200            { background-color: #252c33; }
+
+/* ── Borders ────────────────────────────────────────────────────── */
+html.dark .border,
+html.dark .border-slate-100       { border-color: #252b32; }
+html.dark .border-slate-200       { border-color: #2c343c; }
+html.dark .border-slate-300       { border-color: #363f49; }
+html.dark .border-gray-100        { border-color: #252b32; }
+html.dark .border-gray-200        { border-color: #2c343c; }
+html.dark .border-gray-300        { border-color: #363f49; }
+
+/* ── Divide ─────────────────────────────────────────────────────── */
+html.dark .divide-slate-100 > * + * { border-color: #252b32; }
+html.dark .divide-slate-200 > * + * { border-color: #2c343c; }
+html.dark .divide-gray-100  > * + * { border-color: #252b32; }
+html.dark .divide-gray-200  > * + * { border-color: #2c343c; }
+
+/* ── Text — near-neutral scale, only accent is green ────────────── */
+html.dark .text-slate-900     { color: #e1e6ea; }
+html.dark .text-slate-800     { color: #ccd3d9; }
+html.dark .text-slate-700     { color: #b0bac3; }
+html.dark .text-slate-600     { color: #8f9dab; }
+html.dark .text-slate-500     { color: #7a8693; }
+html.dark .text-slate-400     { color: #5e6e7a; }
+html.dark .text-slate-300     { color: #a8b4bc; }
+html.dark .text-gray-900      { color: #e1e6ea; }
+html.dark .text-gray-800      { color: #ccd3d9; }
+html.dark .text-gray-700      { color: #b0bac3; }
+html.dark .text-gray-600      { color: #8f9dab; }
+html.dark .text-gray-500      { color: #7a8693; }
+html.dark .text-gray-400      { color: #5e6e7a; }
+html.dark .text-black         { color: #e1e6ea; }
+
+/* ── Hover backgrounds ──────────────────────────────────────────── */
+html.dark .hover\:bg-slate-50:hover   { background-color: #1c2025; }
+html.dark .hover\:bg-slate-100:hover  { background-color: #20262b; }
+html.dark .hover\:bg-slate-200:hover  { background-color: #252c33; }
+html.dark .hover\:bg-white:hover      { background-color: #1c2025; }
+html.dark .hover\:bg-gray-50:hover    { background-color: #1c2025; }
+html.dark .hover\:bg-gray-100:hover   { background-color: #20262b; }
+
+/* ── Hover text ─────────────────────────────────────────────────── */
+html.dark .hover\:text-slate-900:hover { color: #e1e6ea; }
+html.dark .hover\:text-slate-800:hover { color: #ccd3d9; }
+html.dark .hover\:text-slate-700:hover { color: #b0bac3; }
+html.dark .hover\:text-gray-900:hover  { color: #e1e6ea; }
+html.dark .hover\:text-gray-700:hover  { color: #b0bac3; }
+
+/* ── Form inputs ────────────────────────────────────────────────── */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.dark select,
+html.dark textarea {
+  background-color: #1c2025;
+  border-color: #2c343c;
+  color: #e1e6ea;
+}
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"])::placeholder,
+html.dark textarea::placeholder {
+  color: #5e6e7a;
+}
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+html.dark select:focus,
+html.dark textarea:focus {
+  border-color: #8dc572;
+  box-shadow: 0 0 0 3px rgba(141, 197, 114, 0.12);
+  outline: none;
+}
+html.dark input[type="search"] {
+  background-color: #1c2025;
+  border-color: #2c343c;
+  color: #e1e6ea;
+}
+
+/* ── Tables ─────────────────────────────────────────────────────── */
+html.dark table             { background-color: #171b1f; }
+html.dark thead,
+html.dark thead tr          { background-color: #1c2025; }
+html.dark th                { color: #7a8693; border-color: #252b32; }
+html.dark td                { border-color: #252b32; }
+html.dark tr:hover          { background-color: #1c2025; }
+
+/* ── Shadows ────────────────────────────────────────────────────── */
+html.dark .shadow,
+html.dark .shadow-sm,
+html.dark .shadow-md        { --tw-shadow-color: rgba(0,0,0,0.5); }
+
+/* ── Scrollbar ──────────────────────────────────────────────────── */
+html.dark ::-webkit-scrollbar               { width: 6px; height: 6px; }
+html.dark ::-webkit-scrollbar-track         { background: #171b1f; }
+html.dark ::-webkit-scrollbar-thumb         { background: #2c343c; border-radius: 4px; }
+
+/* ── Suppress all animations in dark mode ───────────────────────── */
+html.dark .animate-fiu,
+html.dark .card-hover,
+html.dark .stat-shimmer::before            { animation: none !important; transition: none !important; }
+
+/* ── Inline-style white surfaces → dark in dark mode ────────────── */
+html.dark [style*="background: #fff"],
+html.dark [style*="background:#fff"],
+html.dark [style*="background: white"],
+html.dark [style*="background-color: white"],
+html.dark [style*="background-color: #fff"] { background-color: #171b1f !important; }
+
+/* ── Kill white box-shadows in dark mode ────────────────────────── */
+html.dark [style*="boxShadow"] { box-shadow: 0 2px 8px rgba(0,0,0,0.35) !important; }
+
+/* ── White/light inline backgrounds on listing cards ────────────── */
+html.dark .bg-white\/80 { background-color: rgba(28,32,37,0.85) !important; }
+html.dark [class*="bg-white\/"] { background-color: rgba(28,32,37,0.80) !important; }
+
+/* ── bg-slate-50 used as chip bg in listing stats ───────────────── */
+html.dark .bg-slate-50 { background-color: #1c2025 !important; }
+
+/* ── Brand green lightest shades → dark surfaces in dark mode ───── */
+html.dark .bg-emerald-50,  html.dark .bg-green-50,
+html.dark .bg-blue-50,     html.dark .bg-sky-50,    html.dark .bg-cyan-50,
+html.dark .bg-violet-50,   html.dark .bg-purple-50, html.dark .bg-indigo-50,
+html.dark .bg-orange-50,   html.dark .bg-amber-50,  html.dark .bg-yellow-50,
+html.dark .bg-rose-50,     html.dark .bg-pink-50                              { background-color: #1c2025 !important; }
+
+html.dark .bg-emerald-100, html.dark .bg-green-100,
+html.dark .bg-blue-100,    html.dark .bg-sky-100,   html.dark .bg-cyan-100,
+html.dark .bg-violet-100,  html.dark .bg-purple-100,html.dark .bg-indigo-100,
+html.dark .bg-orange-100,  html.dark .bg-amber-100, html.dark .bg-yellow-100,
+html.dark .bg-rose-100,    html.dark .bg-pink-100                             { background-color: #20262b !important; }
+
+html.dark .hover\:bg-emerald-50:hover,  html.dark .hover\:bg-green-50:hover,
+html.dark .hover\:bg-blue-50:hover,     html.dark .hover\:bg-violet-50:hover,
+html.dark .hover\:bg-amber-50:hover,    html.dark .hover\:bg-rose-50:hover   { background-color: #20262b !important; }
+
+html.dark .hover\:bg-emerald-100:hover, html.dark .hover\:bg-green-100:hover,
+html.dark .hover\:bg-blue-100:hover,    html.dark .hover\:bg-violet-100:hover,
+html.dark .hover\:bg-amber-100:hover,   html.dark .hover\:bg-rose-100:hover  { background-color: #252c33 !important; }
+
+/* border colors for these light chips in dark mode */
+html.dark .border-emerald-100, html.dark .border-green-100,
+html.dark .border-blue-100,    html.dark .border-violet-100,
+html.dark .border-amber-100,   html.dark .border-rose-100                    { border-color: #252b32 !important; }
+html.dark ::-webkit-scrollbar-thumb:hover   { background: #8dc572; }
+
+/* ── Ring / focus ───────────────────────────────────────────────── */
+html.dark .ring-slate-200,
+html.dark .ring-gray-200    { --tw-ring-color: #2c343c; }
+
+/* ── Dialog overlays ────────────────────────────────────────────── */
+html.dark [data-radix-dialog-overlay],
+html.dark [role="dialog"] .fixed.inset-0 {
+  background-color: rgba(0, 0, 0, 0.70);
+}
+
+/* ── Skeleton ───────────────────────────────────────────────────── */
+html.dark .animate-pulse    { background-color: #20262b; }
+
+/* ================================================================
+   BOXY / SQUARE UI — strip all border-radius from cards & containers
+   ================================================================ */
+html .rounded,
+html .rounded-sm,
+html .rounded-md,
+html .rounded-lg,
+html .rounded-xl,
+html .rounded-2xl,
+html .rounded-3xl,
+html .rounded-full { border-radius: 6px !important; }
+
+/* keep avatars / icon badges circular */
+html .rounded-full[class*="w-10"],
+html .rounded-full[class*="w-9"],
+html .rounded-full[class*="w-8"],
+html .rounded-full[class*="h-10"],
+html .rounded-full[class*="h-9"],
+html .rounded-full[class*="h-8"] { border-radius: 9999px !important; }
+
+/* ================================================================
+   BRAND GREEN PALETTE — all emerald/green/teal → shades of #8dc572
+   Uses html-level specificity to override Tailwind generated classes.
+
+   Shade scale (base = #8dc572, HSL ≈ 100° 44% 61%):
+     50  #eef6e8   100 #d5ecbf   200 #bde0a6   300 #a3d282
+     400 #8dc572   500 #74ad58   600 #5e9045   700 #4c7438
+     800 #3a5a2a   900 #2b4320
+   ================================================================ */
+
+:root {
+  --g50:  #eef6e8; --g100: #d5ecbf; --g200: #bde0a6; --g300: #a3d282;
+  --g400: #8dc572; --g500: #74ad58; --g600: #5e9045; --g700: #4c7438;
+  --g800: #3a5a2a; --g900: #2b4320;
+}
+
+/* ── background ───────────────────────────────────────────────── */
+html .bg-emerald-50,  html .bg-green-50  { background-color: var(--g50)  !important; }
+html .bg-emerald-100, html .bg-green-100 { background-color: var(--g100) !important; }
+html .bg-emerald-200, html .bg-green-200 { background-color: var(--g200) !important; }
+html .bg-emerald-300, html .bg-green-300 { background-color: var(--g300) !important; }
+html .bg-emerald-400, html .bg-green-400 { background-color: var(--g400) !important; }
+html .bg-emerald-500, html .bg-green-500 { background-color: var(--g500) !important; }
+html .bg-emerald-600, html .bg-green-600 { background-color: var(--g600) !important; }
+html .bg-emerald-700, html .bg-green-700 { background-color: var(--g700) !important; }
+html .bg-emerald-800, html .bg-green-800 { background-color: var(--g800) !important; }
+html .bg-teal-400 { background-color: var(--g400) !important; }
+html .bg-teal-500 { background-color: var(--g500) !important; }
+html .bg-teal-600 { background-color: var(--g600) !important; }
+
+/* opacity variants */
+html .bg-emerald-50\/30  { background-color: rgb(238 246 232 / 0.30) !important; }
+html .bg-emerald-500\/10 { background-color: rgb(116 173 88  / 0.10) !important; }
+
+/* ── text ─────────────────────────────────────────────────────── */
+html .text-emerald-400, html .text-green-400 { color: var(--g400) !important; }
+html .text-emerald-500, html .text-green-500 { color: var(--g500) !important; }
+html .text-emerald-600, html .text-green-600 { color: var(--g600) !important; }
+html .text-emerald-700, html .text-green-700 { color: var(--g700) !important; }
+html .text-emerald-800, html .text-green-800 { color: var(--g800) !important; }
+html .text-teal-500 { color: var(--g500) !important; }
+html .text-teal-600 { color: var(--g600) !important; }
+
+/* ── border ───────────────────────────────────────────────────── */
+html .border-emerald-100, html .border-green-100 { border-color: var(--g100) !important; }
+html .border-emerald-200, html .border-green-200 { border-color: var(--g200) !important; }
+html .border-emerald-300, html .border-green-300 { border-color: var(--g300) !important; }
+html .border-emerald-400, html .border-green-400 { border-color: var(--g400) !important; }
+html .border-emerald-500, html .border-green-500 { border-color: var(--g500) !important; }
+html .border-teal-400 { border-color: var(--g400) !important; }
+html .border-teal-500 { border-color: var(--g500) !important; }
+
+/* spinner border-t */
+html .border-t-emerald-500 { border-top-color: var(--g500) !important; }
+
+/* ── hover: background ────────────────────────────────────────── */
+html .hover\:bg-emerald-50:hover,  html .hover\:bg-green-50:hover  { background-color: var(--g50)  !important; }
+html .hover\:bg-emerald-100:hover, html .hover\:bg-green-100:hover { background-color: var(--g100) !important; }
+html .hover\:bg-emerald-500:hover, html .hover\:bg-green-500:hover { background-color: var(--g500) !important; }
+html .hover\:bg-emerald-600:hover, html .hover\:bg-green-600:hover { background-color: var(--g600) !important; }
+
+/* ── hover: text ──────────────────────────────────────────────── */
+html .hover\:text-emerald-600:hover { color: var(--g600) !important; }
+html .hover\:text-emerald-700:hover { color: var(--g700) !important; }
+
+/* ── hover: border ────────────────────────────────────────────── */
+html .hover\:border-emerald-300:hover { border-color: var(--g300) !important; }
+html .hover\:border-emerald-400:hover { border-color: var(--g400) !important; }
+html .hover\:border-emerald-500:hover { border-color: var(--g500) !important; }
+
+/* ── focus: border ────────────────────────────────────────────── */
+html .focus\:border-emerald-400:focus { border-color: var(--g400) !important; }
+html .focus-within\:border-emerald-400:focus-within { border-color: var(--g400) !important; }
+
+/* ── ring ─────────────────────────────────────────────────────── */
+html .ring-emerald-500 { --tw-ring-color: var(--g500); }
+html .focus\:ring-emerald-500\/20:focus {
+  --tw-ring-color: rgb(116 173 88 / 0.20) !important;
+}
+html .focus-within\:ring-emerald-500\/20:focus-within {
+  --tw-ring-color: rgb(116 173 88 / 0.20) !important;
+}
+
+/* ── gradient from/to/via ─────────────────────────────────────── */
+html .from-emerald-500 { --tw-gradient-from: var(--g500) !important; }
+html .from-emerald-600 { --tw-gradient-from: var(--g600) !important; }
+html .to-emerald-500   { --tw-gradient-to:   var(--g500) !important; }
+html .to-teal-500      { --tw-gradient-to:   var(--g600) !important; }
+html .via-emerald-500  { --tw-gradient-via:  var(--g500) !important; }
+
+/* ── data-state (e.g. Radix Tabs active) ──────────────────────── */
+html [data-state=active].data-\[state\=active\]\:bg-emerald-50  { background-color: var(--g50)  !important; }
+html [data-state=active].data-\[state\=active\]\:text-emerald-700 { color: var(--g700) !important; }
+
+/* ── animate-pulse dot ────────────────────────────────────────── */
+html .bg-emerald-400.animate-pulse { background-color: var(--g400) !important; }
+
+/* ================================================================
+   ALL OTHER COLORS → GREEN SHADES
+   Maps blue / indigo / violet / purple / cyan / sky /
+         orange / amber / yellow / rose / pink / fuchsia / red
+   to shades of #8dc572. Red kept only for explicit danger states.
+   ================================================================ */
+
+/* ── blue / sky / cyan → g400-g500 ────────────────────────────── */
+html .bg-blue-50,   html .bg-sky-50,   html .bg-cyan-50   { background-color: var(--g50)  !important; }
+html .bg-blue-100,  html .bg-sky-100,  html .bg-cyan-100  { background-color: var(--g100) !important; }
+html .bg-blue-200,  html .bg-sky-200,  html .bg-cyan-200  { background-color: var(--g200) !important; }
+html .bg-blue-300,  html .bg-sky-300,  html .bg-cyan-300  { background-color: var(--g300) !important; }
+html .bg-blue-400,  html .bg-sky-400,  html .bg-cyan-400  { background-color: var(--g400) !important; }
+html .bg-blue-500,  html .bg-sky-500,  html .bg-cyan-500  { background-color: var(--g500) !important; }
+html .bg-blue-600,  html .bg-sky-600,  html .bg-cyan-600  { background-color: var(--g600) !important; }
+html .bg-blue-700,  html .bg-sky-700,  html .bg-cyan-700  { background-color: var(--g700) !important; }
+
+html .text-blue-400, html .text-sky-400, html .text-cyan-400 { color: var(--g400) !important; }
+html .text-blue-500, html .text-sky-500, html .text-cyan-500 { color: var(--g500) !important; }
+html .text-blue-600, html .text-sky-600, html .text-cyan-600 { color: var(--g600) !important; }
+html .text-blue-700, html .text-sky-700, html .text-cyan-700 { color: var(--g700) !important; }
+
+html .border-blue-200, html .border-sky-200, html .border-cyan-200 { border-color: var(--g200) !important; }
+html .border-blue-300, html .border-sky-300, html .border-cyan-300 { border-color: var(--g300) !important; }
+html .border-blue-400, html .border-sky-400, html .border-cyan-400 { border-color: var(--g400) !important; }
+html .border-blue-500, html .border-sky-500, html .border-cyan-500 { border-color: var(--g500) !important; }
+
+html .hover\:bg-blue-50:hover,  html .hover\:bg-sky-50:hover  { background-color: var(--g50)  !important; }
+html .hover\:bg-blue-100:hover, html .hover\:bg-sky-100:hover { background-color: var(--g100) !important; }
+html .hover\:bg-blue-500:hover, html .hover\:bg-sky-500:hover { background-color: var(--g500) !important; }
+html .hover\:bg-blue-600:hover, html .hover\:bg-sky-600:hover { background-color: var(--g600) !important; }
+
+html .from-blue-400, html .from-sky-400, html .from-cyan-400 { --tw-gradient-from: var(--g400) !important; }
+html .from-blue-500, html .from-sky-500, html .from-cyan-500 { --tw-gradient-from: var(--g500) !important; }
+html .from-blue-600, html .from-sky-600, html .from-cyan-600 { --tw-gradient-from: var(--g600) !important; }
+html .to-blue-400,   html .to-sky-400,   html .to-cyan-400   { --tw-gradient-to: var(--g400) !important; }
+html .to-blue-500,   html .to-sky-500,   html .to-cyan-500   { --tw-gradient-to: var(--g500) !important; }
+html .to-blue-600,   html .to-sky-600,   html .to-cyan-600   { --tw-gradient-to: var(--g600) !important; }
+
+/* ── indigo / violet / purple → g500-g700 ─────────────────────── */
+html .bg-indigo-50,  html .bg-violet-50,  html .bg-purple-50  { background-color: var(--g50)  !important; }
+html .bg-indigo-100, html .bg-violet-100, html .bg-purple-100 { background-color: var(--g100) !important; }
+html .bg-indigo-200, html .bg-violet-200, html .bg-purple-200 { background-color: var(--g200) !important; }
+html .bg-indigo-400, html .bg-violet-400, html .bg-purple-400 { background-color: var(--g400) !important; }
+html .bg-indigo-500, html .bg-violet-500, html .bg-purple-500 { background-color: var(--g500) !important; }
+html .bg-indigo-600, html .bg-violet-600, html .bg-purple-600 { background-color: var(--g600) !important; }
+html .bg-indigo-700, html .bg-violet-700, html .bg-purple-700 { background-color: var(--g700) !important; }
+
+html .text-indigo-400, html .text-violet-400, html .text-purple-400 { color: var(--g400) !important; }
+html .text-indigo-500, html .text-violet-500, html .text-purple-500 { color: var(--g500) !important; }
+html .text-indigo-600, html .text-violet-600, html .text-purple-600 { color: var(--g600) !important; }
+html .text-indigo-700, html .text-violet-700, html .text-purple-700 { color: var(--g700) !important; }
+
+html .border-indigo-200, html .border-violet-200, html .border-purple-200 { border-color: var(--g200) !important; }
+html .border-indigo-300, html .border-violet-300, html .border-purple-300 { border-color: var(--g300) !important; }
+html .border-indigo-500, html .border-violet-500, html .border-purple-500 { border-color: var(--g500) !important; }
+
+html .from-indigo-500, html .from-violet-500, html .from-purple-500 { --tw-gradient-from: var(--g500) !important; }
+html .from-indigo-600, html .from-violet-600, html .from-purple-600 { --tw-gradient-from: var(--g600) !important; }
+html .to-indigo-500,   html .to-violet-500,   html .to-purple-500   { --tw-gradient-to: var(--g500) !important; }
+html .to-indigo-600,   html .to-violet-600,   html .to-purple-600   { --tw-gradient-to: var(--g600) !important; }
+
+/* ── orange / amber / yellow → g300-g500 ──────────────────────── */
+html .bg-orange-50,  html .bg-amber-50,  html .bg-yellow-50  { background-color: var(--g50)  !important; }
+html .bg-orange-100, html .bg-amber-100, html .bg-yellow-100 { background-color: var(--g100) !important; }
+html .bg-orange-200, html .bg-amber-200, html .bg-yellow-200 { background-color: var(--g200) !important; }
+html .bg-orange-300, html .bg-amber-300, html .bg-yellow-300 { background-color: var(--g300) !important; }
+html .bg-orange-400, html .bg-amber-400, html .bg-yellow-400 { background-color: var(--g400) !important; }
+html .bg-orange-500, html .bg-amber-500, html .bg-yellow-500 { background-color: var(--g500) !important; }
+html .bg-orange-600, html .bg-amber-600, html .bg-yellow-600 { background-color: var(--g600) !important; }
+
+html .text-orange-400, html .text-amber-400, html .text-yellow-400 { color: var(--g400) !important; }
+html .text-orange-500, html .text-amber-500, html .text-yellow-500 { color: var(--g500) !important; }
+html .text-orange-600, html .text-amber-600, html .text-yellow-600 { color: var(--g600) !important; }
+html .text-orange-700, html .text-amber-700, html .text-yellow-700 { color: var(--g700) !important; }
+
+html .border-orange-200, html .border-amber-200, html .border-yellow-200 { border-color: var(--g200) !important; }
+html .border-orange-300, html .border-amber-300, html .border-yellow-300 { border-color: var(--g300) !important; }
+html .border-orange-500, html .border-amber-500, html .border-yellow-500 { border-color: var(--g500) !important; }
+
+html .from-orange-400, html .from-amber-400 { --tw-gradient-from: var(--g400) !important; }
+html .from-orange-500, html .from-amber-500 { --tw-gradient-from: var(--g500) !important; }
+html .to-orange-400,   html .to-amber-400   { --tw-gradient-to: var(--g400) !important; }
+html .to-orange-500,   html .to-amber-500   { --tw-gradient-to: var(--g500) !important; }
+
+/* ── rose / pink / fuchsia → g500-g600 ────────────────────────── */
+html .bg-rose-50,    html .bg-pink-50,    html .bg-fuchsia-50    { background-color: var(--g50)  !important; }
+html .bg-rose-100,   html .bg-pink-100,   html .bg-fuchsia-100   { background-color: var(--g100) !important; }
+html .bg-rose-200,   html .bg-pink-200,   html .bg-fuchsia-200   { background-color: var(--g200) !important; }
+html .bg-rose-400,   html .bg-pink-400,   html .bg-fuchsia-400   { background-color: var(--g400) !important; }
+html .bg-rose-500,   html .bg-pink-500,   html .bg-fuchsia-500   { background-color: var(--g500) !important; }
+html .bg-rose-600,   html .bg-pink-600,   html .bg-fuchsia-600   { background-color: var(--g600) !important; }
+
+html .text-rose-400,  html .text-pink-400,  html .text-fuchsia-400  { color: var(--g400) !important; }
+html .text-rose-500,  html .text-pink-500,  html .text-fuchsia-500  { color: var(--g500) !important; }
+html .text-rose-600,  html .text-pink-600,  html .text-fuchsia-600  { color: var(--g600) !important; }
+html .text-rose-700,  html .text-pink-700,  html .text-fuchsia-700  { color: var(--g700) !important; }
+
+html .border-rose-200, html .border-pink-200 { border-color: var(--g200) !important; }
+html .border-rose-300, html .border-pink-300 { border-color: var(--g300) !important; }
+html .border-rose-500, html .border-pink-500 { border-color: var(--g500) !important; }
+
+html .hover\:bg-rose-50:hover  { background-color: var(--g50)  !important; }
+html .hover\:bg-rose-100:hover { background-color: var(--g100) !important; }
+html .hover\:text-rose-500:hover, html .hover\:text-red-500:hover { color: var(--g500) !important; }
+
