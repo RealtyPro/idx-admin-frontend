@@ -304,7 +304,6 @@ export default function AdminDashboard() {
                   href={stat.href}
                   className="relative bg-white rounded-2xl p-4 border border-slate-100 overflow-hidden block"
                   style={{ animationDelay: `${0.08 + i * 0.07}s`, boxShadow: '0 4px 20px rgba(141,197,114,0.13), 0 1px 4px rgba(0,0,0,0.06)' }}
-                  style={{ animationDelay: `${0.08 + i * 0.07}s` }}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center bg-gradient-to-br ${stat.gradient} shadow-sm`}>
