@@ -51,7 +51,7 @@ export default function adminLayout({
   const { theme, toggle: toggleTheme } = useTheme();
   const isDark = theme === "dark";
 
-  const sidebarW = collapsed ? 56 : 240;
+  const sidebarW = collapsed ? 88 : 240;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -98,22 +98,22 @@ export default function adminLayout({
       {/* Expand / collapse toggle — outside sidebar so it's never clipped */}
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="fixed z-40 flex items-center justify-center rounded-full shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-2xl"
+        className="fixed z-40 flex items-center justify-center rounded-full transition-all duration-300 hover:scale-105"
         style={{
           top: "50%",
           transform: "translateY(-50%)",
-          left: sidebarW - 22,
-          width: 44,
-          height: 44,
-          background: "linear-gradient(135deg, #8dc572, #6aad52)",
-          border: "3px solid #fff",
-          boxShadow: "0 4px 16px rgba(141,197,114,0.5)",
+          left: sidebarW - 18,
+          width: 36,
+          height: 36,
+          background: "#e8f0e4",
+          border: "1.5px solid #c5d9bc",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
         }}
         title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed
-          ? <ChevronRightIcon className="w-6 h-6 text-white" />
-          : <ChevronLeftIcon className="w-6 h-6 text-white" />
+          ? <ChevronRightIcon className="w-4 h-4 text-slate-400" />
+          : <ChevronLeftIcon className="w-4 h-4 text-slate-400" />
         }
       </button>
 
