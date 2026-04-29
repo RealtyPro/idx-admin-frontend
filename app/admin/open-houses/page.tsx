@@ -445,6 +445,7 @@ export default function OpenHousesListPage() {
                     <img
                       src={listingCoverPhoto}
                       alt={propertyName}
+                      referrerPolicy="no-referrer"
                       className="w-full h-full object-cover"
                     />
                   ) : (
