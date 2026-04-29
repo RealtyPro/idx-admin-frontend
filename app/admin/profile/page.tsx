@@ -35,6 +35,9 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [internationalPhone, setInternationalPhone] = useState("");
+  const [personalWeb, setPersonalWeb] = useState("");
+  const [mlsProviders, setMlsProviders] = useState<any[]>([]);
   const [address, setAddress] = useState("");
   const [address1, setAddress1] = useState("");
   const [address2, setAddress2] = useState("");
@@ -172,29 +175,45 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    if (statesData) {
+    if (!county && countyName && Array.isArray(counties) && counties.length > 0) {
+      const match = counties.find(
+        (c: any) => (c.name || c.title || "").toLowerCase() === countyName.toLowerCase(),
+      );
+      if (match?.id) setCounty(String(match.id));
     }
-  }, [statesData]);
+  }, [counties, countyName, county]);
+
   useEffect(() => {
-    if (countiesData) {
+    if (!city && cityName && Array.isArray(cities) && cities.length > 0) {
+      const match = cities.find(
+        (c: any) => (c.name || c.title || "").toLowerCase() === cityName.toLowerCase(),
+      );
+      if (match?.id) setCity(String(match.id));
     }
-  }, [countiesData]);
-  useEffect(() => {
-    if (citiesData) {
-    }
-  }, [citiesData]);
+  }, [cities, cityName, city]);
 
   useEffect(() => {
     if (profile) {
-      if (profile.photo) setProfilePhoto(profile.photo);
+      if (profile.photo) {
+        setProfilePhoto(
+          typeof profile.photo === "string"
+            ? profile.photo
+            : Array.isArray(profile.photo) && profile.photo[0]?.path
+            ? profile.photo[0].path
+            : "",
+        );
+      }
       setName(profile.name || "");
       setEmail(profile.email || "");
       setPhone(formatUSPhone(toPhoneInputValue(profile.mobile)));
+      setInternationalPhone(profile.phone || "");
+      setPersonalWeb(profile.web || "");
+      setMlsProviders(Array.isArray(profile.mls_providers) ? profile.mls_providers : []);
       setCity(profile.city || "");
       setState(profile.state || "");
-      setZip(profile.zip || "");
-      setCountry(profile.country || "");
-      setCounty(profile.country || "");
+      setZip(profile.zip || profile.address?.zipcode || "");
+      setCountry(profile.country || profile.address?.country || "");
+      setCounty(profile.county || "");
 
       // Address may be an object or a string
       if (profile.address && typeof profile.address === "object") {
@@ -245,17 +264,24 @@ export default function ProfilePage() {
       setCompanyEmail(profile.company_email || comp?.email || "");
       setCompanyPhone(formatUSPhone(toPhoneInputValue(profile.company_phone || comp?.phone || "")));
       setCompanyWebsite(
-        profile.company_website || profile.web || comp?.website || "",
+        profile.company_website || comp?.website || "",
       );
-      if (comp?.location) {
-        if (typeof comp.location === "object") {
-          setCompanyState(comp.location.state || "");
-          setCompanyCounty(comp.location.county || "");
-          setCompanyCity(comp.location.city || "");
-        } else if (typeof comp.location === "string") {
-          setCompanyCity(comp.location);
-        }
-      }
+      setCompanyState(
+        profile.company_state ||
+        (comp?.location && typeof comp.location === "object" ? comp.location.state : "") ||
+        ""
+      );
+      setCompanyCounty(
+        profile.company_county ||
+        (comp?.location && typeof comp.location === "object" ? comp.location.county : "") ||
+        ""
+      );
+      setCompanyCity(
+        profile.company_city ||
+        (comp?.location && typeof comp.location === "object" ? comp.location.city : "") ||
+        (comp?.location && typeof comp.location === "string" ? comp.location : "") ||
+        ""
+      );
       const logo = profile.company_logo || comp?.logo;
       if (logo) {
         if (typeof logo === "string") {
@@ -453,6 +479,8 @@ export default function ProfilePage() {
     const payload: any = {
       name,
       mobile: phone,
+      phone: internationalPhone,
+      web: personalWeb,
       address,
       state: state,
       city: city,
@@ -492,7 +520,7 @@ export default function ProfilePage() {
 
   const startEdit = () => {
     snapshotRef.current = {
-      name, phone, address, state, county, city,
+      name, phone, internationalPhone, personalWeb, address, state, county, city,
       stateName, countyName, cityName, facebook, linkedIn, instagram,
       companyName, companyAddress, companyState, companyCounty, companyCity,
       companyEmail, companyPhone, companyWebsite,
@@ -508,6 +536,8 @@ export default function ProfilePage() {
     if (s) {
       setName(s.name || "");
       setPhone(s.phone || "");
+      setInternationalPhone(s.internationalPhone || "");
+      setPersonalWeb(s.personalWeb || "");
       setAddress(s.address || "");
       setState(s.state || "");
       setCounty(s.county || "");
@@ -738,26 +768,52 @@ export default function ProfilePage() {
               />
             </div>
           </div>
-          <div>
-            <label className={labelCls}>Mobile</label>
-            <input
-              className={inputCls}
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(formatUSPhone(e.target.value))}
-              readOnly={!isEditing}
-              placeholder="(212) 555-0199"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+            <div>
+              <label className={labelCls}>Mobile</label>
+              <input
+                className={inputCls}
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(formatUSPhone(e.target.value))}
+                readOnly={!isEditing}
+                placeholder="(212) 555-0199"
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Phone (International)</label>
+              <input
+                className={inputCls}
+                type="tel"
+                value={internationalPhone}
+                onChange={(e) => setInternationalPhone(e.target.value)}
+                readOnly={!isEditing}
+                placeholder="+1 555 555 0199"
+              />
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>Address</label>
-            <input
-              className={inputCls}
-              value={address}
-              onChange={(e) => handleAddressChange(e.target.value)}
-              readOnly={!isEditing}
-              placeholder="Address line 1 (enter second line on new line)"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+            <div>
+              <label className={labelCls}>Address</label>
+              <input
+                className={inputCls}
+                value={address}
+                onChange={(e) => handleAddressChange(e.target.value)}
+                readOnly={!isEditing}
+                placeholder="Address line 1 (enter second line on new line)"
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Personal Website</label>
+              <input
+                className={inputCls}
+                type="url"
+                value={personalWeb}
+                onChange={(e) => setPersonalWeb(e.target.value)}
+                readOnly={!isEditing}
+                placeholder="https://example.com"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
@@ -1088,6 +1144,42 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* MLS Providers Section (read-only) */}
+      {mlsProviders.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8 mt-6">
+          <div className="flex items-center mb-5">
+            <div className="flex items-center gap-2">
+              <BuildingOffice2Icon className="w-5 h-5 text-slate-400" />
+              <h3 className="text-sm font-semibold text-slate-900">
+                MLS Providers
+              </h3>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {mlsProviders.map((provider, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-3 p-4 rounded-xl border border-slate-100 bg-slate-50"
+              >
+                {provider.logo && (
+                  <img
+                    src={provider.logo}
+                    alt={provider.name || "MLS"}
+                    className="w-12 h-12 rounded-lg object-contain bg-white border border-slate-100"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                )}
+                <span className="text-sm font-medium text-slate-700">
+                  {provider.name || "Unnamed Provider"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
