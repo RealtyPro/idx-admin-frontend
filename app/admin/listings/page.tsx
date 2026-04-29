@@ -38,20 +38,42 @@ function ListingsContent() {
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ---------- helpers ---------- */
+  const extractImageUrl = (item: any): string | null => {
+    if (typeof item === "string" && item.trim()) return item.trim();
+    if (item && typeof item === "object") {
+      return item.url || item.src || item.href || item.image || item.photo || item.MediaURL || null;
+    }
+    return null;
+  };
+
   const getListingImage = (listing: any) => {
+    // Check cover_photo first (array or string)
+    const cover = listing?.cover_photo;
+    if (Array.isArray(cover) && cover.length > 0) {
+      const url = extractImageUrl(cover[0]);
+      if (url) return url;
+    }
+    if (typeof cover === "string" && cover.trim()) return cover.trim();
+
     const images = listing?.images ?? listing?.image ?? listing?.photos;
     if (typeof images === "string") {
       if (images.trim().startsWith("[")) {
         try {
           const parsed = JSON.parse(images);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const url = extractImageUrl(parsed[0]);
+            if (url) return url;
+          }
         } catch {
           return images;
         }
       }
       return images;
     }
-    if (Array.isArray(images) && images.length > 0) return images[0];
+    if (Array.isArray(images) && images.length > 0) {
+      const url = extractImageUrl(images[0]);
+      if (url) return url;
+    }
     return "/images/hero-image.png";
   };
 
@@ -674,6 +696,10 @@ function ListingsContent() {
                         `Listing ${listing.id}`
                       }
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/images/hero-image.png";
+                      }}
                     />
                     {listing.mls_listingkey && (
                       <span className="absolute top-2 left-2 bg-slate-800/70 text-white text-[10px] font-medium px-2 py-0.5 rounded">

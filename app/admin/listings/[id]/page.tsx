@@ -80,17 +80,29 @@ export default function ListingDetailsPage() {
     return Array.isArray(views) ? views.filter(Boolean) : [];
   };
 
+  // Extract URL string from either a plain string or an image object
+  const extractImageUrl = (item: any): string | null => {
+    if (typeof item === "string" && item.trim()) return item.trim();
+    if (item && typeof item === "object") {
+      return item.url || item.src || item.href || item.image || item.photo || item.MediaURL || null;
+    }
+    return null;
+  };
+
   // Get images array - combine cover_photo and additional images
   const getImages = () => {
     const allImages: string[] = [];
 
-    // First add cover_photo (this will be shown first)
-    if (
-      listing?.cover_photo &&
-      Array.isArray(listing.cover_photo) &&
-      listing.cover_photo.length > 0
-    ) {
-      allImages.push(...listing.cover_photo);
+    // First add cover_photo (string or array)
+    if (listing?.cover_photo) {
+      if (typeof listing.cover_photo === "string" && listing.cover_photo.trim()) {
+        allImages.push(listing.cover_photo.trim());
+      } else if (Array.isArray(listing.cover_photo)) {
+        listing.cover_photo.forEach((item: any) => {
+          const url = extractImageUrl(item);
+          if (url) allImages.push(url);
+        });
+      }
     }
 
     // Then append additional images from the images array
@@ -99,11 +111,10 @@ export default function ListingDetailsPage() {
       Array.isArray(listing.images) &&
       listing.images.length > 0
     ) {
-      // Filter out duplicates if cover_photo already contains some images
-      const uniqueImages = listing.images.filter(
-        (img: string) => !allImages.includes(img),
-      );
-      allImages.push(...uniqueImages);
+      listing.images.forEach((item: any) => {
+        const url = extractImageUrl(item);
+        if (url && !allImages.includes(url)) allImages.push(url);
+      });
     }
 
     return allImages;
@@ -391,6 +402,7 @@ export default function ListingDetailsPage() {
                 src={images[selectedImageIndex] || "/placeholder-image.jpg"}
                 alt={`${listing.title || "Property"} - Image ${selectedImageIndex + 1}`}
                 className="w-full h-full object-cover transition-opacity duration-300"
+                referrerPolicy="no-referrer"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
                 }}
@@ -522,6 +534,7 @@ export default function ListingDetailsPage() {
                         src={img}
                         alt={`Thumbnail ${index + 1}`}
                         className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src =
                             "/placeholder-image.jpg";

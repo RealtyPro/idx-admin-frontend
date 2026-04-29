@@ -190,7 +190,7 @@ export default function BlogCreatePage() {
                 <option value="">Select a category</option>
                 <option value="blog">Blog</option>
                 <option value="news">News</option>
-                <option value="articles">Articles</option>
+                <option value="article">Articles</option>
               </select>
             </div>
 
