@@ -206,7 +206,7 @@ export default function ProfilePage() {
       setName(profile.name || "");
       setEmail(profile.email || "");
       setPhone(formatUSPhone(toPhoneInputValue(profile.mobile)));
-      setInternationalPhone(profile.phone || "");
+      setInternationalPhone(formatUSPhone(toPhoneInputValue(profile.phone)));
       setPersonalWeb(profile.web || "");
       setMlsProviders(Array.isArray(profile.mls_providers) ? profile.mls_providers : []);
       setCity(profile.city || "");
@@ -786,9 +786,9 @@ export default function ProfilePage() {
                 className={inputCls}
                 type="tel"
                 value={internationalPhone}
-                onChange={(e) => setInternationalPhone(e.target.value)}
+                onChange={(e) => setInternationalPhone(formatUSPhone(e.target.value))}
                 readOnly={!isEditing}
-                placeholder="+1 555 555 0199"
+                placeholder="(555) 555-0199"
               />
             </div>
           </div>

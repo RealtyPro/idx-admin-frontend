@@ -390,6 +390,7 @@ export default function AdminDashboard() {
                               <div className="relative h-[200px] overflow-hidden">
                                 <img
                                   src={image}
+                                  referrerPolicy='no-referrer'
                                   alt={listing.title || listing.name || `Listing ${listing.id}`}
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 />
