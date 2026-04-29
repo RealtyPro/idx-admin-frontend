@@ -34,7 +34,7 @@ export default function ProfilePage() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState<PhoneValue>({ code: "", number: "" });
+  const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [address1, setAddress1] = useState("");
   const [address2, setAddress2] = useState("");
@@ -72,14 +72,9 @@ export default function ProfilePage() {
   const [linkedIn, setLinkedIn] = useState("");
   const [instagram, setInstagram] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isEditingPhoto, setIsEditingPhoto] = useState(false);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [isEditingCompany, setIsEditingCompany] = useState(false);
-  const [isEditingAbout, setIsEditingAbout] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const profileSnapshotRef = useRef<any>(null);
-  const companySnapshotRef = useRef<any>(null);
-  const aboutSnapshotRef = useRef<any>(null);
+  const snapshotRef = useRef<any>(null);
 
   const profile = data?.data || data;
 
@@ -164,6 +159,18 @@ export default function ProfilePage() {
 
   const toPhoneInputValue = (phoneData: any): string => formatPhone(phoneData);
 
+  const formatUSPhone = (value: string): string => {
+    // Strip all non-digit characters
+    let digits = value.replace(/\D/g, "");
+    // Strip leading country code "1" if 11 digits
+    if (digits.length === 11 && digits.startsWith("1")) digits = digits.slice(1);
+    digits = digits.slice(0, 10);
+    if (digits.length === 0) return "";
+    if (digits.length <= 3) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
+
   useEffect(() => {
     if (statesData) {
     }
@@ -182,7 +189,7 @@ export default function ProfilePage() {
       if (profile.photo) setProfilePhoto(profile.photo);
       setName(profile.name || "");
       setEmail(profile.email || "");
-      setPhone(parsePhoneToObject(profile.phone || profile.mobile));
+      setPhone(formatUSPhone(toPhoneInputValue(profile.mobile)));
       setCity(profile.city || "");
       setState(profile.state || "");
       setZip(profile.zip || "");
@@ -236,7 +243,7 @@ export default function ProfilePage() {
       setCompanyName(profile.company_name || comp?.name || "");
       setCompanyAddress(profile.company_address || comp?.address || "");
       setCompanyEmail(profile.company_email || comp?.email || "");
-      setCompanyPhone(toPhoneInputValue(profile.company_phone || comp?.phone || ""));
+      setCompanyPhone(formatUSPhone(toPhoneInputValue(profile.company_phone || comp?.phone || "")));
       setCompanyWebsite(
         profile.company_website || profile.web || comp?.website || "",
       );
@@ -276,7 +283,7 @@ export default function ProfilePage() {
 
   const handleProfilePhotoChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (!isEditingPhoto) return;
+      if (!isEditing) return;
       const file = e.target.files?.[0];
       if (!file) return;
       setProfilePhotoFile(file);
@@ -337,13 +344,13 @@ export default function ProfilePage() {
       aboutLong,
       updateProfileMutation,
       queryClient,
-      isEditingPhoto,
+      isEditing,
     ],
   );
 
   const handleCompanyLogoChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (!isEditingCompany) return;
+      if (!isEditing) return;
       const file = e.target.files?.[0];
       if (!file) return;
       setCompanyLogoUploading(true);
@@ -406,7 +413,7 @@ export default function ProfilePage() {
       aboutLong,
       updateProfileMutation,
       queryClient,
-      isEditingCompany,
+      isEditing,
     ],
   );
 
@@ -438,17 +445,14 @@ export default function ProfilePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isEditingProfile) return;
-    submitProfileUpdate(() => setIsEditingProfile(false));
+    if (!isEditing) return;
+    submitProfileUpdate(() => setIsEditing(false));
   };
 
   const buildPayload = () => {
     const payload: any = {
       name,
-      phone: {
-        code: phone?.code || "",
-        number: phone?.number || "",
-      },
+      mobile: phone,
       address,
       state: state,
       city: city,
@@ -486,38 +490,24 @@ export default function ProfilePage() {
     return payload;
   };
 
-  const handleUpdateClick = (section: "company" | "about") => {
-    if (section === "company" && !isEditingCompany) return;
-    if (section === "about" && !isEditingAbout) return;
-    submitProfileUpdate(() => {
-      if (section === "company") setIsEditingCompany(false);
-      if (section === "about") setIsEditingAbout(false);
-    });
-  };
-
-  const startEditProfile = () => {
-    profileSnapshotRef.current = {
-      name,
-      phone,
-      address,
-      state,
-      county,
-      city,
-      stateName,
-      countyName,
-      cityName,
-      facebook,
-      linkedIn,
-      instagram,
+  const startEdit = () => {
+    snapshotRef.current = {
+      name, phone, address, state, county, city,
+      stateName, countyName, cityName, facebook, linkedIn, instagram,
+      companyName, companyAddress, companyState, companyCounty, companyCity,
+      companyEmail, companyPhone, companyWebsite,
+      companyLogoPreview, companyLogoResult: companyLogoResultRef.current,
+      aboutShort, aboutLong,
+      profilePhoto,
     };
-    setIsEditingProfile(true);
+    setIsEditing(true);
   };
 
-  const cancelEditProfile = () => {
-    const s = profileSnapshotRef.current;
+  const cancelEdit = () => {
+    const s = snapshotRef.current;
     if (s) {
       setName(s.name || "");
-      setPhone(s.phone || { code: "", number: "" });
+      setPhone(s.phone || "");
       setAddress(s.address || "");
       setState(s.state || "");
       setCounty(s.county || "");
@@ -528,29 +518,6 @@ export default function ProfilePage() {
       setFacebook(s.facebook || "");
       setLinkedIn(s.linkedIn || "");
       setInstagram(s.instagram || "");
-    }
-    setIsEditingProfile(false);
-  };
-
-  const startEditCompany = () => {
-    companySnapshotRef.current = {
-      companyName,
-      companyAddress,
-      companyState,
-      companyCounty,
-      companyCity,
-      companyEmail,
-      companyPhone,
-      companyWebsite,
-      companyLogoPreview,
-      companyLogoResult: companyLogoResultRef.current,
-    };
-    setIsEditingCompany(true);
-  };
-
-  const cancelEditCompany = () => {
-    const s = companySnapshotRef.current;
-    if (s) {
       setCompanyName(s.companyName || "");
       setCompanyAddress(s.companyAddress || "");
       setCompanyState(s.companyState || "");
@@ -561,25 +528,12 @@ export default function ProfilePage() {
       setCompanyWebsite(s.companyWebsite || "");
       setCompanyLogoPreview(s.companyLogoPreview || "");
       companyLogoResultRef.current = s.companyLogoResult || null;
-    }
-    setIsEditingCompany(false);
-  };
-
-  const startEditAbout = () => {
-    aboutSnapshotRef.current = {
-      aboutShort,
-      aboutLong,
-    };
-    setIsEditingAbout(true);
-  };
-
-  const cancelEditAbout = () => {
-    const s = aboutSnapshotRef.current;
-    if (s) {
       setAboutShort(s.aboutShort || "");
       setAboutLong(s.aboutLong || "");
+      setProfilePhoto(s.profilePhoto || "");
+      setProfilePhotoFile(null);
     }
-    setIsEditingAbout(false);
+    setIsEditing(false);
   };
 
   const labelCls = "block text-xs font-medium text-slate-700 mb-1.5";
@@ -667,56 +621,52 @@ export default function ProfilePage() {
         pauseOnHover
       />
 
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-semibold text-slate-900">Profile</h1>
           <p className="text-sm text-slate-500 mt-0.5">
             Manage your personal and company information
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="px-4 py-2 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => submitProfileUpdate(() => setIsEditing(false))}
+                disabled={updateProfileMutation.isPending}
+                className="px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
+              >
+                {updateProfileMutation.isPending ? "Saving..." : "Save"}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={startEdit}
+              className="px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+            >
+              Edit
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Profile Photo Section */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8 mb-6">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center mb-5">
           <div className="flex items-center gap-2">
             <PhotoIcon className="w-5 h-5 text-slate-400" />
             <h3 className="text-sm font-semibold text-slate-900">
               Profile Photo
             </h3>
-          </div>
-          <div className="flex items-center gap-2">
-            {isEditingPhoto ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setProfilePhoto(profile?.photo || "");
-                    setProfilePhotoFile(null);
-                    setProfilePhotoError(null);
-                    setIsEditingPhoto(false);
-                  }}
-                  className="px-4 py-2 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingPhoto(false)}
-                  className="px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-                >
-                  Save
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsEditingPhoto(true)}
-                className="px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-              >
-                Edit
-              </button>
-            )}
           </div>
         </div>
         <div className="flex items-center gap-5">
@@ -738,13 +688,13 @@ export default function ProfilePage() {
               accept="image/*"
               ref={profilePhotoInputRef}
               className="hidden"
-              disabled={!isEditingPhoto}
+              disabled={!isEditing}
               onChange={handleProfilePhotoChange}
             />
             <button
               type="button"
               onClick={() => profilePhotoInputRef.current?.click()}
-              disabled={!isEditingPhoto || profilePhotoUploading}
+              disabled={!isEditing || profilePhotoUploading}
               className="px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
             >
               {profilePhotoUploading ? "Uploading..." : "Upload Photo"}
@@ -758,22 +708,13 @@ export default function ProfilePage() {
 
       {/* Profile Settings Section */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8 mb-6">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center mb-5">
           <div className="flex items-center gap-2">
             <UserCircleIcon className="w-5 h-5 text-slate-400" />
             <h3 className="text-sm font-semibold text-slate-900">
               Profile Settings
             </h3>
           </div>
-          {!isEditingProfile ? (
-            <button
-              type="button"
-              onClick={startEditProfile}
-              className="px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-            >
-              Edit
-            </button>
-          ) : null}
         </div>
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
@@ -783,7 +724,7 @@ export default function ProfilePage() {
                 className={inputCls}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                readOnly={!isEditingProfile}
+                readOnly={!isEditing}
                 required
               />
             </div>
@@ -798,14 +739,14 @@ export default function ProfilePage() {
             </div>
           </div>
           <div>
-            <label className={labelCls}>Phone</label>
+            <label className={labelCls}>Mobile</label>
             <input
               className={inputCls}
               type="tel"
-              value={formatPhone(phone)}
-              onChange={(e) => setPhone(parsePhoneToObject(e.target.value))}
-              readOnly={!isEditingProfile}
-              placeholder="+971 1234567890"
+              value={phone}
+              onChange={(e) => setPhone(formatUSPhone(e.target.value))}
+              readOnly={!isEditing}
+              placeholder="(212) 555-0199"
             />
           </div>
           <div>
@@ -814,7 +755,7 @@ export default function ProfilePage() {
               className={inputCls}
               value={address}
               onChange={(e) => handleAddressChange(e.target.value)}
-              readOnly={!isEditingProfile}
+              readOnly={!isEditing}
               placeholder="Address line 1 (enter second line on new line)"
             />
           </div>
@@ -834,7 +775,7 @@ export default function ProfilePage() {
                   setCity("");
                   setCityName("");
                 }}
-                disabled={!isEditingProfile || statesLoading}
+                disabled={!isEditing || statesLoading}
               >
                 {renderSelect(states, statesLoading, "Select state")}
               </select>
@@ -857,7 +798,7 @@ export default function ProfilePage() {
                   setCity("");
                   setCityName("");
                 }}
-                disabled={!isEditingProfile || !state || countiesLoading}
+                disabled={!isEditing || !state || countiesLoading}
               >
                 {renderSelect(counties, countiesLoading, "Select county")}
               </select>
@@ -872,7 +813,7 @@ export default function ProfilePage() {
                   setCity(v);
                   setCityName(getOptionLabel(cities, v));
                 }}
-                disabled={!isEditingProfile || !county || citiesLoading}
+                disabled={!isEditing || !county || citiesLoading}
               >
                 {renderSelect(cities, citiesLoading, "Select city")}
               </select>
@@ -892,7 +833,7 @@ export default function ProfilePage() {
                   type="url"
                   value={facebook}
                   onChange={(e) => setFacebook(e.target.value)}
-                  readOnly={!isEditingProfile}
+                  readOnly={!isEditing}
                   placeholder="https://facebook.com/yourpage"
                 />
               </div>
@@ -903,7 +844,7 @@ export default function ProfilePage() {
                   type="url"
                   value={linkedIn}
                   onChange={(e) => setLinkedIn(e.target.value)}
-                  readOnly={!isEditingProfile}
+                  readOnly={!isEditing}
                   placeholder="https://linkedin.com/in/profile"
                 />
               </div>
@@ -914,7 +855,7 @@ export default function ProfilePage() {
                   type="url"
                   value={instagram}
                   onChange={(e) => setInstagram(e.target.value)}
-                  readOnly={!isEditingProfile}
+                  readOnly={!isEditing}
                   placeholder="https://instagram.com/profile"
                 />
               </div>
@@ -928,24 +869,6 @@ export default function ProfilePage() {
           )}
 
           <div className="flex items-center gap-3 pt-2">
-            {isEditingProfile && (
-              <>
-                <button
-                  type="button"
-                  onClick={cancelEditProfile}
-                  className="px-5 py-2.5 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={updateProfileMutation.isPending}
-                  className="px-5 py-2.5 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
-                >
-                  {updateProfileMutation.isPending ? "Saving..." : "Save"}
-                </button>
-              </>
-            )}
             <Link
               href={
                 email
@@ -962,20 +885,11 @@ export default function ProfilePage() {
 
       {/* Company Section */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8 mb-6">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center mb-5">
           <div className="flex items-center gap-2">
             <BuildingOffice2Icon className="w-5 h-5 text-slate-400" />
             <h3 className="text-sm font-semibold text-slate-900">Company</h3>
           </div>
-          {!isEditingCompany ? (
-            <button
-              type="button"
-              onClick={startEditCompany}
-              className="px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-            >
-              Edit
-            </button>
-          ) : null}
         </div>
         <div className="space-y-5">
           <div>
@@ -1006,13 +920,13 @@ export default function ProfilePage() {
                   accept="image/*"
                   ref={companyLogoInputRef}
                   className="hidden"
-                  disabled={!isEditingCompany}
+                  disabled={!isEditing}
                   onChange={handleCompanyLogoChange}
                 />
                 <button
                   type="button"
                   onClick={() => companyLogoInputRef.current?.click()}
-                  disabled={!isEditingCompany || companyLogoUploading}
+                  disabled={!isEditing || companyLogoUploading}
                   className="px-4 py-2 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
                 >
                   {companyLogoUploading ? "Uploading..." : "Upload Logo"}
@@ -1033,7 +947,7 @@ export default function ProfilePage() {
                 className={inputCls}
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                readOnly={!isEditingCompany}
+                readOnly={!isEditing}
                 placeholder="Company name"
               />
             </div>
@@ -1043,7 +957,7 @@ export default function ProfilePage() {
                 className={inputCls}
                 value={companyAddress}
                 onChange={(e) => setCompanyAddress(e.target.value)}
-                readOnly={!isEditingCompany}
+                readOnly={!isEditing}
                 placeholder="Company address"
               />
             </div>
@@ -1060,7 +974,7 @@ export default function ProfilePage() {
                   setCompanyCounty("");
                   setCompanyCity("");
                 }}
-                disabled={!isEditingCompany || statesLoading}
+                disabled={!isEditing || statesLoading}
               >
                 {renderSelect(states, statesLoading, "Select state")}
               </select>
@@ -1079,7 +993,7 @@ export default function ProfilePage() {
                   setCompanyCounty(e.target.value);
                   setCompanyCity("");
                 }}
-                disabled={!isEditingCompany || !companyState || companyCountiesLoading}
+                disabled={!isEditing || !companyState || companyCountiesLoading}
               >
                 {renderSelect(
                   companyCounties,
@@ -1094,7 +1008,7 @@ export default function ProfilePage() {
                 className={selectCls}
                 value={companyCity}
                 onChange={(e) => setCompanyCity(e.target.value)}
-                disabled={!isEditingCompany || !companyCounty || companyCitiesLoading}
+                disabled={!isEditing || !companyCounty || companyCitiesLoading}
               >
                 {renderSelect(
                   companyCities,
@@ -1113,7 +1027,7 @@ export default function ProfilePage() {
                 type="email"
                 value={companyEmail}
                 onChange={(e) => setCompanyEmail(e.target.value)}
-                readOnly={!isEditingCompany}
+                readOnly={!isEditing}
                 placeholder="company@email.com"
               />
             </div>
@@ -1122,10 +1036,10 @@ export default function ProfilePage() {
               <input
                 className={inputCls}
                 type="tel"
-                value={toPhoneInputValue(companyPhone)}
-                onChange={(e) => setCompanyPhone(e.target.value)}
-                readOnly={!isEditingCompany}
-                placeholder="+971 1234567890"
+                value={companyPhone}
+                onChange={(e) => setCompanyPhone(formatUSPhone(e.target.value))}
+                readOnly={!isEditing}
+                placeholder="(212) 555-0199"
               />
             </div>
             <div>
@@ -1135,52 +1049,21 @@ export default function ProfilePage() {
                 type="url"
                 value={companyWebsite}
                 onChange={(e) => setCompanyWebsite(e.target.value)}
-                readOnly={!isEditingCompany}
+                readOnly={!isEditing}
                 placeholder="https://company.com"
               />
             </div>
-          </div>
-
-          <div className="flex items-center gap-3 pt-2">
-            {!isEditingCompany ? null : (
-              <>
-                <button
-                  type="button"
-                  onClick={cancelEditCompany}
-                  className="px-5 py-2.5 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleUpdateClick("company")}
-                  disabled={updateProfileMutation.isPending}
-                  className="px-5 py-2.5 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
-                >
-                  {updateProfileMutation.isPending ? "Saving..." : "Save"}
-                </button>
-              </>
-            )}
           </div>
         </div>
       </div>
 
       {/* About Section */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:p-8">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center mb-5">
           <div className="flex items-center gap-2">
             <InformationCircleIcon className="w-5 h-5 text-slate-400" />
             <h3 className="text-sm font-semibold text-slate-900">About</h3>
           </div>
-          {!isEditingAbout ? (
-            <button
-              type="button"
-              onClick={startEditAbout}
-              className="px-4 py-2 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-            >
-              Edit
-            </button>
-          ) : null}
         </div>
         <div className="space-y-5">
           <div>
@@ -1189,7 +1072,7 @@ export default function ProfilePage() {
               className={`${inputCls} min-h-[80px]`}
               value={aboutShort}
               onChange={(e) => setAboutShort(e.target.value)}
-              readOnly={!isEditingAbout}
+              readOnly={!isEditing}
               placeholder="Short summary"
             />
           </div>
@@ -1199,30 +1082,9 @@ export default function ProfilePage() {
               className={`${inputCls} min-h-[140px]`}
               value={aboutLong}
               onChange={(e) => setAboutLong(e.target.value)}
-              readOnly={!isEditingAbout}
+              readOnly={!isEditing}
               placeholder="Detailed description"
             />
-          </div>
-          <div className="flex items-center gap-3 pt-2">
-            {!isEditingAbout ? null : (
-              <>
-                <button
-                  type="button"
-                  onClick={cancelEditAbout}
-                  className="px-5 py-2.5 text-sm font-medium rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleUpdateClick("about")}
-                  disabled={updateProfileMutation.isPending}
-                  className="px-5 py-2.5 text-sm font-medium rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
-                >
-                  {updateProfileMutation.isPending ? "Saving..." : "Save"}
-                </button>
-              </>
-            )}
           </div>
         </div>
       </div>
