@@ -26,6 +26,17 @@ export default function NeighbourhoodEditPage() {
   const [county, setCounty] = useState<string | number>("");
   const [city, setCity] = useState<string | number>("");
   const [description, setDescription] = useState("");
+  // Helper to normalize image URLs to avoid mixed content
+  const normalizeImageUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    if (url.startsWith('https://')) return url;
+    if (url.startsWith('http://104.225.217.254:8081/')) {
+      // Proxy through Next.js rewrite
+      return url.replace('http://104.225.217.254:8081/', '/media/');
+    }
+    return url;
+  };
+
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageObject, setImageObject] = useState<ImageObject | null>(null);
@@ -55,13 +66,13 @@ export default function NeighbourhoodEditPage() {
         if (typeof imgData === "string") {
           const isDefault = imgData.includes("/img/default/") || imgData.includes("default");
           const url = imgData.startsWith("http") ? imgData : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${imgData}`;
-          setImage(url);
-          if (!isDefault) setOriginalImage(url);
+          setImage(normalizeImageUrl(url));
+          if (!isDefault) setOriginalImage(normalizeImageUrl(url));
         } else if (typeof imgData === "object") {
           setImageObject(imgData as ImageObject);
           setOriginalImageObject(imgData as ImageObject);
           const url = imgData.path?.startsWith("http") ? imgData.path : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${imgData.path}`;
-          setImage(url); setOriginalImage(url);
+          setImage(normalizeImageUrl(url)); setOriginalImage(normalizeImageUrl(url));
         }
       }
       setTimeout(() => setIsInitialLoad(false), 500);
@@ -170,7 +181,7 @@ export default function NeighbourhoodEditPage() {
                   try {
                     const obj = await uploadNeighbourhoodImage(file);
                     setImageObject(obj);
-                    const url = obj.path.startsWith("http") ? obj.path : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/xs/${obj.path}`;
+                    const url = obj.path.startsWith("http") ? normalizeImageUrl(obj.path) : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/xs/${obj.path}`;
                     setImage(url); setUploadSuccess(true); setTimeout(() => setUploadSuccess(false), 3000);
                   } catch (err: any) {
                     alert(err?.response?.data?.message || err?.message || "Failed to upload."); setImage(tmp); setImageObject(originalImageObject); setImageFile(null);

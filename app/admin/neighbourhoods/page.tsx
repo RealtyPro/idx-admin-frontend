@@ -82,14 +82,26 @@ export default function NeighbourhoodsListPage() {
     setSearchParams(cleared); setActiveFilters(cleared); setCurrentPage(1);
   };
 
+  // Normalize image URLs to avoid mixed content
+  const normalizeImageUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    if (url.startsWith('https://')) return url;
+    if (url.startsWith('http://104.225.217.254:8081/')) {
+      // Proxy through Next.js rewrite
+      return url.replace('http://104.225.217.254:8081/', '/media/');
+    }
+    return url;
+  };
+
   const getNeighbourhoodImageUrl = (n: any): string | null => {
     const img = n.images || n.image;
     if (!img) return null;
     if (typeof img === "string") {
       if (img.includes("/img/default/") || img.includes("default")) return null;
-      return img.startsWith("http") ? img : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img}`;
+      // Use backend domain for relative, else normalize
+      return img.startsWith("http") ? normalizeImageUrl(img) : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img}`;
     }
-    if (typeof img === "object" && img.path) return img.path.startsWith("http") ? img.path : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img.path}`;
+    if (typeof img === "object" && img.path) return img.path.startsWith("http") ? normalizeImageUrl(img.path) : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/storage/${img.path}`;
     return null;
   };
 

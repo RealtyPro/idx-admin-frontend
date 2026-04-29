@@ -46,15 +46,26 @@ export default function NeighbourhoodDetails() {
   const countyName = findName(countiesList, neighbourhood?.county_id, neighbourhood?.county?.name || "N/A");
   const cityName = findName(citiesList, neighbourhood?.city_id, neighbourhood?.city?.name || "N/A");
 
+  // Normalize image URLs to avoid mixed content
+  const normalizeImageUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    if (url.startsWith('https://')) return url;
+    if (url.startsWith('http://104.225.217.254:8081/')) {
+      // Proxy through Next.js rewrite
+      return url.replace('http://104.225.217.254:8081/', '/media/');
+    }
+    return url;
+  };
+
   const getImageUrl = () => {
     if (!neighbourhood) return null;
     const img = neighbourhood.images || neighbourhood.image;
     if (!img) return null;
     if (typeof img === "string") {
       if (img.includes("/img/default/") || img.includes("default")) return null;
-      return img.startsWith("http") ? img : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${img}`;
+      return img.startsWith("http") ? normalizeImageUrl(img) : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${img}`;
     }
-    if (typeof img === "object" && img.path) return img.path.startsWith("http") ? img.path : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${img.path}`;
+    if (typeof img === "object" && img.path) return img.path.startsWith("http") ? normalizeImageUrl(img.path) : `${process.env.NEXT_PUBLIC_BACKEND_DOMAIN}/image/local/original/${img.path}`;
     return null;
   };
   const imageUrl = getImageUrl();
