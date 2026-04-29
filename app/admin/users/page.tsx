@@ -403,7 +403,7 @@ export default function UsersPage() {
 
                 {/* CRM status */}
                 <div className="hidden md:block min-w-[100px]">
-                  {user.crm_status === "0" || user.crm_status === 0 ? (
+                  {user.crm_status === "0" || user.crm_status ===  0 ? (
                     <button
                       onClick={(e) => { e.stopPropagation(); handlePushToCRM(user); }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-colors"
