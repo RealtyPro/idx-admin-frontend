@@ -105,7 +105,7 @@ export const fetchPublicSingleOpenHouse = async (
   id: string,
 ): Promise<unknown> => {
   return tryEndpoints(async (endpoint) => {
-    const response = await axiosInstance.get(`${'v1/openhouse'}?openhouse_id=${id}`);
+    const response = await axiosInstance.post(`${'v1/openhouse'}?openhouse_id=${id}`);
     return response.data;
   });
 };
